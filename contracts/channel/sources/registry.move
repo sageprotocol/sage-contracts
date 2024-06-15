@@ -73,5 +73,6 @@ module sage::channel_registry {
         );
 
         self.registry.add(channel_name, channel_record);
+        self.reverse_registry.add(channel_record, channel_name);
     }
 }
