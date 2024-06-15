@@ -117,10 +117,9 @@ module sage::channel {
     }
 
     public fun join (
-        uid: UID,
+        channel_id: ID,
         ctx: &mut TxContext
-    ): (bool, UID) {
-        let channel_id = object::uid_to_inner(&uid);
+    ): bool {
         let user = tx_context::sender(ctx);
 
         // do something here
@@ -131,15 +130,13 @@ module sage::channel {
             user
         });
 
-        // true
-        (true, uid)
+        true
     }
 
     public fun leave (
-        uid: UID,
+        channel_id: ID,
         ctx: &mut TxContext
-    ): (bool, UID) {
-        let channel_id = object::uid_to_inner(&uid);
+    ): bool {
         let user = tx_context::sender(ctx);
 
         // do something here
@@ -150,8 +147,7 @@ module sage::channel {
             user
         });
 
-        // true
-        (true, uid)
+        true
     }
 
     public fun update_avatar (
