@@ -5,13 +5,11 @@ module sage::channel {
     use sui::event;
 
     use sage::{
-        channel_registry::{Self, AdminCap, Registry}
+        channel_membership::{Self, ChannelMembership, ChannelMembershipRegistry},
+        channel_registry::{Self, AdminCap, ChannelRegistry}
     };
 
     // --------------- Constants ---------------
-
-    const CHANNEL_JOIN: u8 = 0;
-    const CHANNEL_LEAVE: u8 = 1;
 
     const CHANNEL_NAME_MAX_LENGTH: u64 = 63;
     const CHANNEL_NAME_MIN_LENGTH: u64 = 3;
@@ -58,25 +56,20 @@ module sage::channel {
         description: String
     }
 
-    public struct ChannelMembership has copy, drop {
-        channel_id: ID,
-        message: u8,
-        user: address
-    }
-
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
     public fun create(
         clock: &Clock,
-        registry: &mut Registry,
+        channel_registry: &mut ChannelRegistry,
+        channel_membership_registry: &mut ChannelMembershipRegistry,
         name: String,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         ctx: &mut TxContext,
-    ): Channel {
+    ): (Channel, ChannelMembership) {
         let is_valid_name = is_valid_channel_name(&name);
 
         assert!(is_valid_name, EInvalidChannelName);
@@ -87,7 +80,7 @@ module sage::channel {
         let channel_id = object::uid_to_inner(&uid);
 
         channel_registry::add_record(
-            registry,
+            channel_registry,
             name,
             channel_id
         );
@@ -101,8 +94,14 @@ module sage::channel {
             description,
             name,
         };
+
+        let channel_membership = channel_membership::create(
+            channel_membership_registry,
+            channel_id,
+            ctx
+        );
         
-        // 3) public share or burn
+        transfer::share_object(channel);
 
         event::emit(ChannelCreated {
             avatar_hash,
@@ -113,41 +112,7 @@ module sage::channel {
             description
         });
 
-        channel
-    }
-
-    public fun join (
-        channel_id: ID,
-        ctx: &mut TxContext
-    ): bool {
-        let user = tx_context::sender(ctx);
-
-        // do something here
-
-        event::emit(ChannelMembership {
-            channel_id,
-            message: CHANNEL_JOIN,
-            user
-        });
-
-        true
-    }
-
-    public fun leave (
-        channel_id: ID,
-        ctx: &mut TxContext
-    ): bool {
-        let user = tx_context::sender(ctx);
-
-        // do something here
-
-        event::emit(ChannelMembership {
-            channel_id,
-            message: CHANNEL_LEAVE,
-            user
-        });
-
-        true
+        (channel, channel_membership)
     }
 
     public fun update_avatar (
