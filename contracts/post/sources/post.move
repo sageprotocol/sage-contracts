@@ -6,6 +6,7 @@ module sage::post {
 
     use sage::{
         channel::{Self, Channel},
+        post_comments::{Self, PostCommentsRegistry},
         post_likes::{Self, PostLikesRegistry}
     };
 
@@ -52,6 +53,26 @@ module sage::post {
 
     // --------------- Public Functions ---------------
 
+    public fun get_id(
+        post: Post
+    ): ID {
+        let Post {
+            id: uid,
+            created_at: _,
+            created_by: _,
+            data: _,
+            description: _,
+            edited: _,
+            parent: _,
+            title: _,
+            updated_at: _
+        } = post;
+
+        let id = object::uid_to_inner(&uid);
+
+        id
+    }
+
     public fun like(
         post_likes_registry: &mut PostLikesRegistry,
         post_id: ID,
@@ -77,6 +98,7 @@ module sage::post {
 
     public fun post_from_channel(
         clock: &Clock,
+        post_comments_registry: &mut PostCommentsRegistry,
         post_likes_registry: &mut PostLikesRegistry,
         channel: Channel,
         data: String,
@@ -88,6 +110,31 @@ module sage::post {
 
         create(
             clock,
+            post_comments_registry,
+            post_likes_registry,
+            data,
+            description,
+            parent,
+            title,
+            ctx
+        )
+    }
+
+    public fun post_from_post(
+        clock: &Clock,
+        post_comments_registry: &mut PostCommentsRegistry,
+        post_likes_registry: &mut PostLikesRegistry,
+        post: Post,
+        data: String,
+        description: String,
+        title: String,
+        ctx: &mut TxContext
+    ): Post {
+        let parent = get_id(post);
+
+        create(
+            clock,
+            post_comments_registry,
             post_likes_registry,
             data,
             description,
@@ -103,6 +150,7 @@ module sage::post {
 
     fun create(
         clock: &Clock,
+        post_comments_registry: &mut PostCommentsRegistry,
         post_likes_registry: &mut PostLikesRegistry,
         data: String,
         description: String,
@@ -128,6 +176,12 @@ module sage::post {
             title,
             updated_at: timestamp
         };
+
+        post_comments::create(
+            post_comments_registry,
+            id,
+            ctx
+        );
 
         post_likes::create(
             post_likes_registry,
