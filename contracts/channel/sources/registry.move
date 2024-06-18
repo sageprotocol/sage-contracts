@@ -3,6 +3,10 @@ module sage::channel_registry {
 
     use sui::{table::{Self, Table}};
 
+    use sage::{
+        admin::{AdminCap}
+    };
+
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
@@ -11,33 +15,14 @@ module sage::channel_registry {
 
     // --------------- Name Tag ---------------
 
-    public struct AdminCap has key {
-        id: UID
-    }
-
-    public struct ChannelName has copy, store, drop {
-        name: String
-    }
-
-    public struct ChannelRecord has copy, store, drop {
-        channel_id: ID
-    }
-
     public struct ChannelRegistry has store {
-        registry: Table<ChannelName, ChannelRecord>,
-        reverse_registry: Table<ChannelRecord, ChannelName>
+        registry: Table<String, ID>,
+        reverse_registry: Table<ID, String>
     }
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
-
-    fun init(ctx: &mut TxContext) {
-        let admin = tx_context::sender(ctx);
-        let admin_cap = AdminCap { id: object::new(ctx) };
-
-        transfer::transfer(admin_cap, admin);
-    }
 
     // --------------- Public Functions ---------------
 
@@ -53,7 +38,7 @@ module sage::channel_registry {
 
     public fun has_record(
         self: &ChannelRegistry,
-        channel_name: ChannelName
+        channel_name: String
     ): bool {
         self.registry.contains(channel_name)
     }
@@ -65,19 +50,11 @@ module sage::channel_registry {
         name: String,
         channel_id: ID
     ) {
-        let channel_name = ChannelName {
-            name
-        };
-
-        let record_exists = self.has_record(channel_name);
+        let record_exists = self.has_record(name);
 
         assert!(!record_exists, EChannelRecordExists);
 
-        let channel_record = ChannelRecord {
-            channel_id
-        };
-
-        self.registry.add(channel_name, channel_record);
-        self.reverse_registry.add(channel_record, channel_name);
+        self.registry.add(name, channel_id);
+        self.reverse_registry.add(channel_id, name);
     }
 }
