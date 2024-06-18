@@ -5,14 +5,15 @@ module sage::channel {
     use sui::event;
 
     use sage::{
+        admin::{AdminCap},
         channel_membership::{Self, ChannelMembership, ChannelMembershipRegistry},
-        channel_registry::{Self, AdminCap, ChannelRegistry}
+        channel_registry::{Self, ChannelRegistry}
     };
 
     // --------------- Constants ---------------
 
-    const CHANNEL_NAME_MAX_LENGTH: u64 = 63;
     const CHANNEL_NAME_MIN_LENGTH: u64 = 3;
+    const CHANNEL_NAME_MAX_LENGTH: u64 = 63;
 
     // --------------- Errors ---------------
 
@@ -113,6 +114,24 @@ module sage::channel {
         });
 
         (channel, channel_membership)
+    }
+
+    public fun get_id(
+        channel: Channel
+    ): ID {
+        let Channel {
+            id: uid,
+            avatar_hash: _,
+            banner_hash: _,
+            created_at: _,
+            created_by: _,
+            description: _,
+            name: _
+        } = channel;
+
+        let id = object::uid_to_inner(&uid);
+
+        id
     }
 
     public fun update_avatar (
