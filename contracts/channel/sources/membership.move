@@ -130,11 +130,19 @@ module sage::channel_membership {
         channel_id: ID,
         ctx: &mut TxContext
     ) {
+        let user = tx_context::sender(ctx);
+
         let channel_membership = ChannelMembership {
             membership: table::new(ctx)
         };
 
         self.registry.add(channel_id, channel_membership);
+
+        let channel_member = ChannelMember {
+            member_type: CHANNEL_MEMBER_WALLET
+        };
+
+        channel_membership.membership.add(user, channel_member);
     }
 
     // --------------- Internal Functions ---------------
