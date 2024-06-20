@@ -2,6 +2,10 @@ module sage::channel_membership {
     use sui::event;
     use sui::{table::{Self, Table}};
 
+    use sage::{
+        admin::{AdminCap}
+    };
+
     // --------------- Constants ---------------
 
     const CHANNEL_MEMBER_WALLET: u8 = 0;
@@ -40,15 +44,27 @@ module sage::channel_membership {
 
     // --------------- Constructor ---------------
 
-    fun init(
+    // --------------- Public Functions ---------------
+
+    public fun create_channel_membership_registry(
+        _: &AdminCap,
         ctx: &mut TxContext
-    ) {
-        let _channel_membership_registry = ChannelMembershipRegistry {
+    ): ChannelMembershipRegistry {
+        ChannelMembershipRegistry {
             registry: table::new(ctx)
-        };
+        }
     }
 
-    // --------------- Public Functions ---------------
+    #[test_only]
+    public fun destroy_for_testing(
+        channel_membership_registry: ChannelMembershipRegistry
+    ) {
+        let ChannelMembershipRegistry {
+            registry
+        } = channel_membership_registry;
+
+        registry.destroy_empty();
+    }
 
     public fun join (
         self: &mut ChannelMembership,
@@ -113,14 +129,12 @@ module sage::channel_membership {
         self: &mut ChannelMembershipRegistry,
         channel_id: ID,
         ctx: &mut TxContext
-    ): ChannelMembership {
+    ) {
         let channel_membership = ChannelMembership {
             membership: table::new(ctx)
         };
 
         self.registry.add(channel_id, channel_membership);
-
-        channel_membership
     }
 
     // --------------- Internal Functions ---------------
