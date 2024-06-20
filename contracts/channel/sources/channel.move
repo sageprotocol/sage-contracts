@@ -6,14 +6,14 @@ module sage::channel {
 
     use sage::{
         admin::{AdminCap},
-        channel_membership::{Self, ChannelMembership, ChannelMembershipRegistry},
+        channel_membership::{Self, ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry}
     };
 
     // --------------- Constants ---------------
 
     const CHANNEL_NAME_MIN_LENGTH: u64 = 3;
-    const CHANNEL_NAME_MAX_LENGTH: u64 = 63;
+    const CHANNEL_NAME_MAX_LENGTH: u64 = 20;
 
     // --------------- Errors ---------------
 
@@ -70,7 +70,7 @@ module sage::channel {
         banner_hash: String,
         description: String,
         ctx: &mut TxContext,
-    ): (Channel, ChannelMembership) {
+    ): ID {
         let is_valid_name = is_valid_channel_name(&name);
 
         assert!(is_valid_name, EInvalidChannelName);
@@ -96,7 +96,7 @@ module sage::channel {
             name,
         };
 
-        let channel_membership = channel_membership::create(
+        channel_membership::create(
             channel_membership_registry,
             channel_id,
             ctx
@@ -113,25 +113,7 @@ module sage::channel {
             description
         });
 
-        (channel, channel_membership)
-    }
-
-    public fun get_id(
-        channel: Channel
-    ): ID {
-        let Channel {
-            id: uid,
-            avatar_hash: _,
-            banner_hash: _,
-            created_at: _,
-            created_by: _,
-            description: _,
-            name: _
-        } = channel;
-
-        let id = object::uid_to_inner(&uid);
-
-        id
+        channel_id
     }
 
     public fun update_avatar (
