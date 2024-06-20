@@ -26,7 +26,7 @@ module sage::channel_registry {
 
     // --------------- Public Functions ---------------
 
-    public fun create(
+    public fun create_channel_registry(
         _: &AdminCap,
         ctx: &mut TxContext
     ): ChannelRegistry {
@@ -34,6 +34,19 @@ module sage::channel_registry {
             registry: table::new(ctx),
             reverse_registry: table::new(ctx)
         }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(
+        self: ChannelRegistry
+    ) {
+        let ChannelRegistry {
+            registry,
+            reverse_registry
+        } = self;
+
+        registry.drop();
+        reverse_registry.drop();
     }
 
     public fun has_record(
