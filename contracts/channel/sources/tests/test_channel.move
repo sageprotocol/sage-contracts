@@ -12,7 +12,7 @@ module sage::test_channel {
         admin::{Self, AdminCap},
         channel::{Self},
         channel_membership::{Self, ChannelMembershipRegistry},
-        channel_registry::{Self, ChannelRegistry}
+        channel_registry::{Self, ChannelRegistry, EChannelRecordExists}
     };
 
     // --------------- Constants ---------------
@@ -23,6 +23,7 @@ module sage::test_channel {
 
     const EMemberLength: u64 = 0;
     const EIsMember: u64 = 1;
+    const EHasMember: u64 = 2;
     const EChannelNameInvalid: u64 = 2;
 
     // --------------- Public Functions ---------------
@@ -123,6 +124,70 @@ module sage::test_channel {
             );
 
             assert!(member_length == 1, EMemberLength);
+
+            let has_member = channel_registry::has_record(
+                channel_registry,
+                string::utf8(b"channel-name")
+            );
+
+            assert!(has_member, EHasMember);
+
+            ts::return_shared(clock);
+
+            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            channel_registry::destroy_for_testing(channel_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelRecordExists)]
+    fun test_channel_uniqueness() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let channel_registry = &mut channel_registry_val;
+            let channel_membership_registry = &mut channel_membership_registry_val;
+
+            let _channel_id_1 = channel::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                string::utf8(b"channel-name"),
+                string::utf8(b"avatar_hash"),
+                string::utf8(b"banner_hash"),
+                string::utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let _channel_id_2 = channel::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                string::utf8(b"channel-name"),
+                string::utf8(b"avatar_hash_2"),
+                string::utf8(b"banner_hash_2"),
+                string::utf8(b"description_2"),
+                ts::ctx(scenario)
+            );
 
             ts::return_shared(clock);
 
