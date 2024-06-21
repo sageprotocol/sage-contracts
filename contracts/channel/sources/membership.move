@@ -55,36 +55,30 @@ module sage::channel_membership {
         }
     }
 
-    #[test_only]
-    public fun destroy_for_testing(
-        channel_membership_registry: ChannelMembershipRegistry
-    ) {
-        let ChannelMembershipRegistry {
-            registry
-        } = channel_membership_registry;
-
-        registry.destroy_empty();
+    public fun get_membership(
+        self: &mut ChannelMembershipRegistry,
+        channel_id: ID
+    ): &mut ChannelMembership {
+        self.registry.borrow_mut(channel_id)
     }
 
-    public fun join (
+    public fun get_member_length(
+        self: &ChannelMembership
+    ): u64 {
+        self.membership.length()
+    }
+
+    public fun join(
         self: &mut ChannelMembership,
         channel_id: ID,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
 
-        let is_member = is_member(
+        join_channel(
             self,
             user
         );
-
-        assert!(!is_member, EChannelMemberExists);
-
-        let channel_member = ChannelMember {
-            member_type: CHANNEL_MEMBER_WALLET
-        };
-
-        self.membership.add(user, channel_member);
 
         event::emit(ChannelMembershipUpdate {
             channel_id,
@@ -93,7 +87,7 @@ module sage::channel_membership {
         });
     }
 
-    public fun leave (
+    public fun leave(
         self: &mut ChannelMembership,
         channel_id: ID,
         ctx: &mut TxContext
@@ -130,21 +124,52 @@ module sage::channel_membership {
         channel_id: ID,
         ctx: &mut TxContext
     ) {
-        let user = tx_context::sender(ctx);
-
-        let channel_membership = ChannelMembership {
+        let mut channel_membership = ChannelMembership {
             membership: table::new(ctx)
         };
 
+        let channel_membership_val = &mut channel_membership;
+        let user = tx_context::sender(ctx);
+
+        join_channel(
+            channel_membership_val,
+            user
+        );
+
         self.registry.add(channel_id, channel_membership);
+    }
+
+    // --------------- Internal Functions ---------------
+
+    fun join_channel(
+        self: &mut ChannelMembership,
+        user: address
+    ) {
+        let is_member = is_member(
+            self,
+            user
+        );
+
+        assert!(!is_member, EChannelMemberExists);
 
         let channel_member = ChannelMember {
             member_type: CHANNEL_MEMBER_WALLET
         };
 
-        channel_membership.membership.add(user, channel_member);
+        self.membership.add(user, channel_member);
     }
 
-    // --------------- Internal Functions ---------------
+    // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun destroy_for_testing(
+        channel_membership_registry: ChannelMembershipRegistry
+    ) {
+        let ChannelMembershipRegistry {
+            registry
+        } = channel_membership_registry;
+
+        registry.destroy_empty();
+    }
 
 }
