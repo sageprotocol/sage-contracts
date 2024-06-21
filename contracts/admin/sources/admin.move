@@ -29,13 +29,15 @@ module sage::admin {
 
     // --------------- Public Functions ---------------
 
+    // --------------- Friend Functions ---------------
+
+    // --------------- Internal Functions ---------------
+
+    // --------------- Test Functions ---------------
+
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(ctx);
     }
-
-    // --------------- Friend Functions ---------------
-
-    // --------------- Internal Functions ---------------
 
 }

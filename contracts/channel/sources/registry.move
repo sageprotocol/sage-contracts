@@ -36,19 +36,6 @@ module sage::channel_registry {
         }
     }
 
-    #[test_only]
-    public fun destroy_for_testing(
-        self: ChannelRegistry
-    ) {
-        let ChannelRegistry {
-            registry,
-            reverse_registry
-        } = self;
-
-        registry.drop();
-        reverse_registry.drop();
-    }
-
     public fun has_record(
         self: &ChannelRegistry,
         channel_name: String
@@ -69,5 +56,20 @@ module sage::channel_registry {
 
         self.registry.add(name, channel_id);
         self.reverse_registry.add(channel_id, name);
+    }
+
+    // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun destroy_for_testing(
+        self: ChannelRegistry
+    ) {
+        let ChannelRegistry {
+            registry,
+            reverse_registry
+        } = self;
+
+        registry.drop();
+        reverse_registry.drop();
     }
 }
