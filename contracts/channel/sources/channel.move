@@ -163,7 +163,9 @@ module sage::channel {
 
     // --------------- Internal Functions ---------------
 
-    fun is_valid_channel_name(name: &String): bool {
+    fun is_valid_channel_name(
+        name: &String
+    ): bool {
         let len = name.length();
         let name_bytes = name.bytes();
         let mut index = 0;
@@ -187,5 +189,14 @@ module sage::channel {
         };
 
         true
+    }
+
+    // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun is_valid_channel_name_for_testing(
+        name: &String
+    ): bool {
+        is_valid_channel_name(name)
     }
 }
