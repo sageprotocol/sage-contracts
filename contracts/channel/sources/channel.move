@@ -116,8 +116,26 @@ module sage::channel {
         channel_id
     }
 
-    public fun update_avatar (
-        _admin_cap: &AdminCap,
+    public fun get_id (
+        channel: Channel
+    ): (UID, ID) {
+        let Channel {
+            id: uid,
+            avatar_hash: _,
+            banner_hash: _,
+            created_at: _,
+            created_by: _,
+            description: _,
+            name: _
+        } = channel;
+
+        let id = object::uid_to_inner(&uid);
+
+        (uid, id)
+    }
+
+    public fun update_avatar_admin (
+        _: &AdminCap,
         channel: &mut Channel,
         hash: String
     ): bool {
@@ -131,8 +149,8 @@ module sage::channel {
         true
     }
 
-    public fun update_banner (
-        _admin_cap: &AdminCap,
+    public fun update_banner_admin (
+        _: &AdminCap,
         channel: &mut Channel,
         hash: String
     ): bool {
@@ -146,8 +164,8 @@ module sage::channel {
         true
     }
 
-    public fun update_description (
-        _admin_cap: &AdminCap,
+    public fun update_description_admin (
+        _: &AdminCap,
         channel: &mut Channel,
         description: String
     ): bool {
