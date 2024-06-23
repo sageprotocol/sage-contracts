@@ -1,14 +1,7 @@
 module sage::post {
     use std::string::{String};
 
-    use sui::clock::Clock;
     use sui::event;
-
-    use sage::{
-        channel::{Self, Channel},
-        post_comments::{Self, PostCommentsRegistry},
-        post_likes::{Self, PostLikesRegistry}
-    };
 
     // --------------- Constants ---------------
 
@@ -25,7 +18,6 @@ module sage::post {
         data: String,
         description: String,
         edited: bool,
-        parent: ID,
         title: String,
         updated_at: u64
     }
@@ -39,23 +31,17 @@ module sage::post {
         data: String,
         description: String,
         edited: bool,
-        parent: ID,
         title: String,
         updated_at: u64
-    }
-
-    public struct PostLiked has copy, drop {
-        id: ID,
-        user: address
     }
 
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
-    public fun get_id(
+    public fun get_id (
         post: Post
-    ): ID {
+    ): (UID, ID) {
         let Post {
             id: uid,
             created_at: _,
@@ -63,131 +49,27 @@ module sage::post {
             data: _,
             description: _,
             edited: _,
-            parent: _,
             title: _,
             updated_at: _
         } = post;
 
         let id = object::uid_to_inner(&uid);
 
-        id
-    }
-
-    public fun like(
-        post_likes_registry: &mut PostLikesRegistry,
-        post_id: ID,
-        ctx: &mut TxContext
-    ) {
-        let user = tx_context::sender(ctx);
-
-        let post_likes = post_likes::get(
-            post_likes_registry,
-            post_id
-        );
-
-        post_likes::add(
-            post_likes,
-            user
-        );
-
-        event::emit(PostLiked {
-            id: post_id,
-            user
-        });
-    }
-
-    public fun post_from_channel(
-        clock: &Clock,
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
-        channel: Channel,
-        data: String,
-        description: String,
-        title: String,
-        ctx: &mut TxContext
-    ): Post {
-        let parent = channel::get_id(channel);
-
-        create(
-            clock,
-            post_comments_registry,
-            post_likes_registry,
-            data,
-            description,
-            parent,
-            title,
-            ctx
-        )
-    }
-
-    public fun post_from_post(
-        clock: &Clock,
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
-        post: Post,
-        data: String,
-        description: String,
-        title: String,
-        ctx: &mut TxContext
-    ): Post {
-        let parent = get_id(post);
-
-        create(
-            clock,
-            post_comments_registry,
-            post_likes_registry,
-            data,
-            description,
-            parent,
-            title,
-            ctx
-        )
+        (uid, id)
     }
 
     // --------------- Friend Functions ---------------
 
-    // --------------- Internal Functions ---------------
-
-    fun create(
-        clock: &Clock,
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
+    public(package) fun create(
+        user: address,
         data: String,
         description: String,
-        parent: ID,
         title: String,
+        timestamp: u64,
         ctx: &mut TxContext
-    ): Post {
+    ): (Post, ID) {
         let uid = object::new(ctx);
-        let user = tx_context::sender(ctx);
-
         let id = object::uid_to_inner(&uid);
-
-        let timestamp = clock.timestamp_ms();
-
-        let post = Post {
-            id: uid,
-            created_at: timestamp,
-            created_by: user,
-            data,
-            description,
-            edited: false,
-            parent,
-            title,
-            updated_at: timestamp
-        };
-
-        post_comments::create(
-            post_comments_registry,
-            id,
-            ctx
-        );
-
-        post_likes::create(
-            post_likes_registry,
-            id,
-            ctx
-        );
 
         event::emit(PostCreated {
             id,
@@ -196,11 +78,25 @@ module sage::post {
             data,
             description,
             edited: false,
-            parent,
             title,
             updated_at: timestamp
         });
 
-        post
+        let post = Post {
+            id: uid,
+            created_at: timestamp,
+            created_by: user,
+            data,
+            description,
+            edited: false,
+            title,
+            updated_at: timestamp
+        };
+
+        (post, id)
     }
+
+    // --------------- Internal Functions ---------------
+
+    // --------------- Test Functions ---------------
 }
