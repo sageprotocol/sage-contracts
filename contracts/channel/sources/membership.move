@@ -56,27 +56,27 @@ module sage::channel_membership {
     }
 
     public fun get_membership(
-        self: &mut ChannelMembershipRegistry,
+        channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_id: ID
     ): &mut ChannelMembership {
-        self.registry.borrow_mut(channel_id)
+        channel_membership_registry.registry.borrow_mut(channel_id)
     }
 
     public fun get_member_length(
-        self: &ChannelMembership
+        channel_membership: &ChannelMembership
     ): u64 {
-        self.membership.length()
+        channel_membership.membership.length()
     }
 
     public fun join(
-        self: &mut ChannelMembership,
+        channel_membership: &mut ChannelMembership,
         channel_id: ID,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
 
         join_channel(
-            self,
+            channel_membership,
             user
         );
 
@@ -88,20 +88,20 @@ module sage::channel_membership {
     }
 
     public fun leave(
-        self: &mut ChannelMembership,
+        channel_membership: &mut ChannelMembership,
         channel_id: ID,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
 
         let is_member = is_member(
-            self,
+            channel_membership,
             user
         );
 
         assert!(is_member, EchannelMemberDoesNotExist);
 
-        self.membership.remove(user);
+        channel_membership.membership.remove(user);
 
         event::emit(ChannelMembershipUpdate {
             channel_id,
@@ -111,16 +111,16 @@ module sage::channel_membership {
     }
 
     public fun is_member(
-        self: &ChannelMembership,
+        channel_membership: &ChannelMembership,
         user: address
     ): bool {
-        self.membership.contains(user)
+        channel_membership.membership.contains(user)
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
-        self: &mut ChannelMembershipRegistry,
+        channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_id: ID,
         ctx: &mut TxContext
     ) {
@@ -136,17 +136,17 @@ module sage::channel_membership {
             user
         );
 
-        self.registry.add(channel_id, channel_membership);
+        channel_membership_registry.registry.add(channel_id, channel_membership);
     }
 
     // --------------- Internal Functions ---------------
 
     fun join_channel(
-        self: &mut ChannelMembership,
+        channel_membership: &mut ChannelMembership,
         user: address
     ) {
         let is_member = is_member(
-            self,
+            channel_membership,
             user
         );
 
@@ -156,7 +156,7 @@ module sage::channel_membership {
             member_type: CHANNEL_MEMBER_WALLET
         };
 
-        self.membership.add(user, channel_member);
+        channel_membership.membership.add(user, channel_member);
     }
 
     // --------------- Test Functions ---------------
