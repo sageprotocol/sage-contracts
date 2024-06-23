@@ -1,4 +1,5 @@
 module sage::post_likes {
+    use sui::event;
     use sui::{table::{Self, Table}};
 
     use sage::{
@@ -23,6 +24,11 @@ module sage::post_likes {
 
     // --------------- Events ---------------
 
+    public struct PostLiked has copy, drop {
+        id: ID,
+        user: address
+    }
+
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
@@ -37,25 +43,31 @@ module sage::post_likes {
     }
 
     public fun has_record(
-        self: &PostLikes,
+        post_likes: &PostLikes,
         user: address
     ): bool {
-        self.likes.contains(user)
+        post_likes.likes.contains(user)
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
-        self: &mut PostLikes,
+        post_likes: &mut PostLikes,
+        post_id: ID,
         user: address
     ) {
-        let has_liked = self.has_record(
+        let has_liked = post_likes.has_record(
             user
         );
 
         assert!(!has_liked, EUserAlreadyLiked);
 
-        self.likes.add(user, b"likes");
+        post_likes.likes.add(user, b"likes");
+
+        event::emit(PostLiked {
+            id: post_id,
+            user
+        });
     }
 
     public(package) fun create(
@@ -78,5 +90,7 @@ module sage::post_likes {
     }
 
     // --------------- Internal Functions ---------------
+
+    // --------------- Test Functions ---------------
 
 }
