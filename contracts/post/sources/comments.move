@@ -2,12 +2,15 @@ module sage::post_comments {
     use sui::{table::{Self, Table}};
 
     use sage::{
-        admin::{AdminCap}
+        admin::{AdminCap},
+        post::{Post}
     };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
+
+    const EPostCommentsExists: u64 = 0;
 
     // --------------- Name Tag ---------------
 
@@ -16,7 +19,7 @@ module sage::post_comments {
     }
 
     public struct PostComments has store {
-        comments: Table<ID, vector<u8>>
+        comments: Table<ID, Post>
     }
 
     // --------------- Events ---------------
@@ -34,13 +37,21 @@ module sage::post_comments {
         }
     }
 
+    public fun has_record(
+        post_comments_registry: &PostCommentsRegistry,
+        channel_id: ID
+    ): bool {
+        post_comments_registry.registry.contains(channel_id)
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
-        self: &mut PostComments,
-        post_id: ID
+        post_comments: &mut PostComments,
+        post_id: ID,
+        post: Post
     ) {
-        self.comments.add(post_id, b"comment");
+        post_comments.comments.add(post_id, post);
     }
 
     public(package) fun create(
@@ -48,6 +59,10 @@ module sage::post_comments {
         post_id: ID,
         ctx: &mut TxContext
     ) {
+        let has_record = has_record(post_comments_registry, post_id);
+
+        assert!(!has_record, EPostCommentsExists);
+
         let post_comments = PostComments {
             comments: table::new(ctx)
         };
@@ -63,5 +78,7 @@ module sage::post_comments {
     }
 
     // --------------- Internal Functions ---------------
+
+    // --------------- Test Functions ---------------
 
 }
