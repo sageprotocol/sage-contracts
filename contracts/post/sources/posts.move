@@ -28,6 +28,13 @@ module sage::channel_posts {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_channel_post(
+        channel_posts: &mut ChannelPosts,
+        post_id: ID
+    ): &Post {
+        channel_posts.posts.borrow_mut(post_id)
+    }
+
     public fun create_channel_posts_registry(
         _: &AdminCap,
         ctx: &mut TxContext
@@ -35,6 +42,13 @@ module sage::channel_posts {
         ChannelPostsRegistry {
             registry: table::new(ctx)
         }
+    }
+
+    public fun get_channel_posts(
+        channel_posts_registry: &mut ChannelPostsRegistry,
+        channel_id: ID
+    ): &mut ChannelPosts {
+        &mut channel_posts_registry.registry[channel_id]
     }
 
     public fun has_record(
@@ -48,10 +62,10 @@ module sage::channel_posts {
 
     public(package) fun add(
         channel_posts: &mut ChannelPosts,
-        channel_id: ID,
+        post_id: ID,
         post: Post
     ) {
-        channel_posts.posts.add(channel_id, post);
+        channel_posts.posts.add(post_id, post);
     }
 
     public(package) fun create(
@@ -70,19 +84,12 @@ module sage::channel_posts {
         channel_posts_registry.registry.add(channel_id, channel_posts);
     }
 
-    public(package) fun get(
-        channel_posts_registry: &mut ChannelPostsRegistry,
-        channel_id: ID
-    ): &mut ChannelPosts {
-        &mut channel_posts_registry.registry[channel_id]
-    }
-
     // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
+    public(package) fun destroy_for_testing(
         channel_posts_registry: ChannelPostsRegistry
     ) {
         let ChannelPostsRegistry {
