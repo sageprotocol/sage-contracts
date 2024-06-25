@@ -59,7 +59,7 @@ module sage::channel_membership {
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_id: ID
     ): &mut ChannelMembership {
-        channel_membership_registry.registry.borrow_mut(channel_id)
+        &mut channel_membership_registry.registry[channel_id]
     }
 
     public fun get_member_length(
