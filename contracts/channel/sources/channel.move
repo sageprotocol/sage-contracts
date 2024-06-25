@@ -5,7 +5,7 @@ module sage::channel {
     use sui::event;
 
     use sage::{
-        admin::{AdminCap},
+        admin::{UpdateCap},
         channel_membership::{Self, ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry}
     };
@@ -135,49 +135,45 @@ module sage::channel {
     }
 
     public fun update_avatar_admin (
-        _: &AdminCap,
+        _: &UpdateCap,
         channel: &mut Channel,
         hash: String
-    ): bool {
+    ) {
         channel.avatar_hash = hash;
 
         event::emit(ChannelAvatarUpdated {
             channel_id: object::uid_to_inner(&channel.id),
             hash
         });
-
-        true
     }
 
     public fun update_banner_admin (
-        _: &AdminCap,
+        _: &UpdateCap,
         channel: &mut Channel,
         hash: String
-    ): bool {
+    ) {
         channel.banner_hash = hash;
 
         event::emit(ChannelBannerUpdated {
             channel_id: object::uid_to_inner(&channel.id),
             hash
         });
-
-        true
     }
 
     public fun update_description_admin (
-        _: &AdminCap,
+        _: &UpdateCap,
         channel: &mut Channel,
         description: String
-    ): bool {
+    ) {
         channel.description = description;
 
         event::emit(ChannelDescriptionUpdated {
             channel_id: object::uid_to_inner(&channel.id),
             description
         });
-
-        true
     }
+
+    // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
 
