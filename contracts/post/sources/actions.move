@@ -1,4 +1,4 @@
-module sage::post_actions {
+module sage::actions {
     use std::string::{String};
 
     use sui::clock::Clock;
@@ -59,7 +59,7 @@ module sage::post_actions {
             channel_name
         );
 
-        let post = create(
+        let (post, post_id) = create(
             clock,
             post_comments_registry,
             post_likes_registry,
@@ -69,16 +69,36 @@ module sage::post_actions {
             ctx
         );
 
-        let channel_posts = channel_posts::get(
+        let has_record = channel_posts::has_record(
+            channel_posts_registry,
+            channel_id
+        );
+
+        if (!has_record) {
+            channel_posts::create(
+                channel_posts_registry,
+                channel_id,
+                ctx
+            );
+        };
+
+        let channel_posts = channel_posts::get_channel_posts(
             channel_posts_registry,
             channel_id
         );
 
         channel_posts::add(
             channel_posts,
-            channel_id,
+            post_id,
             post
         );
+
+        // let post = channel_posts::borrow_channel_post(
+        //     channel_posts,
+        //     post_id
+        // );
+
+        // transfer::public_freeze_object(post);
     }
 
     public fun post_from_post(
@@ -96,7 +116,7 @@ module sage::post_actions {
             original_id
         ) = post::get_id(original_post);
 
-        let post = create(
+        let (post, post_id) = create(
             clock,
             post_comments_registry,
             post_likes_registry,
@@ -106,7 +126,20 @@ module sage::post_actions {
             ctx
         );
 
-        let post_comments = post_comments::get(
+        let has_record = post_comments::has_record(
+            post_comments_registry,
+            original_id
+        );
+
+        if (!has_record) {
+            post_comments::create(
+                post_comments_registry,
+                original_id,
+                ctx
+            );
+        };
+
+        let post_comments = post_comments::get_post_comments(
             post_comments_registry,
             original_id
         );
@@ -116,6 +149,8 @@ module sage::post_actions {
             original_id,
             post
         );
+
+        // transfer::public_freeze_object(post);
 
         original_uid
     }
@@ -132,7 +167,7 @@ module sage::post_actions {
         description: String,
         title: String,
         ctx: &mut TxContext
-    ): Post {
+    ): (Post, ID) {
         let user = tx_context::sender(ctx);
 
         let timestamp = clock.timestamp_ms();
@@ -158,7 +193,7 @@ module sage::post_actions {
             ctx
         );
 
-        post
+        (post, post_id)
     }
 
     // --------------- Test Functions ---------------
