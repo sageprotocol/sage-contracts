@@ -2,7 +2,7 @@
 module sage::test_channel {
     use sui::clock::{Self, Clock};
 
-    use std::string::{Self, utf8};
+    use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts, Scenario};
 
@@ -26,10 +26,10 @@ module sage::test_channel {
     const EHasMember: u64 = 2;
     const EChannelNameInvalid: u64 = 2;
 
-    // --------------- Public Functions ---------------
+    // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun setup_for_testing(): (Scenario, ChannelRegistry, ChannelMembershipRegistry) {
+    fun setup_for_testing(): (Scenario, ChannelRegistry, ChannelMembershipRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
@@ -107,10 +107,10 @@ module sage::test_channel {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
-                string::utf8(b"channel-name"),
-                string::utf8(b"avatar_hash"),
-                string::utf8(b"banner_hash"),
-                string::utf8(b"description"),
+                utf8(b"channel-name"),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
                 ts::ctx(scenario)
             );
 
@@ -127,7 +127,7 @@ module sage::test_channel {
 
             let has_member = channel_registry::has_record(
                 channel_registry,
-                string::utf8(b"channel-name")
+                utf8(b"channel-name")
             );
 
             assert!(has_member, EHasMember);
@@ -171,10 +171,10 @@ module sage::test_channel {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
-                string::utf8(b"channel-name"),
-                string::utf8(b"avatar_hash"),
-                string::utf8(b"banner_hash"),
-                string::utf8(b"description"),
+                utf8(b"channel-name"),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
                 ts::ctx(scenario)
             );
 
@@ -182,10 +182,10 @@ module sage::test_channel {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
-                string::utf8(b"channel-name"),
-                string::utf8(b"avatar_hash_2"),
-                string::utf8(b"banner_hash_2"),
-                string::utf8(b"description_2"),
+                utf8(b"channel-name"),
+                utf8(b"avatar_hash_2"),
+                utf8(b"banner_hash_2"),
+                utf8(b"description_2"),
                 ts::ctx(scenario)
             );
 
@@ -228,10 +228,10 @@ module sage::test_channel {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
-                string::utf8(b"channel-name"),
-                string::utf8(b"avatar_hash"),
-                string::utf8(b"banner_hash"),
-                string::utf8(b"description"),
+                utf8(b"channel-name"),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
                 ts::ctx(scenario)
             );
 
@@ -286,10 +286,10 @@ module sage::test_channel {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
-                string::utf8(b"channel-name"),
-                string::utf8(b"avatar_hash"),
-                string::utf8(b"banner_hash"),
-                string::utf8(b"description"),
+                utf8(b"channel-name"),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
                 ts::ctx(scenario)
             );
 
