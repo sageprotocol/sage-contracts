@@ -93,4 +93,15 @@ module sage::post_likes {
 
     // --------------- Test Functions ---------------
 
+    #[test_only]
+    public fun destroy_for_testing(
+        post_likes_registry: PostLikesRegistry
+    ) {
+        let PostLikesRegistry {
+            registry
+        } = post_likes_registry;
+
+        registry.destroy_empty();
+    }
+
 }
