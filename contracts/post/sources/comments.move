@@ -37,11 +37,18 @@ module sage::post_comments {
         }
     }
 
+    public fun get_post_comments(
+        post_comments_registry: &mut PostCommentsRegistry,
+        post_id: ID
+    ): &mut PostComments {
+        &mut post_comments_registry.registry[post_id]
+    }
+
     public fun has_record(
         post_comments_registry: &PostCommentsRegistry,
-        channel_id: ID
+        post_id: ID
     ): bool {
-        post_comments_registry.registry.contains(channel_id)
+        post_comments_registry.registry.contains(post_id)
     }
 
     // --------------- Friend Functions ---------------
@@ -70,15 +77,19 @@ module sage::post_comments {
         post_comments_registry.registry.add(post_id, post_comments);
     }
 
-    public(package) fun get(
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_id: ID
-    ): &mut PostComments {
-        &mut post_comments_registry.registry[post_id]
-    }
-
     // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun destroy_for_testing(
+        post_comments_registry: PostCommentsRegistry
+    ) {
+        let PostCommentsRegistry {
+            registry
+        } = post_comments_registry;
+
+        registry.destroy_empty();
+    }
 
 }
