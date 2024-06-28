@@ -1,18 +1,11 @@
 #[test_only]
 module sage::test_channel {
-    use sui::clock::{Self, Clock};
-
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
-
-    use sui::{table::{ETableNotEmpty}};
+    use sui::test_scenario::{Self as ts};
 
     use sage::{
-        admin::{Self, AdminCap},
-        channel::{Self},
-        channel_membership::{Self, ChannelMembershipRegistry},
-        channel_registry::{Self, ChannelRegistry, EChannelRecordExists}
+        channel::{Self}
     };
 
     // --------------- Constants ---------------
@@ -21,299 +14,153 @@ module sage::test_channel {
 
     // --------------- Errors ---------------
 
-    const EMemberLength: u64 = 0;
-    const EIsMember: u64 = 1;
-    const EHasMember: u64 = 2;
-    const EChannelNameInvalid: u64 = 2;
+    const EChannelAvatarMismatch: u64 = 0;
+    const EChannelBannerMismatch: u64 = 1;
+    const EChannelDescriptionMismatch: u64 = 2;
+    const EChannelNameInvalid: u64 = 3;
 
     // --------------- Test Functions ---------------
 
-    #[test_only]
-    fun setup_for_testing(): (Scenario, ChannelRegistry, ChannelMembershipRegistry) {
+    #[test]
+    fun test_channel_create() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
-        {
-            admin::init_for_testing(ts::ctx(scenario));
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        let (channel_registry, channel_membership_registry) = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let channel_registry = channel_registry::create_channel_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            let channel_membership_registry = channel_membership::create_channel_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
-
-            (channel_registry, channel_membership_registry)
-        };
-
-        (scenario_val, channel_registry, channel_membership_registry)
-    }
-
-    #[test]
-    fun test_channel_init() {
-        let (
-            mut scenario_val,
-            channel_registry_val,
-            channel_membership_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
+            let created_at: u64 = 999;
+
+            let _channel = channel::create(
+                utf8(b"channel-name"),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                created_at,
+                ADMIN
+            );
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
-    fun test_channel_create() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val,
-            mut channel_membership_registry_val
-        ) = setup_for_testing();
-
+    fun test_channel_update_avatar() {
+        let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
 
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
+            let avatar_hash = utf8(b"avatar_hash");
 
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-
-            let channel_id = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
-                utf8(b"avatar_hash"),
+            let mut channel = channel::create(
+                channel_name,
+                avatar_hash,
                 utf8(b"banner_hash"),
                 utf8(b"description"),
-                ts::ctx(scenario)
+                created_at,
+                ADMIN
             );
 
-            let channel_membership = channel_membership::get_membership(
-                channel_membership_registry,
-                channel_id
+            let channel_avatar = channel::get_avatar(channel);
+
+            assert!(channel_avatar == avatar_hash, EChannelAvatarMismatch);
+
+            let new_channel_avatar = utf8(b"new_avatar_hash");
+
+            channel::update_avatar(
+                channel_name,
+                &mut channel,
+                new_channel_avatar
             );
 
-            let member_length = channel_membership::get_member_length(
-                channel_membership
-            );
+            let channel_avatar = channel::get_avatar(channel);
 
-            assert!(member_length == 1, EMemberLength);
-
-            let has_member = channel_registry::has_record(
-                channel_registry,
-                utf8(b"channel-name")
-            );
-
-            assert!(has_member, EHasMember);
-
-            ts::return_shared(clock);
-
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
+            assert!(channel_avatar == new_channel_avatar, EChannelAvatarMismatch);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = EChannelRecordExists)]
-    fun test_channel_uniqueness() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val,
-            mut channel_membership_registry_val
-        ) = setup_for_testing();
-
+    fun test_channel_update_banner() {
+        let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
 
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
+            let banner_hash = utf8(b"banner_hash");
 
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-
-            let _channel_id_1 = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
+            let mut channel = channel::create(
+                channel_name,
                 utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
+                banner_hash,
                 utf8(b"description"),
-                ts::ctx(scenario)
+                created_at,
+                ADMIN
             );
 
-            let _channel_id_2 = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
-                utf8(b"avatar_hash_2"),
-                utf8(b"banner_hash_2"),
-                utf8(b"description_2"),
-                ts::ctx(scenario)
+            let channel_banner = channel::get_banner(channel);
+
+            assert!(channel_banner == banner_hash, EChannelBannerMismatch);
+
+            let new_channel_banner = utf8(b"new_banner_hash");
+
+            channel::update_banner(
+                channel_name,
+                &mut channel,
+                new_channel_banner
             );
 
-            ts::return_shared(clock);
+            let channel_banner = channel::get_banner(channel);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
+            assert!(channel_banner == new_channel_banner, EChannelBannerMismatch);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
-    fun test_channel_is_member() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val,
-            mut channel_membership_registry_val
-        ) = setup_for_testing();
-
+    fun test_channel_update_description() {
+        let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
 
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
+            let description = utf8(b"description");
 
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-
-            let channel_id = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
+            let mut channel = channel::create(
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
-                utf8(b"description"),
-                ts::ctx(scenario)
+                description,
+                created_at,
+                ADMIN
             );
 
-            let channel_membership = channel_membership::get_membership(
-                channel_membership_registry,
-                channel_id
+            let channel_description = channel::get_description(channel);
+
+            assert!(channel_description == description, EChannelDescriptionMismatch);
+
+            let new_channel_description = utf8(b"new_description");
+
+            channel::update_description(
+                channel_name,
+                &mut channel,
+                new_channel_description
             );
 
-            let is_member = channel_membership::is_member(
-                channel_membership,
-                tx_context::sender(ts::ctx(scenario))
-            );
+            let channel_description = channel::get_description(channel);
 
-            assert!(is_member, EIsMember);
-
-            ts::return_shared(clock);
-
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
-    fun test_channel_leave() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val,
-            mut channel_membership_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
-
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-
-            let channel_id = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                ts::ctx(scenario)
-            );
-
-            let channel_membership = channel_membership::get_membership(
-                channel_membership_registry,
-                channel_id
-            );
-
-            channel_membership::leave(
-                channel_membership,
-                channel_id,
-                ts::ctx(scenario)
-            );
-
-            let member_length = channel_membership::get_member_length(
-                channel_membership
-            );
-
-            assert!(member_length == 0, EMemberLength);
-
-            ts::return_shared(clock);
-
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
+            assert!(channel_description == new_channel_description, EChannelDescriptionMismatch);
         };
 
         ts::end(scenario_val);

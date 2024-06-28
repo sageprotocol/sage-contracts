@@ -1,14 +1,7 @@
 module sage::channel {
     use std::string::{String};
 
-    use sui::clock::Clock;
     use sui::event;
-
-    use sage::{
-        admin::{UpdateCap},
-        channel_membership::{Self, ChannelMembershipRegistry},
-        channel_registry::{Self, ChannelRegistry}
-    };
 
     // --------------- Constants ---------------
 
@@ -21,8 +14,7 @@ module sage::channel {
 
     // --------------- Name Tag ---------------
 
-    public struct Channel has key, store {
-        id: UID,
+    public struct Channel has copy, drop, store {
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
@@ -36,24 +28,24 @@ module sage::channel {
     public struct ChannelCreated has copy, drop {
         avatar_hash: String,
         banner_hash: String,
-        channel_id: ID,
         channel_name: String,
+        created_at: u64,
         created_by: address,
         description: String
     }
 
     public struct ChannelAvatarUpdated has copy, drop {
-        channel_id: ID,
+        channel_name: String,
         hash: String
     }
 
     public struct ChannelBannerUpdated has copy, drop {
-        channel_id: ID,
+        channel_name: String,
         hash: String
     }
 
     public struct ChannelDescriptionUpdated has copy, drop {
-        channel_id: ID,
+        channel_name: String,
         description: String
     }
 
@@ -61,67 +53,11 @@ module sage::channel {
 
     // --------------- Public Functions ---------------
 
-    public fun create(
-        clock: &Clock,
-        channel_registry: &mut ChannelRegistry,
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        name: String,
-        avatar_hash: String,
-        banner_hash: String,
-        description: String,
-        ctx: &mut TxContext,
-    ): ID {
-        let is_valid_name = is_valid_channel_name(&name);
-
-        assert!(is_valid_name, EInvalidChannelName);
-
-        let created_by = tx_context::sender(ctx);
-        let uid = object::new(ctx);
-
-        let channel_id = object::uid_to_inner(&uid);
-
-        channel_registry::add_record(
-            channel_registry,
-            name,
-            channel_id
-        );
-
-        let channel = Channel {
-            id: uid,
-            avatar_hash,
-            banner_hash,
-            created_at: clock.timestamp_ms(),
-            created_by,
-            description,
-            name,
-        };
-
-        channel_membership::create(
-            channel_membership_registry,
-            channel_id,
-            ctx
-        );
-        
-        transfer::share_object(channel);
-
-        event::emit(ChannelCreated {
-            avatar_hash,
-            banner_hash,
-            channel_id,
-            channel_name: name,
-            created_by,
-            description
-        });
-
-        channel_id
-    }
-
-    public fun get_id (
+    public fun get_avatar(
         channel: Channel
-    ): (UID, ID) {
+    ): String {
         let Channel {
-            id: uid,
-            avatar_hash: _,
+            avatar_hash,
             banner_hash: _,
             created_at: _,
             created_by: _,
@@ -129,51 +65,112 @@ module sage::channel {
             name: _
         } = channel;
 
-        let id = object::uid_to_inner(&uid);
-
-        (uid, id)
+        avatar_hash
     }
 
-    public fun update_avatar_admin (
-        _: &UpdateCap,
+    public fun get_banner(
+        channel: Channel
+    ): String {
+        let Channel {
+            avatar_hash: _,
+            banner_hash,
+            created_at: _,
+            created_by: _,
+            description: _,
+            name: _
+        } = channel;
+
+        banner_hash
+    }
+
+    public fun get_description(
+        channel: Channel
+    ): String {
+        let Channel {
+            avatar_hash: _,
+            banner_hash: _,
+            created_at: _,
+            created_by: _,
+            description,
+            name: _
+        } = channel;
+
+        description
+    }
+
+    // --------------- Friend Functions ---------------
+
+    public(package) fun create(
+        channel_name: String,
+        avatar_hash: String,
+        banner_hash: String,
+        description: String,
+        created_at: u64,
+        created_by: address
+    ): Channel {
+        let is_valid_name = is_valid_channel_name(&channel_name);
+
+        assert!(is_valid_name, EInvalidChannelName);
+
+        let channel = Channel {
+            avatar_hash,
+            banner_hash,
+            created_at,
+            created_by,
+            description,
+            name: channel_name
+        };
+
+        event::emit(ChannelCreated {
+            avatar_hash,
+            banner_hash,
+            channel_name,
+            created_at,
+            created_by,
+            description
+        });
+
+        channel
+    }
+
+    public(package) fun update_avatar (
+        channel_name: String,
         channel: &mut Channel,
         hash: String
     ) {
         channel.avatar_hash = hash;
 
         event::emit(ChannelAvatarUpdated {
-            channel_id: object::uid_to_inner(&channel.id),
+            channel_name,
             hash
         });
     }
 
-    public fun update_banner_admin (
-        _: &UpdateCap,
+    public(package) fun update_banner (
+        channel_name: String,
         channel: &mut Channel,
         hash: String
     ) {
         channel.banner_hash = hash;
 
         event::emit(ChannelBannerUpdated {
-            channel_id: object::uid_to_inner(&channel.id),
+            channel_name,
             hash
         });
     }
 
-    public fun update_description_admin (
-        _: &UpdateCap,
+    public(package) fun update_description (
+        channel_name: String,
         channel: &mut Channel,
         description: String
     ) {
         channel.description = description;
 
         event::emit(ChannelDescriptionUpdated {
-            channel_id: object::uid_to_inner(&channel.id),
+            channel_name,
             description
         });
     }
-
-    // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
 

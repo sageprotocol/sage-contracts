@@ -1,9 +1,12 @@
 module sage::channel_membership {
+    use std::string::{String};
+
     use sui::event;
     use sui::{table::{Self, Table}};
 
     use sage::{
-        admin::{AdminCap}
+        admin::{AdminCap},
+        channel::{Channel}
     };
 
     // --------------- Constants ---------------
@@ -30,14 +33,14 @@ module sage::channel_membership {
     }
 
     public struct ChannelMembershipRegistry has store {
-        registry: Table<ID, ChannelMembership>
+        registry: Table<Channel, ChannelMembership>
     }
     
 
     // --------------- Events ---------------
 
     public struct ChannelMembershipUpdate has copy, drop {
-        channel_id: ID,
+        channel_name: String,
         message: u8,
         user: address
     }
@@ -57,9 +60,9 @@ module sage::channel_membership {
 
     public fun get_membership(
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_id: ID
+        channel: Channel
     ): &mut ChannelMembership {
-        &mut channel_membership_registry.registry[channel_id]
+        &mut channel_membership_registry.registry[channel]
     }
 
     public fun get_member_length(
@@ -70,7 +73,7 @@ module sage::channel_membership {
 
     public fun join(
         channel_membership: &mut ChannelMembership,
-        channel_id: ID,
+        channel_name: String,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
@@ -81,7 +84,7 @@ module sage::channel_membership {
         );
 
         event::emit(ChannelMembershipUpdate {
-            channel_id,
+            channel_name,
             message: CHANNEL_JOIN,
             user
         });
@@ -89,7 +92,7 @@ module sage::channel_membership {
 
     public fun leave(
         channel_membership: &mut ChannelMembership,
-        channel_id: ID,
+        channel_name: String,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
@@ -104,7 +107,7 @@ module sage::channel_membership {
         channel_membership.membership.remove(user);
 
         event::emit(ChannelMembershipUpdate {
-            channel_id,
+            channel_name,
             message: CHANNEL_LEAVE,
             user
         });
@@ -121,7 +124,7 @@ module sage::channel_membership {
 
     public(package) fun create(
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_id: ID,
+        channel: Channel,
         ctx: &mut TxContext
     ) {
         let mut channel_membership = ChannelMembership {
@@ -136,7 +139,7 @@ module sage::channel_membership {
             user
         );
 
-        channel_membership_registry.registry.add(channel_id, channel_membership);
+        channel_membership_registry.registry.add(channel, channel_membership);
     }
 
     // --------------- Internal Functions ---------------

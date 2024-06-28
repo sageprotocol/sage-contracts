@@ -1,18 +1,15 @@
 #[test_only]
 module sage::test_channel_membership {
-    use sui::clock::{Self, Clock};
-
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
-
     use sui::{table::{ETableNotEmpty}};
+
+    use sui::test_scenario::{Self as ts, Scenario};
 
     use sage::{
         admin::{Self, AdminCap},
         channel::{Self},
-        channel_membership::{Self, ChannelMembershipRegistry, EChannelMemberExists},
-        channel_registry::{Self, ChannelRegistry}
+        channel_membership::{Self, ChannelMembershipRegistry, EChannelMemberExists}
     };
 
     // --------------- Constants ---------------
@@ -27,7 +24,7 @@ module sage::test_channel_membership {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun setup_for_testing(): (Scenario, ChannelRegistry, ChannelMembershipRegistry) {
+    public fun setup_for_testing(): (Scenario, ChannelMembershipRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
@@ -35,13 +32,8 @@ module sage::test_channel_membership {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let (channel_registry, channel_membership_registry) = {
+        let channel_membership_registry = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let channel_registry = channel_registry::create_channel_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
 
             let channel_membership_registry = channel_membership::create_channel_membership_registry(
                 &admin_cap,
@@ -50,17 +42,16 @@ module sage::test_channel_membership {
 
             ts::return_to_sender(scenario, admin_cap);
 
-            (channel_registry, channel_membership_registry)
+            channel_membership_registry
         };
 
-        (scenario_val, channel_registry, channel_membership_registry)
+        (scenario_val, channel_membership_registry)
     }
 
     #[test]
-    fun test_channel_registry_init() {
+    fun test_channel_membership_registry_init() {
         let (
             mut scenario_val,
-            channel_registry_val,
             channel_membership_registry_val
         ) = setup_for_testing();
 
@@ -69,7 +60,6 @@ module sage::test_channel_membership {
         ts::next_tx(scenario, ADMIN);
         {
             channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -77,10 +67,9 @@ module sage::test_channel_membership {
 
     #[test]
     #[expected_failure(abort_code = ETableNotEmpty)]
-    fun test_channel_create() {
+    fun test_channel_membership_create() {
         let (
             mut scenario_val,
-            mut channel_registry_val,
             mut channel_membership_registry_val,
         ) = setup_for_testing();
 
@@ -88,33 +77,28 @@ module sage::test_channel_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
-
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
             let channel_membership_registry = &mut channel_membership_registry_val;
 
-            let channel_id = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
+            let created_at: u64 = 999;
+
+            let channel = channel::create(
                 utf8(b"channel-name"),
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
+                created_at,
+                ADMIN
+            );
+
+            channel_membership::create(
+                channel_membership_registry,
+                channel,
                 ts::ctx(scenario)
             );
 
             let channel_membership = channel_membership::get_membership(
                 channel_membership_registry,
-                channel_id
+                channel
             );
 
             let channel_member_count = channel_membership::get_member_length(
@@ -130,10 +114,7 @@ module sage::test_channel_membership {
 
             assert!(is_member, EChannelNotMember);
 
-            ts::return_shared(clock);
-
             channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -144,7 +125,6 @@ module sage::test_channel_membership {
     fun test_channel_join() {
         let (
             mut scenario_val,
-            mut channel_registry_val,
             mut channel_membership_registry_val,
         ) = setup_for_testing();
 
@@ -152,45 +132,38 @@ module sage::test_channel_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
-
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
             let channel_membership_registry = &mut channel_membership_registry_val;
 
-            let channel_id = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
+
+            let channel = channel::create(
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
+                created_at,
+                ADMIN
+            );
+
+            channel_membership::create(
+                channel_membership_registry,
+                channel,
                 ts::ctx(scenario)
             );
 
             let channel_membership = channel_membership::get_membership(
                 channel_membership_registry,
-                channel_id
+                channel
             );
 
             channel_membership::join(
                 channel_membership,
-                channel_id,
+                channel_name,
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(clock);
-
             channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -201,7 +174,6 @@ module sage::test_channel_membership {
     fun test_channel_leave() {
         let (
             mut scenario_val,
-            mut channel_registry_val,
             mut channel_membership_registry_val,
         ) = setup_for_testing();
 
@@ -209,38 +181,34 @@ module sage::test_channel_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
-
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
             let channel_membership_registry = &mut channel_membership_registry_val;
 
-            let channel_id = channel::create(
-                &clock,
-                channel_registry,
-                channel_membership_registry,
-                utf8(b"channel-name"),
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
+
+            let channel = channel::create(
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
+                created_at,
+                ADMIN
+            );
+
+            channel_membership::create(
+                channel_membership_registry,
+                channel,
                 ts::ctx(scenario)
             );
 
             let channel_membership = channel_membership::get_membership(
                 channel_membership_registry,
-                channel_id
+                channel
             );
 
             channel_membership::leave(
                 channel_membership,
-                channel_id,
+                channel_name,
                 ts::ctx(scenario)
             );
 
@@ -252,7 +220,7 @@ module sage::test_channel_membership {
 
             channel_membership::join(
                 channel_membership,
-                channel_id,
+                channel_name,
                 ts::ctx(scenario)
             );
 
@@ -262,10 +230,7 @@ module sage::test_channel_membership {
 
             assert!(channel_member_count_join == 1, EChannelMembershipCountMismatch);
 
-            ts::return_shared(clock);
-
             channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
         };
 
         ts::end(scenario_val);
