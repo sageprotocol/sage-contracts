@@ -8,7 +8,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 
 SageAdmin = { local = "../admin" }
 SageChannel = { local = "../channel" }
-SageTable = { local = "../table" }
+SageImmutable = { local = "../immutable" }
 
 [addresses]
 sage = "0x0"
