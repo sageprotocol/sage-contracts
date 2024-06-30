@@ -184,8 +184,6 @@ module sage::post_actions {
 
     // --------------- Friend Functions ---------------
 
-    // --------------- Internal Functions ---------------
-
     public(package) fun create(
         clock: &Clock,
         post_comments_registry: &mut PostCommentsRegistry,
@@ -221,6 +219,8 @@ module sage::post_actions {
 
         (post, post_id)
     }
+
+    // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 }

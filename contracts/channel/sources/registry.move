@@ -72,6 +72,8 @@ module sage::channel_registry {
         channel_registry.reverse_registry.add(channel, name);
     }
 
+    // --------------- Internal Functions ---------------
+
     // --------------- Test Functions ---------------
 
     #[test_only]

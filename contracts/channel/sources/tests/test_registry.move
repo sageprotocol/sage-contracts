@@ -23,7 +23,7 @@ module sage::test_channel_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun setup_for_testing(): (Scenario, ChannelRegistry) {
+    fun setup_for_testing(): (Scenario, ChannelRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {

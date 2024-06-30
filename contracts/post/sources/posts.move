@@ -89,7 +89,7 @@ module sage::channel_posts {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public(package) fun destroy_for_testing(
+    public fun destroy_for_testing(
         channel_posts_registry: ChannelPostsRegistry
     ) {
         let ChannelPostsRegistry {
