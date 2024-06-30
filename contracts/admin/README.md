@@ -1,0 +1,6 @@
+# Testnet
+
+[Package](https://testnet.suivision.xyz/package/0xb3e984f195a5b1f4bd95660c6df44a043deb142f635facb411fee779e6538553) - 0xb3e984f195a5b1f4bd95660c6df44a043deb142f635facb411fee779e6538553
+
+[AdminCap](https://testnet.suivision.xyz/object/0xf1048ffec7584f326881c3b1f5ed379f7d823b024ed14658b2836c17dda0f31d) - 0xf1048ffec7584f326881c3b1f5ed379f7d823b024ed14658b2836c17dda0f31d
+[UpdateCap](https://testnet.suivision.xyz/object/0xd59f65e989eafaf6b39c7f593c0da03916714d71c7c8ed21faee4610256ba51e) - 0xd59f65e989eafaf6b39c7f593c0da03916714d71c7c8ed21faee4610256ba51e
