@@ -15,13 +15,25 @@ module sage::immutable_vector {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow<Element: copy + drop + store>(
+        v: &ImmutableVector<Element>,
+        i: u64
+    ): &Element {
+        vector::borrow(&v.inner, i)
+    }
+
+    public fun borrow_mut<Element: copy + drop + store>(
+        v: &mut ImmutableVector<Element>,
+        i: u64
+    ): &mut Element {
+        vector::borrow_mut(&mut v.inner, i)
+    }
+
     public fun contains<Element: copy + drop + store>(
         v: ImmutableVector<Element>,
         e: &Element
     ): bool {
-        let inner = get_inner(v);
-
-        vector::contains(&inner, e)
+        vector::contains(&v.inner, e)
     }
 
     public fun empty<Element: copy + drop + store>(): ImmutableVector<Element> {
@@ -34,69 +46,39 @@ module sage::immutable_vector {
         v: ImmutableVector<Element>,
         e: &Element
     ): (bool, u64) {
-        let inner = get_inner(v);
-
-        vector::index_of(&inner, e)
+        vector::index_of(&v.inner, e)
     }
 
     public fun insert<Element: copy + drop + store>(
-        v: ImmutableVector<Element>,
+        v: &mut ImmutableVector<Element>,
         e: Element,
         i: u64
     ) {
-        let mut inner = get_inner(v);
-
-        vector::insert(&mut inner, e, i)
+        vector::insert(&mut v.inner, e, i)
     }
 
     public fun is_empty<Element: copy + drop + store>(
         v: ImmutableVector<Element>
     ): bool {
-        let inner = get_inner(v);
-
-        vector::is_empty(&inner)
+        vector::is_empty(&v.inner)
     }
 
     public fun length<Element: copy + drop + store>(
         v: ImmutableVector<Element>
     ): u64 {
-        let inner = get_inner(v);
-
-        vector::length(&inner)
+        vector::length(&v.inner)
     }
 
     public fun push_back<Element: copy + drop + store>(
         v: &mut ImmutableVector<Element>,
         e: Element
     ) {
-        let inner = get_inner_mut(v);
-
-        vector::push_back(inner, e)
+        vector::push_back(&mut v.inner, e)
     }
 
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
-
-    fun get_inner<Element: copy + drop + store>(
-        v: ImmutableVector<Element>
-    ): vector<Element> {
-        let ImmutableVector {
-            inner
-        } = v;
-
-        inner
-    }
-
-    fun get_inner_mut<Element: copy + drop + store>(
-        v: &mut ImmutableVector<Element>
-    ): &mut vector<Element> {
-        let ImmutableVector {
-            inner
-        } = v;
-
-        inner
-    }
 
     // --------------- Test Functions ---------------
 
