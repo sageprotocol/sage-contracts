@@ -2,7 +2,7 @@ module sage::post_comments {
     use sage::{
         admin::{AdminCap},
         post::{Post},
-        table::{Self, ImmutableTable}
+        immutable_table::{Self, ImmutableTable}
     };
 
     // --------------- Constants ---------------
@@ -32,7 +32,7 @@ module sage::post_comments {
         ctx: &mut TxContext
     ): PostCommentsRegistry {
         PostCommentsRegistry {
-            registry: table::new(ctx)
+            registry: immutable_table::new(ctx)
         }
     }
 
@@ -77,7 +77,7 @@ module sage::post_comments {
         assert!(!has_record, EPostCommentsExists);
 
         let post_comments = PostComments {
-            comments: table::new(ctx)
+            comments: immutable_table::new(ctx)
         };
 
         post_comments_registry.registry.add(post_id, post_comments);

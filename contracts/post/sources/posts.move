@@ -2,8 +2,8 @@ module sage::channel_posts {
     use sage::{
         admin::{AdminCap},
         channel::{Channel},
-        post::{Post},
-        table::{Self, ImmutableTable}
+        immutable_table::{Self, ImmutableTable},
+        post::{Post}
     };
 
     // --------------- Constants ---------------
@@ -33,7 +33,7 @@ module sage::channel_posts {
         ctx: &mut TxContext
     ): ChannelPostsRegistry {
         ChannelPostsRegistry {
-            registry: table::new(ctx)
+            registry: immutable_table::new(ctx)
         }
     }
 
@@ -78,7 +78,7 @@ module sage::channel_posts {
         assert!(!has_record, EChannelPostsExists);
 
         let channel_posts = ChannelPosts {
-            posts: table::new(ctx)
+            posts: immutable_table::new(ctx)
         };
 
         channel_posts_registry.registry.add(channel, channel_posts);

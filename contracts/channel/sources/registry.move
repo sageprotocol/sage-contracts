@@ -4,7 +4,7 @@ module sage::channel_registry {
     use sage::{
         admin::{AdminCap},
         channel::{Channel},
-        table::{Self, ImmutableTable}
+        immutable_table::{Self, ImmutableTable}
     };
 
     // --------------- Constants ---------------
@@ -31,8 +31,8 @@ module sage::channel_registry {
         ctx: &mut TxContext
     ): ChannelRegistry {
         ChannelRegistry {
-            registry: table::new(ctx),
-            reverse_registry: table::new(ctx)
+            registry: immutable_table::new(ctx),
+            reverse_registry: immutable_table::new(ctx)
         }
     }
 

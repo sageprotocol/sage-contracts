@@ -3,7 +3,8 @@ module sage::post_likes {
 
     use sage::{
         admin::{AdminCap},
-        table::{Self, ImmutableTable}
+        immutable_table::{Self, ImmutableTable},
+        immutable_vector::{Self, ImmutableVector}
     };
 
     // --------------- Constants ---------------
@@ -19,7 +20,7 @@ module sage::post_likes {
     }
 
     public struct PostLikes has store {
-        likes: vector<address>
+        likes: ImmutableVector<address>
     }
 
     public struct UserPostLikesRegistry has store {
@@ -27,7 +28,7 @@ module sage::post_likes {
     }
 
     public struct UserPostLikes has store {
-        likes: vector<ID>
+        likes: ImmutableVector<ID>
     }
 
     // --------------- Events ---------------
@@ -46,7 +47,7 @@ module sage::post_likes {
         ctx: &mut TxContext
     ): PostLikesRegistry {
         PostLikesRegistry {
-            registry: table::new(ctx)
+            registry: immutable_table::new(ctx)
         }
     }
 
@@ -55,7 +56,7 @@ module sage::post_likes {
         ctx: &mut TxContext
     ): UserPostLikesRegistry {
         UserPostLikesRegistry {
-            registry: table::new(ctx)
+            registry: immutable_table::new(ctx)
         }
     }
 
@@ -133,7 +134,7 @@ module sage::post_likes {
         post_id: ID
     ) {
         let post_likes = PostLikes {
-            likes: vector::empty<address>()
+            likes: immutable_vector::empty<address>()
         };
 
         post_likes_registry.registry.add(post_id, post_likes);
@@ -144,7 +145,7 @@ module sage::post_likes {
         user: address
     ) {
         let user_post_likes = UserPostLikes {
-            likes: vector::empty<ID>()
+            likes: immutable_vector::empty<ID>()
         };
 
         user_post_likes_registry.registry.add(user, user_post_likes);

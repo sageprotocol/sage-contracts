@@ -1,6 +1,6 @@
 #[test_only]
 module sage::table_tests {
-    use sage::table::{Self, add, contains, borrow, borrow_mut};
+    use sage::immutable_table::{Self, add, contains, borrow, borrow_mut};
 
     use sui::test_scenario as ts;
 
@@ -8,7 +8,7 @@ module sage::table_tests {
     fun simple_all_functions() {
         let sender = @0x0;
         let mut scenario = ts::begin(sender);
-        let mut table = table::new(ts::ctx(&mut scenario));
+        let mut table = immutable_table::new(ts::ctx(&mut scenario));
 
         // add fields
         add(&mut table, b"hello", 0);
@@ -32,7 +32,7 @@ module sage::table_tests {
 
         ts::end(scenario);
 
-        table::destroy_for_testing(table);
+        immutable_table::destroy_for_testing(table);
     }
 
     #[test]
@@ -40,7 +40,7 @@ module sage::table_tests {
     fun add_duplicate() {
         let sender = @0x0;
         let mut scenario = ts::begin(sender);
-        let mut table = table::new(ts::ctx(&mut scenario));
+        let mut table = immutable_table::new(ts::ctx(&mut scenario));
         add(&mut table, b"hello", 0);
         add(&mut table, b"hello", 1);
         abort 42
@@ -51,7 +51,7 @@ module sage::table_tests {
     fun borrow_missing() {
         let sender = @0x0;
         let mut scenario = ts::begin(sender);
-        let table = table::new<u64, u64>(ts::ctx(&mut scenario));
+        let table = immutable_table::new<u64, u64>(ts::ctx(&mut scenario));
         borrow(&table, 0);
         abort 42
     }
@@ -61,7 +61,7 @@ module sage::table_tests {
     fun borrow_mut_missing() {
         let sender = @0x0;
         let mut scenario = ts::begin(sender);
-        let mut table = table::new<u64, u64>(ts::ctx(&mut scenario));
+        let mut table = immutable_table::new<u64, u64>(ts::ctx(&mut scenario));
         borrow_mut(&mut table, 0);
         abort 42
     }
@@ -70,29 +70,29 @@ module sage::table_tests {
     fun sanity_check_contains() {
         let sender = @0x0;
         let mut scenario = ts::begin(sender);
-        let mut table = table::new<u64, u64>(ts::ctx(&mut scenario));
+        let mut table = immutable_table::new<u64, u64>(ts::ctx(&mut scenario));
         assert!(!contains(&table, 0), 0);
         add(&mut table, 0, 0);
         assert!(contains<u64, u64>(&table, 0), 0);
         assert!(!contains<u64, u64>(&table, 1), 0);
         ts::end(scenario);
-        table::destroy_for_testing(table);
+        immutable_table::destroy_for_testing(table);
     }
 
     #[test]
     fun sanity_check_size() {
         let sender = @0x0;
         let mut scenario = ts::begin(sender);
-        let mut table = table::new<u64, u64>(ts::ctx(&mut scenario));
-        assert!(table::is_empty(&table), 0);
-        assert!(table::length(&table) == 0, 0);
+        let mut table = immutable_table::new<u64, u64>(ts::ctx(&mut scenario));
+        assert!(immutable_table::is_empty(&table), 0);
+        assert!(immutable_table::length(&table) == 0, 0);
         add(&mut table, 0, 0);
-        assert!(!table::is_empty(&table), 0);
-        assert!(table::length(&table) == 1, 0);
+        assert!(!immutable_table::is_empty(&table), 0);
+        assert!(immutable_table::length(&table) == 1, 0);
         add(&mut table, 1, 0);
-        assert!(!table::is_empty(&table), 0);
-        assert!(table::length(&table) == 2, 0);
+        assert!(!immutable_table::is_empty(&table), 0);
+        assert!(immutable_table::length(&table) == 2, 0);
         ts::end(scenario);
-        table::destroy_for_testing(table);
+        immutable_table::destroy_for_testing(table);
     }
 }
