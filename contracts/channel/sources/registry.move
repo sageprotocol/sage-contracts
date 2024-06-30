@@ -1,10 +1,10 @@
 module sage::channel_registry {
     use std::string::{String};
 
-    use sui::{table::{Self, Table}};
-
     use sage::{
-        admin::{AdminCap}
+        admin::{AdminCap},
+        channel::{Channel},
+        immutable_table::{Self, ImmutableTable}
     };
 
     // --------------- Constants ---------------
@@ -16,8 +16,8 @@ module sage::channel_registry {
     // --------------- Name Tag ---------------
 
     public struct ChannelRegistry has store {
-        registry: Table<String, ID>,
-        reverse_registry: Table<ID, String>
+        registry: ImmutableTable<String, Channel>,
+        reverse_registry: ImmutableTable<Channel, String>
     }
 
     // --------------- Events ---------------
@@ -31,23 +31,23 @@ module sage::channel_registry {
         ctx: &mut TxContext
     ): ChannelRegistry {
         ChannelRegistry {
-            registry: table::new(ctx),
-            reverse_registry: table::new(ctx)
+            registry: immutable_table::new(ctx),
+            reverse_registry: immutable_table::new(ctx)
         }
     }
 
-    public fun get_channel_id(
+    public fun get_channel(
         channel_registry: &mut ChannelRegistry,
         channel_name: String
-    ): ID {
-        channel_registry.registry[channel_name]
+    ): Channel {
+        *channel_registry.registry.borrow(channel_name)
     }
 
     public fun get_channel_name(
         channel_registry: &mut ChannelRegistry,
-        channel_id: ID
+        channel: Channel
     ): String {
-        channel_registry.reverse_registry[channel_id]
+        *channel_registry.reverse_registry.borrow(channel)
     }
 
     public fun has_record(
@@ -59,18 +59,20 @@ module sage::channel_registry {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun add_record(
+    public(package) fun add(
         channel_registry: &mut ChannelRegistry,
         name: String,
-        channel_id: ID
+        channel: Channel
     ) {
         let record_exists = channel_registry.has_record(name);
 
         assert!(!record_exists, EChannelRecordExists);
 
-        channel_registry.registry.add(name, channel_id);
-        channel_registry.reverse_registry.add(channel_id, name);
+        channel_registry.registry.add(name, channel);
+        channel_registry.reverse_registry.add(channel, name);
     }
+
+    // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 
@@ -83,7 +85,7 @@ module sage::channel_registry {
             reverse_registry
         } = channel_registry;
 
-        registry.drop();
-        reverse_registry.drop();
+        registry.destroy_for_testing();
+        reverse_registry.destroy_for_testing();
     }
 }

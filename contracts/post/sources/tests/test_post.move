@@ -28,6 +28,29 @@ module sage::test_post {
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
+            let (_post, _created_id) = post::create(
+                user,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                timestamp,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_get_id() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let timestamp: u64 = 999;
+            let user: address = @0xaaa;
+
             let (post, created_id) = post::create(
                 user,
                 utf8(b"data"),
@@ -37,13 +60,9 @@ module sage::test_post {
                 ts::ctx(scenario)
             );
 
-            let (uid, received_id) = post::get_id(
-                post
-            );
+            let retrieved_id = post::get_id(post);
 
-            assert!(created_id == received_id, EPostMismatch);
-
-            object::delete(uid);
+            assert!(created_id == retrieved_id, EPostMismatch);
         };
 
         ts::end(scenario_val);

@@ -1,8 +1,8 @@
 module sage::channel_posts {
-    use sui::{table::{Self, Table}};
-
     use sage::{
         admin::{AdminCap},
+        channel::{Channel},
+        immutable_table::{Self, ImmutableTable},
         post::{Post}
     };
 
@@ -15,11 +15,11 @@ module sage::channel_posts {
     // --------------- Name Tag ---------------
 
     public struct ChannelPostsRegistry has store {
-        registry: Table<ID, ChannelPosts>
+        registry: ImmutableTable<Channel, ChannelPosts>
     }
 
     public struct ChannelPosts has store {
-        posts: Table<ID, Post>
+        posts: ImmutableTable<ID, Post>
     }
 
     // --------------- Events ---------------
@@ -28,34 +28,34 @@ module sage::channel_posts {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_channel_post(
-        channel_posts: &mut ChannelPosts,
-        post_id: ID
-    ): &Post {
-        channel_posts.posts.borrow_mut(post_id)
-    }
-
     public fun create_channel_posts_registry(
         _: &AdminCap,
         ctx: &mut TxContext
     ): ChannelPostsRegistry {
         ChannelPostsRegistry {
-            registry: table::new(ctx)
+            registry: immutable_table::new(ctx)
         }
     }
 
     public fun get_channel_posts(
         channel_posts_registry: &mut ChannelPostsRegistry,
-        channel_id: ID
+        channel: Channel
     ): &mut ChannelPosts {
-        &mut channel_posts_registry.registry[channel_id]
+        channel_posts_registry.registry.borrow_mut(channel)
+    }
+
+    public fun has_post(
+        channel_posts: &mut ChannelPosts,
+        post_id: ID
+    ): bool {
+        channel_posts.posts.contains(post_id)
     }
 
     public fun has_record(
         channel_posts_registry: &ChannelPostsRegistry,
-        channel_id: ID
+        channel: Channel
     ): bool {
-        channel_posts_registry.registry.contains(channel_id)
+        channel_posts_registry.registry.contains(channel)
     }
 
     // --------------- Friend Functions ---------------
@@ -70,18 +70,18 @@ module sage::channel_posts {
 
     public(package) fun create(
         channel_posts_registry: &mut ChannelPostsRegistry,
-        channel_id: ID,
+        channel: Channel,
         ctx: &mut TxContext
     ) {
-        let has_record = has_record(channel_posts_registry, channel_id);
+        let has_record = has_record(channel_posts_registry, channel);
 
         assert!(!has_record, EChannelPostsExists);
 
         let channel_posts = ChannelPosts {
-            posts: table::new(ctx)
+            posts: immutable_table::new(ctx)
         };
 
-        channel_posts_registry.registry.add(channel_id, channel_posts);
+        channel_posts_registry.registry.add(channel, channel_posts);
     }
 
     // --------------- Internal Functions ---------------
@@ -89,14 +89,14 @@ module sage::channel_posts {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public(package) fun destroy_for_testing(
+    public fun destroy_for_testing(
         channel_posts_registry: ChannelPostsRegistry
     ) {
         let ChannelPostsRegistry {
             registry
         } = channel_posts_registry;
 
-        registry.destroy_empty();
+        registry.destroy_for_testing();
     }
 
 }

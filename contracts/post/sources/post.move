@@ -7,17 +7,16 @@ module sage::post {
 
     // --------------- Errors ---------------
 
-    // const EPostNotOwned: u64 = 0;
-
     // --------------- Name Tag ---------------
 
-    public struct Post has key, store {
-        id: UID,
+    public struct Post has copy, drop, store {
+        id: ID,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
-        edited: bool,
+        is_deleted: bool,
+        is_edited: bool,
         title: String,
         updated_at: u64
     }
@@ -30,7 +29,8 @@ module sage::post {
         created_by: address,
         data: String,
         description: String,
-        edited: bool,
+        is_deleted: bool,
+        is_edited: bool,
         title: String,
         updated_at: u64
     }
@@ -39,23 +39,22 @@ module sage::post {
 
     // --------------- Public Functions ---------------
 
-    public fun get_id (
+    public fun get_id(
         post: Post
-    ): (UID, ID) {
+    ): ID {
         let Post {
-            id: uid,
+            id,
             created_at: _,
             created_by: _,
             data: _,
             description: _,
-            edited: _,
+            is_deleted: _,
+            is_edited: _,
             title: _,
             updated_at: _
         } = post;
 
-        let id = object::uid_to_inner(&uid);
-
-        (uid, id)
+        id
     }
 
     // --------------- Friend Functions ---------------
@@ -69,7 +68,19 @@ module sage::post {
         ctx: &mut TxContext
     ): (Post, ID) {
         let uid = object::new(ctx);
-        let id = object::uid_to_inner(&uid);
+        let id = uid.to_inner();
+
+        let post = Post {
+            id,
+            created_at: timestamp,
+            created_by: user,
+            data,
+            description,
+            is_deleted: false,
+            is_edited: false,
+            title,
+            updated_at: timestamp
+        };
 
         event::emit(PostCreated {
             id,
@@ -77,21 +88,13 @@ module sage::post {
             created_by: user,
             data,
             description,
-            edited: false,
+            is_deleted: false,
+            is_edited: false,
             title,
             updated_at: timestamp
         });
 
-        let post = Post {
-            id: uid,
-            created_at: timestamp,
-            created_by: user,
-            data,
-            description,
-            edited: false,
-            title,
-            updated_at: timestamp
-        };
+        object::delete(uid);
 
         (post, id)
     }

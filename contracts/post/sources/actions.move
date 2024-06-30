@@ -1,19 +1,22 @@
-module sage::actions {
+module sage::post_actions {
     use std::string::{String};
 
     use sui::clock::Clock;
 
     use sage::{
+        channel_membership::{Self, ChannelMembershipRegistry},
         channel_posts::{Self, ChannelPostsRegistry},
         channel_registry::{Self, ChannelRegistry},
         post::{Self, Post},
         post_comments::{Self, PostCommentsRegistry},
-        post_likes::{Self, PostLikesRegistry}
+        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}
     };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
+
+    const EUserNotChannelMember: u64 = 0;
 
     // --------------- Name Tag ---------------
 
@@ -25,18 +28,37 @@ module sage::actions {
 
     public fun like(
         post_likes_registry: &mut PostLikesRegistry,
+        user_post_likes_registry: &mut UserPostLikesRegistry,
         post_id: ID,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
 
-        let post_likes = post_likes::get(
+        let post_likes = post_likes::get_post_likes(
             post_likes_registry,
             post_id
         );
 
+        let has_user_likes = post_likes::has_user_likes_record(
+            user_post_likes_registry,
+            user
+        );
+
+        if (!has_user_likes) {
+            post_likes::create_user_post_likes(
+                user_post_likes_registry,
+                user
+            );
+        };
+
+        let user_post_likes = post_likes::get_user_post_likes(
+            user_post_likes_registry,
+            user
+        );
+
         post_likes::add(
             post_likes,
+            user_post_likes,
             post_id,
             user
         );
@@ -45,6 +67,7 @@ module sage::actions {
     public fun post_from_channel(
         clock: &Clock,
         channel_registry: &mut ChannelRegistry,
+        channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_posts_registry: &mut ChannelPostsRegistry,
         post_comments_registry: &mut PostCommentsRegistry,
         post_likes_registry: &mut PostLikesRegistry,
@@ -53,11 +76,25 @@ module sage::actions {
         description: String,
         title: String,
         ctx: &mut TxContext
-    ) {
-        let channel_id = channel_registry::get_channel_id(
+    ): ID {
+        let user = tx_context::sender(ctx);
+
+        let channel = channel_registry::get_channel(
             channel_registry,
             channel_name
         );
+
+        let channel_membership = channel_membership::get_membership(
+            channel_membership_registry,
+            channel
+        );
+
+        let is_member = channel_membership::is_member(
+            channel_membership,
+            user
+        );
+
+        assert!(is_member, EUserNotChannelMember);
 
         let (post, post_id) = create(
             clock,
@@ -71,20 +108,20 @@ module sage::actions {
 
         let has_record = channel_posts::has_record(
             channel_posts_registry,
-            channel_id
+            channel
         );
 
         if (!has_record) {
             channel_posts::create(
                 channel_posts_registry,
-                channel_id,
+                channel,
                 ctx
             );
         };
 
         let channel_posts = channel_posts::get_channel_posts(
             channel_posts_registry,
-            channel_id
+            channel
         );
 
         channel_posts::add(
@@ -93,28 +130,20 @@ module sage::actions {
             post
         );
 
-        // let post = channel_posts::borrow_channel_post(
-        //     channel_posts,
-        //     post_id
-        // );
-
-        // transfer::public_freeze_object(post);
+        post_id
     }
 
     public fun post_from_post(
         clock: &Clock,
         post_comments_registry: &mut PostCommentsRegistry,
         post_likes_registry: &mut PostLikesRegistry,
-        original_post: Post,
+        parent_post: Post,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
-    ): UID {
-        let (
-            original_uid,
-            original_id
-        ) = post::get_id(original_post);
+    ): ID {
+        let parent_id = post::get_id(parent_post);
 
         let (post, post_id) = create(
             clock,
@@ -128,36 +157,32 @@ module sage::actions {
 
         let has_record = post_comments::has_record(
             post_comments_registry,
-            original_id
+            parent_id
         );
 
         if (!has_record) {
             post_comments::create(
                 post_comments_registry,
-                original_id,
+                parent_id,
                 ctx
             );
         };
 
         let post_comments = post_comments::get_post_comments(
             post_comments_registry,
-            original_id
+            parent_id
         );
 
         post_comments::add(
             post_comments,
-            original_id,
+            post_id,
             post
         );
 
-        // transfer::public_freeze_object(post);
-
-        original_uid
+        post_id
     }
 
     // --------------- Friend Functions ---------------
-
-    // --------------- Internal Functions ---------------
 
     public(package) fun create(
         clock: &Clock,
@@ -187,14 +212,15 @@ module sage::actions {
             ctx
         );
 
-        post_likes::create(
+        post_likes::create_post_likes(
             post_likes_registry,
-            post_id,
-            ctx
+            post_id
         );
 
         (post, post_id)
     }
+
+    // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 }
