@@ -2,20 +2,43 @@
 
 [move]
 version = 2
-manifest_digest = "7073464704E603216BFD42D2F47E82E2F8FD445AD322D3BD4C919E12812E6FBA"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "1E6BC947C5652C6DDE5E1A4332214FFEC3F7690B08EC3253E0433066D562677A"
+deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
+  { name = "SageAdmin" },
+  { name = "SageImmutable" },
   { name = "Sui" },
 ]
 
 [[move.package]]
 name = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testnet", subdir = "crates/sui-framework/packages/move-stdlib" }
+
+[[move.package]]
+name = "SageAdmin"
+source = { git = "https://github.com/37-labs/sagacious.git", rev = "main", subdir = "contracts/admin" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "SageImmutable"
+source = { git = "https://github.com/37-labs/sagacious.git", rev = "main", subdir = "contracts/immutable" }
+
+dependencies = [
+  { name = "Sui" },
+]
 
 [[move.package]]
 name = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/mainnet", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testnet", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },
 ]
+
+[move.toolchain-version]
+compiler-version = "1.27.0"
+edition = "2024.beta"
+flavor = "sui"
