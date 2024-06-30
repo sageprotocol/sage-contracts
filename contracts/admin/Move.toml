@@ -2,9 +2,10 @@
 name = "SageAdmin"
 edition = "2024.beta"
 version = "0.0.1"
+published-at = "0xb3e984f195a5b1f4bd95660c6df44a043deb142f635facb411fee779e6538553"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 [addresses]
 sage = "0x0"
