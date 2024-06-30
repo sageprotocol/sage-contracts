@@ -4,10 +4,13 @@ edition = "2024.beta"
 version = "0.0.1"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
-SageAdmin = { local = "../admin" }
-SageImmutable = { local = "../immutable" }
+# SageAdmin = { local = "../admin" }
+# SageImmutable = { local = "../immutable" }
+
+SageAdmin = { git = "https://github.com/37-labs/sagacious.git", subdir = "contracts/admin", rev = "fb/deploy" }
+SageImmutable = { git = "https://github.com/37-labs/sagacious.git", subdir = "contracts/immutable", rev = "fb/deploy" }
 
 [addresses]
 sage = "0x0"
