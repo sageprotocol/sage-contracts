@@ -5,17 +5,17 @@ module sage::test_actions {
     use sui::test_scenario::{Self as ts, Scenario};
 
     use sui::clock::{Self, Clock};
-    // use sui::{table::{ETableNotEmpty}};
+    use sui::{table::{ETableNotEmpty}};
 
     use sage::{
-        actions::{Self},
         admin::{Self, AdminCap},
-        channel::{Self},
+        channel_actions::{Self},
         channel_membership::{Self, ChannelMembershipRegistry},
         channel_posts::{Self, ChannelPostsRegistry},
         channel_registry::{Self, ChannelRegistry},
+        post_actions::{Self, EUserNotChannelMember},
         post_comments::{Self, PostCommentsRegistry},
-        post_likes::{Self, PostLikesRegistry}
+        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}
     };
 
     // --------------- Constants ---------------
@@ -24,12 +24,14 @@ module sage::test_actions {
 
     // --------------- Errors ---------------
 
-    // const EPostNotLiked: u64 = 0;
+    const EChannelPostFailure: u64 = 0;
+    const EPostCommentFailure: u64 = 1;
+    const EPostNotLiked: u64 = 2;
 
     // --------------- Test Functions ---------------
 
     #[test_only]
-    fun setup_for_testing(): (Scenario, ChannelMembershipRegistry, ChannelPostsRegistry, ChannelRegistry, PostCommentsRegistry, PostLikesRegistry) {
+    fun setup_for_testing(): (Scenario, ChannelMembershipRegistry, ChannelPostsRegistry, ChannelRegistry, PostCommentsRegistry, PostLikesRegistry, UserPostLikesRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
@@ -42,7 +44,8 @@ module sage::test_actions {
             channel_posts_registry,
             channel_registry,
             post_comments_registry,
-            post_likes_registry
+            post_likes_registry,
+            user_post_likes_registry
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
@@ -66,13 +69,17 @@ module sage::test_actions {
                 &admin_cap,
                 ts::ctx(scenario)
             );
+            let user_post_likes_registry = post_likes::create_user_post_likes_registry(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
 
             ts::return_to_sender(scenario, admin_cap);
 
-            (channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry)
+            (channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry, user_post_likes_registry)
         };
 
-        (scenario_val, channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry)
+        (scenario_val, channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry, user_post_likes_registry)
     }
 
     #[test]
@@ -83,7 +90,8 @@ module sage::test_actions {
             channel_posts_registry_val,
             channel_registry_val,
             post_comments_registry_val,
-            post_likes_registry_val
+            post_likes_registry_val,
+            user_post_likes_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -94,14 +102,14 @@ module sage::test_actions {
             channel_posts::destroy_for_testing(channel_posts_registry_val);
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
-            post_likes::destroy_for_testing(post_likes_registry_val);
+            post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    // #[expected_failure(abort_code = ETableNotEmpty)]
+    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_from_channel() {
         let (
             mut scenario_val,
@@ -109,7 +117,8 @@ module sage::test_actions {
             mut channel_posts_registry_val,
             mut channel_registry_val,
             mut post_comments_registry_val,
-            mut post_likes_registry_val
+            mut post_likes_registry_val,
+            user_post_likes_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -134,7 +143,7 @@ module sage::test_actions {
         let clock = {
             let clock: Clock = ts::take_shared(scenario);
 
-            let _channel_id = channel::create(
+            let _channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -150,9 +159,10 @@ module sage::test_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            actions::post_from_channel(
+            let post_id = post_actions::post_from_channel(
                 &clock,
                 channel_registry,
+                channel_membership_registry,
                 channel_posts_registry,
                 post_comments_registry,
                 post_likes_registry,
@@ -163,11 +173,22 @@ module sage::test_actions {
                 ts::ctx(scenario)
             );
 
-            // let post = 
+            let channel = channel_registry::get_channel(
+                channel_registry,
+                channel_name
+            );
 
-            // let (uid, _id) = post::get_id(post);
+            let channel_posts = channel_posts::get_channel_posts(
+                channel_posts_registry,
+                channel
+            );
 
-            // object::delete(uid);
+            let has_post = channel_posts::has_post(
+                channel_posts,
+                post_id
+            );
+
+            assert!(has_post, EChannelPostFailure);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -178,147 +199,270 @@ module sage::test_actions {
             channel_posts::destroy_for_testing(channel_posts_registry_val);
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
-            post_likes::destroy_for_testing(post_likes_registry_val);
+            post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = ETableNotEmpty)]
-    // fun test_post_from_postl() {
-    //     let (
-    //         mut scenario_val,
-    //         mut channel_membership_registry_val,
-    //         mut channel_posts_registry_val,
-    //         mut channel_registry_val,
-    //         mut post_comments_registry_val,
-    //         mut post_likes_registry_val
-    //     ) = setup_for_testing();
+    #[test]
+    #[expected_failure(abort_code = EUserNotChannelMember)]
+    fun test_post_from_channel_not_member() {
+        let (
+            mut scenario_val,
+            mut channel_membership_registry_val,
+            mut channel_posts_registry_val,
+            mut channel_registry_val,
+            mut post_comments_registry_val,
+            mut post_likes_registry_val,
+            user_post_likes_registry_val
+        ) = setup_for_testing();
 
-    //     let scenario = &mut scenario_val;
+        let scenario = &mut scenario_val;
 
-    //     ts::next_tx(scenario, ADMIN);
-    //     {
-    //         let mut clock = clock::create_for_testing(ts::ctx(scenario));
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_posts_registry = &mut channel_posts_registry_val;
+        let post_comments_registry = &mut post_comments_registry_val;
+        let post_likes_registry = &mut post_likes_registry_val;
 
-    //         clock::set_for_testing(&mut clock, 0);
-    //         clock::share_for_testing(clock);
-    //     };
+        let channel_name = utf8(b"channel-name");
 
-    //     ts::next_tx(scenario, ADMIN);
-    //     let clock = {
-    //         let clock: Clock = ts::take_shared(scenario);
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
 
-    //         let post_comments_registry = &mut post_comments_registry_val;
-    //         let post_likes_registry = &mut post_likes_registry_val;
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
 
-    //         let post = post_actions::create(
-    //             &clock,
-    //             post_comments_registry,
-    //             post_likes_registry,
-    //             utf8(b"data"),
-    //             utf8(b"description"),
-    //             utf8(b"title"),
-    //             ts::ctx(scenario)
-    //         );
+        ts::next_tx(scenario, ADMIN);
+        let clock = {
+            let clock: Clock = ts::take_shared(scenario);
 
-    //         let (uid, _id) = post::get_id(post);
+            clock
+        };
 
-    //         object::delete(uid);
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
 
-    //         clock
-    //     };
+            let channel_membership = channel_membership::get_membership(
+                channel_membership_registry,
+                channel
+            );
 
-    //     ts::next_tx(scenario, ADMIN);
-    //     {
-    //         ts::return_shared(clock);
+            channel_membership::leave(
+                channel_membership,
+                channel_name,
+                ts::ctx(scenario)
+            );
 
-    //         channel_membership::destroy_for_testing(channel_membership_registry_val);
-    //         channel_posts::destroy_for_testing(channel_posts_registry_val);
-    //         channel_registry::destroy_for_testing(channel_registry_val);
-    //         post_comments::destroy_for_testing(post_comments_registry_val);
-    //         post_likes::destroy_for_testing(post_likes_registry_val);
-    //     };
+            post_actions::post_from_channel(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_posts_registry,
+                post_comments_registry,
+                post_likes_registry,
+                channel_name,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
+        };
 
-    //     ts::end(scenario_val);
-    // }
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(clock);
 
-    // #[test]
-    // #[expected_failure(abort_code = ETableNotEmpty)]
-    // fun test_post_like() {
-    //     let (
-    //         mut scenario_val,
-    //         mut channel_membership_registry_val,
-    //         mut channel_posts_registry_val,
-    //         mut channel_registry_val,
-    //         mut post_comments_registry_val,
-    //         mut post_likes_registry_val
-    //     ) = setup_for_testing();
+            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            channel_posts::destroy_for_testing(channel_posts_registry_val);
+            channel_registry::destroy_for_testing(channel_registry_val);
+            post_comments::destroy_for_testing(post_comments_registry_val);
+            post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+        };
 
-    //     let scenario = &mut scenario_val;
+        ts::end(scenario_val);
+    }
 
-    //     ts::next_tx(scenario, ADMIN);
-    //     {
-    //         let mut clock = clock::create_for_testing(ts::ctx(scenario));
+    #[test]
+    fun test_post_from_post() {
+        let (
+            mut scenario_val,
+            channel_membership_registry_val,
+            channel_posts_registry_val,
+            channel_registry_val,
+            mut post_comments_registry_val,
+            mut post_likes_registry_val,
+            user_post_likes_registry_val
+        ) = setup_for_testing();
 
-    //         clock::set_for_testing(&mut clock, 0);
-    //         clock::share_for_testing(clock);
-    //     };
+        let scenario = &mut scenario_val;
 
-    //     ts::next_tx(scenario, ADMIN);
-    //     let clock = {
-    //         let clock: Clock = ts::take_shared(scenario);
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
 
-    //         let post_comments_registry = &mut post_comments_registry_val;
-    //         let post_likes_registry = &mut post_likes_registry_val;
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
 
-    //         let post = post_actions::create(
-    //             &clock,
-    //             post_comments_registry,
-    //             post_likes_registry,
-    //             utf8(b"data"),
-    //             utf8(b"description"),
-    //             utf8(b"title"),
-    //             ts::ctx(scenario)
-    //         );
+        ts::next_tx(scenario, ADMIN);
+        let clock = {
+            let clock: Clock = ts::take_shared(scenario);
 
-    //         let (uid, post_id) = post::get_id(post);
+            clock
+        };
 
-    //         post_actions::like(
-    //             post_likes_registry,
-    //             post_id,
-    //             ts::ctx(scenario)
-    //         );
+        ts::next_tx(scenario, ADMIN);
+        {
+            let post_comments_registry = &mut post_comments_registry_val;
+            let post_likes_registry = &mut post_likes_registry_val;
 
-    //         let post_likes = post_likes::get(
-    //             post_likes_registry,
-    //             post_id
-    //         );
+            let (parent_post, parent_post_id) = post_actions::create(
+                &clock,
+                post_comments_registry,
+                post_likes_registry,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
 
-    //         let post_liked = post_likes::has_record(
-    //             post_likes,
-    //             ADMIN
-    //         );
+            let post_id = post_actions::post_from_post(
+                &clock,
+                post_comments_registry,
+                post_likes_registry,
+                parent_post,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
 
-    //         assert!(post_liked, EPostNotLiked);
+            let post_comments = post_comments::get_post_comments(
+                post_comments_registry,
+                parent_post_id
+            );
 
-    //         object::delete(uid);
+            let has_post = post_comments::has_post(
+                post_comments,
+                post_id
+            );
 
-    //         clock
-    //     };
+            assert!(has_post, EPostCommentFailure);
+        };
 
-    //     ts::next_tx(scenario, ADMIN);
-    //     {
-    //         ts::return_shared(clock);
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(clock);
 
-    //         channel_membership::destroy_for_testing(channel_membership_registry_val);
-    //         channel_posts::destroy_for_testing(channel_posts_registry_val);
-    //         channel_registry::destroy_for_testing(channel_registry_val);
-    //         post_comments::destroy_for_testing(post_comments_registry_val);
-    //         post_likes::destroy_for_testing(post_likes_registry_val);
-    //     };
+            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            channel_posts::destroy_for_testing(channel_posts_registry_val);
+            channel_registry::destroy_for_testing(channel_registry_val);
+            post_comments::destroy_for_testing(post_comments_registry_val);
+            post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+        };
 
-    //     ts::end(scenario_val);
-    // }
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_post_like() {
+        let (
+            mut scenario_val,
+            channel_membership_registry_val,
+            channel_posts_registry_val,
+            channel_registry_val,
+            mut post_comments_registry_val,
+            mut post_likes_registry_val,
+            mut user_post_likes_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let clock = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let post_comments_registry = &mut post_comments_registry_val;
+            let post_likes_registry = &mut post_likes_registry_val;
+            let user_post_likes_registry = &mut user_post_likes_registry_val;
+
+            let (_post, post_id) = post_actions::create(
+                &clock,
+                post_comments_registry,
+                post_likes_registry,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
+
+            post_actions::like(
+                post_likes_registry,
+                user_post_likes_registry,
+                post_id,
+                ts::ctx(scenario)
+            );
+
+            let post_likes = post_likes::get_post_likes(
+                post_likes_registry,
+                post_id
+            );
+
+            let post_liked = post_likes::has_post_likes(
+                post_likes,
+                ADMIN
+            );
+
+            assert!(post_liked, EPostNotLiked);
+
+            let user_post_likes = post_likes::get_user_post_likes(
+                user_post_likes_registry,
+                ADMIN
+            );
+
+            let post_liked = post_likes::has_user_likes(
+                user_post_likes,
+                post_id
+            );
+
+            assert!(post_liked, EPostNotLiked);
+
+            clock
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(clock);
+
+            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            channel_posts::destroy_for_testing(channel_posts_registry_val);
+            channel_registry::destroy_for_testing(channel_registry_val);
+            post_comments::destroy_for_testing(post_comments_registry_val);
+            post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
 }

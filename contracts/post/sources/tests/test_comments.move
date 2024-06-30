@@ -4,8 +4,6 @@ module sage::test_comments {
 
     use sui::test_scenario::{Self as ts, Scenario};
 
-    use sui::{table::{ETableNotEmpty}};
-
     use sage::{
         admin::{Self, AdminCap},
         post::{Self},
@@ -65,7 +63,6 @@ module sage::test_comments {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_comments_create() {
         let (
             mut scenario_val,

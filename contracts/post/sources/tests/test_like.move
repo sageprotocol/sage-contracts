@@ -4,12 +4,10 @@ module sage::test_like {
 
     use sui::test_scenario::{Self as ts, Scenario};
 
-    use sui::{table::{ETableNotEmpty}};
-
     use sage::{
         admin::{Self, AdminCap},
         post::{Self},
-        post_likes::{Self, PostLikesRegistry}
+        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}
     };
 
     // --------------- Constants ---------------
@@ -23,7 +21,7 @@ module sage::test_like {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    fun setup_for_testing(): (Scenario, PostLikesRegistry) {
+    fun setup_for_testing(): (Scenario, PostLikesRegistry, UserPostLikesRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
@@ -31,7 +29,7 @@ module sage::test_like {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let post_likes_registry = {
+        let (post_likes_registry, user_post_likes_registry) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
             let post_likes_registry = post_likes::create_post_likes_registry(
@@ -39,37 +37,46 @@ module sage::test_like {
                 ts::ctx(scenario)
             );
 
+            let user_post_likes_registry = post_likes::create_user_post_likes_registry(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
             ts::return_to_sender(scenario, admin_cap);
 
-            post_likes_registry
+            (post_likes_registry, user_post_likes_registry)
         };
 
-        (scenario_val, post_likes_registry)
+        (scenario_val, post_likes_registry, user_post_likes_registry)
     }
 
     #[test]
     fun test_post_likes_init() {
         let (
             mut scenario_val,
-            post_likes_registry_val
+            post_likes_registry_val,
+            user_post_likes_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            post_likes::destroy_for_testing(post_likes_registry_val);
+            post_likes::destroy_for_testing(
+                post_likes_registry_val,
+                user_post_likes_registry_val
+            );
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_like() {
         let (
             mut scenario_val,
-            mut post_likes_registry_val
+            mut post_likes_registry_val,
+            mut user_post_likes_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -79,7 +86,7 @@ module sage::test_like {
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
-            let (post, post_id) = post::create(
+            let (_post, post_id) = post::create(
                 user,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -89,39 +96,94 @@ module sage::test_like {
             );
 
             let post_likes_registry = &mut post_likes_registry_val;
+            let user_post_likes_registry = &mut user_post_likes_registry_val;
 
-            post_likes::create(
-                post_likes_registry,
-                post_id,
-                ts::ctx(scenario)
-            );
-
-            let post_likes = post_likes::get(
+            post_likes::create_post_likes(
                 post_likes_registry,
                 post_id
             );
 
+            post_likes::create_user_post_likes(
+                user_post_likes_registry,
+                user
+            );
+
+            let post_likes = post_likes::get_post_likes(
+                post_likes_registry,
+                post_id
+            );
+
+            let has_record = post_likes::has_post_likes(
+                post_likes,
+                user
+            );
+
+            assert!(!has_record, EPostLikesMismatch);
+
+            let likes_count = post_likes::get_post_likes_count(
+                post_likes
+            );
+
+            assert!(likes_count == 0, EPostLikesMismatch);
+
+            let user_post_likes = post_likes::get_user_post_likes(
+                user_post_likes_registry,
+                user
+            );
+
+            let has_record = post_likes::has_user_likes(
+                user_post_likes,
+                post_id
+            );
+
+            assert!(!has_record, EPostLikesMismatch);
+
+            let likes_count = post_likes::get_user_likes_count(
+                user_post_likes
+            );
+
+            assert!(likes_count == 0, EPostLikesMismatch);
+
             post_likes::add(
                 post_likes,
+                user_post_likes,
                 post_id,
                 user
             );
 
-            let has_record = post_likes::has_record(
+            let has_record = post_likes::has_post_likes(
                 post_likes,
                 user
             );
 
             assert!(has_record, EPostLikesMismatch);
 
-            let (uid, _id) = post::get_id(post);
+            let likes_count = post_likes::get_post_likes_count(
+                post_likes
+            );
 
-            object::delete(uid);
+            assert!(likes_count == 1, EPostLikesMismatch);
+
+            let has_record = post_likes::has_user_likes(
+                user_post_likes,
+                post_id
+            );
+
+            assert!(has_record, EPostLikesMismatch);
+
+            let likes_count = post_likes::get_user_likes_count(
+                user_post_likes
+            );
+
+            assert!(likes_count == 1, EPostLikesMismatch);
         };
 
         ts::next_tx(scenario, ADMIN);
         {
-            post_likes::destroy_for_testing(post_likes_registry_val);
+            post_likes::destroy_for_testing(
+                post_likes_registry_val,
+                user_post_likes_registry_val
+            );
         };
 
         ts::end(scenario_val);

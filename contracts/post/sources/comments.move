@@ -1,9 +1,8 @@
 module sage::post_comments {
-    use sui::{table::{Self, Table}};
-
     use sage::{
         admin::{AdminCap},
-        post::{Post}
+        post::{Post},
+        table::{Self, ImmutableTable}
     };
 
     // --------------- Constants ---------------
@@ -15,11 +14,11 @@ module sage::post_comments {
     // --------------- Name Tag ---------------
 
     public struct PostCommentsRegistry has store {
-        registry: Table<ID, PostComments>
+        registry: ImmutableTable<ID, PostComments>
     }
 
     public struct PostComments has store {
-        comments: Table<ID, Post>
+        comments: ImmutableTable<ID, Post>
     }
 
     // --------------- Events ---------------
@@ -41,7 +40,14 @@ module sage::post_comments {
         post_comments_registry: &mut PostCommentsRegistry,
         post_id: ID
     ): &mut PostComments {
-        &mut post_comments_registry.registry[post_id]
+        post_comments_registry.registry.borrow_mut(post_id)
+    }
+
+    public fun has_post(
+        post_comments: &mut PostComments,
+        post_id: ID
+    ): bool {
+        post_comments.comments.contains(post_id)
     }
 
     public fun has_record(
@@ -89,7 +95,7 @@ module sage::post_comments {
             registry
         } = post_comments_registry;
 
-        registry.destroy_empty();
+        registry.destroy_for_testing();
     }
 
 }
