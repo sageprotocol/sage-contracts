@@ -2,7 +2,7 @@
 
 [move]
 version = 2
-manifest_digest = "1E6BC947C5652C6DDE5E1A4332214FFEC3F7690B08EC3253E0433066D562677A"
+manifest_digest = "C54D0F7576C9B69650A121BAA91ABE222DED02FF558891C864DAB338789A3B75"
 deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { name = "SageAdmin" },
@@ -16,7 +16,7 @@ source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testn
 
 [[move.package]]
 name = "SageAdmin"
-source = { git = "https://github.com/37-labs/sagacious.git", rev = "main", subdir = "contracts/admin" }
+source = { git = "https://github.com/37-labs/sagacious.git", rev = "fb/deploy", subdir = "contracts/admin" }
 
 dependencies = [
   { name = "Sui" },
@@ -24,7 +24,7 @@ dependencies = [
 
 [[move.package]]
 name = "SageImmutable"
-source = { git = "https://github.com/37-labs/sagacious.git", rev = "main", subdir = "contracts/immutable" }
+source = { git = "https://github.com/37-labs/sagacious.git", rev = "fb/deploy", subdir = "contracts/immutable" }
 
 dependencies = [
   { name = "Sui" },

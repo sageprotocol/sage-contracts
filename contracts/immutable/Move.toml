@@ -2,7 +2,7 @@
 name = "SageImmutable"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0x2a06db983f0d52e6cf260657ac987af3d063ecd4a515a767af8b5eae704eb16e"
+published-at = "0xb5f4a404bd8bc1d1ae6cf639698cb92685f55378651ee44bfb9fcca4ab223b6a"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
