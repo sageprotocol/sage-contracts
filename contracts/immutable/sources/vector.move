@@ -1,4 +1,4 @@
-module sage::immutable_vector {
+module sage_immutable::immutable_vector {
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------

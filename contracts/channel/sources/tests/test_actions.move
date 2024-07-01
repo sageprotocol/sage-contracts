@@ -1,5 +1,5 @@
 #[test_only]
-module sage::test_channel_actions {
+module sage_channel::test_channel_actions {
     use sui::clock::{Self, Clock};
 
     use std::string::{utf8};
@@ -10,8 +10,11 @@ module sage::test_channel_actions {
         table::{ETableNotEmpty}
     };
 
-    use sage::{
-        admin::{Self, AdminCap, UpdateCap},
+    use sage_admin::{
+        admin::{Self, AdminCap, UpdateCap}
+    };
+
+    use sage_channel::{
         channel::{Self},
         channel_actions::{Self},
         channel_membership::{Self, ChannelMembershipRegistry},

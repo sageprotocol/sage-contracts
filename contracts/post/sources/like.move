@@ -1,8 +1,9 @@
-module sage::post_likes {
+module sage_post::post_likes {
     use sui::event;
 
-    use sage::{
-        admin::{AdminCap},
+    use sage_admin::{admin::{AdminCap}};
+
+    use sage_immutable::{
         immutable_table::{Self, ImmutableTable},
         immutable_vector::{Self, ImmutableVector}
     };

@@ -1,6 +1,6 @@
 #[test_only]
-module sage::table_tests {
-    use sage::immutable_table::{Self, add, contains, borrow, borrow_mut};
+module sage_immutable::table_tests {
+    use sage_immutable::immutable_table::{Self, add, contains, borrow, borrow_mut};
 
     use sui::test_scenario as ts;
 

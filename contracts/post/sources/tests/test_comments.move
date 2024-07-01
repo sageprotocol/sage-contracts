@@ -1,11 +1,12 @@
 #[test_only]
-module sage::test_comments {
+module sage_post::test_comments {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts, Scenario};
 
-    use sage::{
-        admin::{Self, AdminCap},
+    use sage_admin::{admin::{Self, AdminCap}};
+
+    use sage_post::{
         post::{Self},
         post_comments::{Self, PostCommentsRegistry}
     };

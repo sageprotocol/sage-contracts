@@ -2,12 +2,17 @@
 name = "SageChannel"
 edition = "2024.beta"
 version = "0.0.1"
+published-at = "0xee602df6c20ce5f41a95d8bae437d2a70e4cc4125e04e5c3a276571f340d8150"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 SageAdmin = { local = "../admin" }
 SageImmutable = { local = "../immutable" }
 
 [addresses]
-sage = "0x0"
+sage_admin = "0x52c60cddec157128b2c0c830393086633849f37a596417fe567ee1d3459dadef"
+sage_channel = "0xee602df6c20ce5f41a95d8bae437d2a70e4cc4125e04e5c3a276571f340d8150"
+sage_immutable = "0x1ec90b428fd5421946ee068bc83d330790fd56b310054a2f363c7d5ec2b100b2"
+
+# sage_channel = "0x0"

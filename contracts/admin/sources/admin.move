@@ -1,4 +1,4 @@
-module sage::admin {
+module sage_admin::admin {
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------

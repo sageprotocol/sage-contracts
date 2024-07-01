@@ -1,10 +1,11 @@
-module sage::channel_actions {
+module sage_channel::channel_actions {
     use std::string::{String};
 
     use sui::clock::Clock;
 
-    use sage::{
-        admin::{UpdateCap},
+    use sage_admin::{admin::{UpdateCap}};
+
+    use sage_channel::{
         channel::{Self, Channel},
         channel_membership::{Self, ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry}

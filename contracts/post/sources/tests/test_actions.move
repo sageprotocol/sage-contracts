@@ -1,5 +1,5 @@
 #[test_only]
-module sage::test_actions {
+module sage_post::test_actions {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts, Scenario};
@@ -7,12 +7,16 @@ module sage::test_actions {
     use sui::clock::{Self, Clock};
     use sui::{table::{ETableNotEmpty}};
 
-    use sage::{
-        admin::{Self, AdminCap},
+    use sage_admin::{admin::{Self, AdminCap}};
+
+    use sage_channel::{
         channel_actions::{Self},
         channel_membership::{Self, ChannelMembershipRegistry},
+        channel_registry::{Self, ChannelRegistry}
+    };
+
+    use sage_post::{
         channel_posts::{Self, ChannelPostsRegistry},
-        channel_registry::{Self, ChannelRegistry},
         post_actions::{Self, EUserNotChannelMember},
         post_comments::{Self, PostCommentsRegistry},
         post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}

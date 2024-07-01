@@ -1,13 +1,12 @@
-module sage::channel_membership {
+module sage_channel::channel_membership {
     use std::string::{String};
 
     use sui::event;
     use sui::{table::{Self, Table}};
 
-    use sage::{
-        admin::{AdminCap},
-        channel::{Channel}
-    };
+    use sage_admin::{admin::{AdminCap}};
+    
+    use sage_channel::{channel::{Channel}};
 
     // --------------- Constants ---------------
 

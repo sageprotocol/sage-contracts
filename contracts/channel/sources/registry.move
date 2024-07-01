@@ -1,11 +1,11 @@
-module sage::channel_registry {
+module sage_channel::channel_registry {
     use std::string::{String};
 
-    use sage::{
-        admin::{AdminCap},
-        channel::{Channel},
-        immutable_table::{Self, ImmutableTable}
-    };
+    use sage_admin::{admin::{AdminCap}};
+
+    use sage_channel::{channel::{Channel}};
+
+    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
 
     // --------------- Constants ---------------
 
