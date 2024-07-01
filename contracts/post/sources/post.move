@@ -1,4 +1,4 @@
-module sage::post {
+module sage_post::post {
     use std::string::{String};
 
     use sui::event;

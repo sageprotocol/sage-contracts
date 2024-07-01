@@ -1,13 +1,14 @@
 #[test_only]
-module sage::test_channel_membership {
+module sage_channel::test_channel_membership {
     use std::string::{utf8};
 
     use sui::{table::{ETableNotEmpty}};
 
     use sui::test_scenario::{Self as ts, Scenario};
 
-    use sage::{
-        admin::{Self, AdminCap},
+    use sage_admin::{admin::{Self, AdminCap}};
+
+    use sage_channel::{
         channel::{Self},
         channel_membership::{Self, ChannelMembershipRegistry, EChannelMemberExists}
     };

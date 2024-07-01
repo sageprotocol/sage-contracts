@@ -1,11 +1,14 @@
-module sage::test_channel_posts {
+#[test_only]
+module sage_post::test_channel_posts {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts, Scenario};
 
-    use sage::{
-        admin::{Self, AdminCap},
-        channel::{Self},
+    use sage_admin::{admin::{Self, AdminCap}};
+
+    use sage_channel::{channel::{Self}};
+
+    use sage_post::{
         channel_posts::{Self, ChannelPostsRegistry},
         post::{Self}
     };

@@ -1,10 +1,10 @@
 #[test_only]
-module sage::test_post {
+module sage_post::test_post {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts};
 
-    use sage::{
+    use sage_post::{
         post::{Self}
     };
 

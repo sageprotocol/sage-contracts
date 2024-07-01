@@ -1,4 +1,4 @@
-module sage::immutable_table {
+module sage_immutable::immutable_table {
     use sui::dynamic_field as field;
 
     // --------------- Constants ---------------

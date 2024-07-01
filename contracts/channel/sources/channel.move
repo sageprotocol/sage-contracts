@@ -1,4 +1,4 @@
-module sage::channel {
+module sage_channel::channel {
     use std::string::{String};
 
     use sui::event;

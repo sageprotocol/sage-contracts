@@ -1,9 +1,9 @@
-module sage::post_comments {
-    use sage::{
-        admin::{AdminCap},
-        post::{Post},
-        immutable_table::{Self, ImmutableTable}
-    };
+module sage_post::post_comments {
+    use sage_admin::{admin::{AdminCap}};
+
+    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
+
+    use sage_post::{post::{Post}};
 
     // --------------- Constants ---------------
 

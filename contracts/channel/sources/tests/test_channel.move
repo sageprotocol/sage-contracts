@@ -1,12 +1,10 @@
 #[test_only]
-module sage::test_channel {
+module sage_channel::test_channel {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts};
 
-    use sage::{
-        channel::{Self}
-    };
+    use sage_channel::{channel::{Self}};
 
     // --------------- Constants ---------------
 

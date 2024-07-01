@@ -1,12 +1,15 @@
-module sage::post_actions {
+module sage_post::post_actions {
     use std::string::{String};
 
     use sui::clock::Clock;
 
-    use sage::{
+    use sage_channel::{
         channel_membership::{Self, ChannelMembershipRegistry},
+        channel_registry::{Self, ChannelRegistry}
+    };
+
+    use sage_post::{
         channel_posts::{Self, ChannelPostsRegistry},
-        channel_registry::{Self, ChannelRegistry},
         post::{Self, Post},
         post_comments::{Self, PostCommentsRegistry},
         post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}
