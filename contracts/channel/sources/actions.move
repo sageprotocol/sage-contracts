@@ -3,7 +3,7 @@ module sage_channel::channel_actions {
 
     use sui::clock::Clock;
 
-    use sage_admin::{admin::{UpdateCap}};
+    use sage_admin::{admin::{AdminCap}};
 
     use sage_channel::{
         channel::{Self, Channel},
@@ -61,7 +61,7 @@ module sage_channel::channel_actions {
     }
 
     public fun update_avatar_admin (
-        _: &UpdateCap,
+        _: &AdminCap,
         channel_name: String,
         channel: &mut Channel,
         hash: String
@@ -74,7 +74,7 @@ module sage_channel::channel_actions {
     }
 
     public fun update_banner_admin (
-        _: &UpdateCap,
+        _: &AdminCap,
         channel_name: String,
         channel: &mut Channel,
         hash: String
@@ -87,7 +87,7 @@ module sage_channel::channel_actions {
     }
 
     public fun update_description_admin (
-        _: &UpdateCap,
+        _: &AdminCap,
         channel_name: String,
         channel: &mut Channel,
         description: String
