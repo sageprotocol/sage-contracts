@@ -63,16 +63,16 @@ module sage_channel::channel_actions {
     public fun join(
         channel_registry: &mut ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel,
+        channel_name: String,
         ctx: &mut TxContext
     ) {
-        let channel_membership = channel_membership::borrow_membership_mut(
-            channel_membership_registry,
-            channel
+        let channel = channel_registry::get_channel(
+            channel_registry,
+            channel_name
         );
 
-        let channel_name = channel_registry::get_channel_name(
-            channel_registry,
+        let channel_membership = channel_membership::borrow_membership_mut(
+            channel_membership_registry,
             channel
         );
 
@@ -86,16 +86,16 @@ module sage_channel::channel_actions {
     public fun leave(
         channel_registry: &mut ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel,
+        channel_name: String,
         ctx: &mut TxContext
     ) {
-        let channel_membership = channel_membership::borrow_membership_mut(
-            channel_membership_registry,
-            channel
+        let channel = channel_registry::get_channel(
+            channel_registry,
+            channel_name
         );
 
-        let channel_name = channel_registry::get_channel_name(
-            channel_registry,
+        let channel_membership = channel_membership::borrow_membership_mut(
+            channel_membership_registry,
             channel
         );
 

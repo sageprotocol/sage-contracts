@@ -190,7 +190,7 @@ module sage::actions {
     public fun join_channel(
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
-        channel: Channel,
+        channel_name: String,
         ctx: &mut TxContext
     ) {
         let channel_registry = field::borrow_mut(&mut sage_channel.id, RegistryKey<ChannelRegistry> {});
@@ -199,7 +199,7 @@ module sage::actions {
         channel_actions::join(
             channel_registry,
             channel_membership_registry,
-            channel,
+            channel_name,
             ctx
         );
     }
@@ -207,7 +207,7 @@ module sage::actions {
     public fun leave_channel(
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
-        channel: Channel,
+        channel_name: String,
         ctx: &mut TxContext
     ) {
         let channel_registry = field::borrow_mut(&mut sage_channel.id, RegistryKey<ChannelRegistry> {});
@@ -216,7 +216,7 @@ module sage::actions {
         channel_actions::leave(
             channel_registry,
             channel_membership_registry,
-            channel,
+            channel_name,
             ctx
         );
     }
