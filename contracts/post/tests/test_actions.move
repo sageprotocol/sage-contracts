@@ -412,7 +412,7 @@ module sage_post::test_actions {
             let post_likes_registry = &mut post_likes_registry_val;
             let user_post_likes_registry = &mut user_post_likes_registry_val;
 
-            let (_post, post_id) = post_actions::create(
+            let (post, post_id) = post_actions::create(
                 &clock,
                 post_comments_registry,
                 post_likes_registry,
@@ -425,7 +425,7 @@ module sage_post::test_actions {
             post_actions::like(
                 post_likes_registry,
                 user_post_likes_registry,
-                post_id,
+                post,
                 ts::ctx(scenario)
             );
 
