@@ -61,6 +61,20 @@ module sage_post::post_likes {
         }
     }
 
+    public fun get_post_likes(
+        post_likes_registry: &mut PostLikesRegistry,
+        post_id: ID
+    ): &mut PostLikes {
+        post_likes_registry.registry.borrow_mut(post_id)
+    }
+
+    public fun get_user_post_likes(
+        user_post_likes_registry: &mut UserPostLikesRegistry,
+        user: address
+    ): &mut UserPostLikes {
+        user_post_likes_registry.registry.borrow_mut(user)
+    }
+
     public fun get_post_likes_count(
         post_likes: &PostLikes
     ): u64 {
@@ -150,20 +164,6 @@ module sage_post::post_likes {
         };
 
         user_post_likes_registry.registry.add(user, user_post_likes);
-    }
-
-    public(package) fun get_post_likes(
-        post_likes_registry: &mut PostLikesRegistry,
-        post_id: ID
-    ): &mut PostLikes {
-        post_likes_registry.registry.borrow_mut(post_id)
-    }
-
-    public(package) fun get_user_post_likes(
-        user_post_likes_registry: &mut UserPostLikesRegistry,
-        user: address
-    ): &mut UserPostLikes {
-        user_post_likes_registry.registry.borrow_mut(user)
     }
 
     // --------------- Internal Functions ---------------
