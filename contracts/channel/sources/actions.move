@@ -60,6 +60,52 @@ module sage_channel::channel_actions {
         channel
     }
 
+    public fun join(
+        channel_registry: &mut ChannelRegistry,
+        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel: Channel,
+        ctx: &mut TxContext
+    ) {
+        let channel_membership = channel_membership::borrow_membership_mut(
+            channel_membership_registry,
+            channel
+        );
+
+        let channel_name = channel_registry::get_channel_name(
+            channel_registry,
+            channel
+        );
+
+        channel_membership::join(
+            channel_membership,
+            channel_name,
+            ctx
+        );
+    }
+
+    public fun leave(
+        channel_registry: &mut ChannelRegistry,
+        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel: Channel,
+        ctx: &mut TxContext
+    ) {
+        let channel_membership = channel_membership::borrow_membership_mut(
+            channel_membership_registry,
+            channel
+        );
+
+        let channel_name = channel_registry::get_channel_name(
+            channel_registry,
+            channel
+        );
+
+        channel_membership::leave(
+            channel_membership,
+            channel_name,
+            ctx
+        );
+    }
+
     public fun update_avatar_admin (
         _: &AdminCap,
         channel_name: String,
