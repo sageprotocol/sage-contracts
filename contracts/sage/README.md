@@ -1,0 +1,21 @@
+# Testnet
+
+[Package](https://testnet.suivision.xyz/package/0xd699cf1f3199fef0f0edc779475ed89440f19d12c1b773e8975679fcf83dc142) - 0xd699cf1f3199fef0f0edc779475ed89440f19d12c1b773e8975679fcf83dc142
+
+[UpgradeCap](https://testnet.suivision.xyz/object/0xf4846604d8ec07237a5a5e949af5c8f0805d91bf33a313ff674273b897ce9b3c) - 0xf4846604d8ec07237a5a5e949af5c8f0805d91bf33a313ff674273b897ce9b3c
+
+[Publisher](https://testnet.suivision.xyz/object/0xa987893ffd17a9cca0c7b7317c51cff8fc237face3b260864e7dd647c3f738cc) - 0xa987893ffd17a9cca0c7b7317c51cff8fc237face3b260864e7dd647c3f738cc
+
+## Objects
+
+[SageChannel](https://testnet.suivision.xyz/object/0x4f6e3c3524e4042a93f9fcf77179df175668957d5b21c13c8a94486ec9a67f71) - 0x4f6e3c3524e4042a93f9fcf77179df175668957d5b21c13c8a94486ec9a67f71
+
+[SageChannelMembership](https://testnet.suivision.xyz/object/0x78f4e4be4fb214dc3fc7f1f0e41018d75991fdd8eeab9ecd6926976d3b0f90a0) - 0x78f4e4be4fb214dc3fc7f1f0e41018d75991fdd8eeab9ecd6926976d3b0f90a0
+
+[SageChannelPosts](https://testnet.suivision.xyz/object/0x65387fbfe2ae2176879b6affc11dd0727aceb123a9addd09e244b8b2496f62d3) - 0x65387fbfe2ae2176879b6affc11dd0727aceb123a9addd09e244b8b2496f62d3
+
+[SagePostComments](https://testnet.suivision.xyz/object/0xe59c154b60b129a0b9bc3563113575184e24b79a0dbe095530d45ca1ff5e6e06) - 0xe59c154b60b129a0b9bc3563113575184e24b79a0dbe095530d45ca1ff5e6e06
+
+[SagePostLikes](https://testnet.suivision.xyz/object/0xa951660d0da3f19083ee638e0a7e6ace14141a329ac557dd827c7407e7472ff2) - 0xa951660d0da3f19083ee638e0a7e6ace14141a329ac557dd827c7407e7472ff2
+
+[SageUserPostLikes](https://testnet.suivision.xyz/object/0x01dde22be8da857fa714635fe0a43312d966352a338bd5c9d49fb9b5674f5934) - 0x01dde22be8da857fa714635fe0a43312d966352a338bd5c9d49fb9b5674f5934

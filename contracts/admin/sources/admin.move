@@ -9,7 +9,11 @@ module sage_admin::admin {
         id: UID
     }
 
-    public struct UpdateCap has key {
+    public struct NotificationCap has key {
+        id: UID
+    }
+
+    public struct TreasuryCap has key {
         id: UID
     }
 
@@ -18,13 +22,13 @@ module sage_admin::admin {
     // --------------- Constructor ---------------
 
     fun init(ctx: &mut TxContext) {
-        let admin = tx_context::sender(ctx);
-
         let admin_cap = AdminCap { id: object::new(ctx) };
-        let update_cap = UpdateCap { id: object::new(ctx) };
+        let notification_cap = NotificationCap { id: object::new(ctx) };
+        let treasury_cap = TreasuryCap { id: object::new(ctx) };
 
-        transfer::transfer(admin_cap, admin);
-        transfer::transfer(update_cap, admin);
+        transfer::transfer(admin_cap, @admin);
+        transfer::transfer(notification_cap, @notification);
+        transfer::transfer(treasury_cap, @treasury);
     }
 
     // --------------- Public Functions ---------------

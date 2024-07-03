@@ -24,7 +24,7 @@ module sage_post::test_actions {
 
     // --------------- Constants ---------------
 
-    const ADMIN: address = @0xde1;
+    const ADMIN: address = @admin;
 
     // --------------- Errors ---------------
 
@@ -260,7 +260,7 @@ module sage_post::test_actions {
                 ts::ctx(scenario)
             );
 
-            let channel_membership = channel_membership::get_membership(
+            let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
                 channel
             );

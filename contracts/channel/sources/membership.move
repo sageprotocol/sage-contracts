@@ -57,7 +57,7 @@ module sage_channel::channel_membership {
         }
     }
 
-    public fun get_membership(
+    public fun borrow_membership_mut(
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel: Channel
     ): &mut ChannelMembership {
@@ -68,6 +68,13 @@ module sage_channel::channel_membership {
         channel_membership: &ChannelMembership
     ): u64 {
         channel_membership.membership.length()
+    }
+
+    public fun is_member(
+        channel_membership: &ChannelMembership,
+        user: address
+    ): bool {
+        channel_membership.membership.contains(user)
     }
 
     public fun join(
@@ -110,13 +117,6 @@ module sage_channel::channel_membership {
             message: CHANNEL_LEAVE,
             user
         });
-    }
-
-    public fun is_member(
-        channel_membership: &ChannelMembership,
-        user: address
-    ): bool {
-        channel_membership.membership.contains(user)
     }
 
     // --------------- Friend Functions ---------------

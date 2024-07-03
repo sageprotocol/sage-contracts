@@ -15,7 +15,7 @@ module sage_channel::test_channel_membership {
 
     // --------------- Constants ---------------
 
-    const ADMIN: address = @0xde1;
+    const ADMIN: address = @admin;
 
     // --------------- Errors ---------------
 
@@ -97,7 +97,7 @@ module sage_channel::test_channel_membership {
                 ts::ctx(scenario)
             );
 
-            let channel_membership = channel_membership::get_membership(
+            let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
                 channel
             );
@@ -153,7 +153,7 @@ module sage_channel::test_channel_membership {
                 ts::ctx(scenario)
             );
 
-            let channel_membership = channel_membership::get_membership(
+            let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
                 channel
             );
@@ -163,6 +163,19 @@ module sage_channel::test_channel_membership {
                 channel_name,
                 ts::ctx(scenario)
             );
+
+            let is_member = channel_membership::is_member(
+                channel_membership,
+                ADMIN
+            );
+
+            assert!(is_member, EChannelNotMember);
+
+            let member_length = channel_membership::get_member_length(
+                channel_membership
+            );
+
+            assert!(member_length == 1, EChannelMembershipCountMismatch);
 
             channel_membership::destroy_for_testing(channel_membership_registry_val);
         };
@@ -202,7 +215,7 @@ module sage_channel::test_channel_membership {
                 ts::ctx(scenario)
             );
 
-            let channel_membership = channel_membership::get_membership(
+            let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
                 channel
             );

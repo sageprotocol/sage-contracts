@@ -1,8 +1,11 @@
-# Testnet
+# IDs
 
-[Package](https://testnet.suivision.xyz/package/0x52c60cddec157128b2c0c830393086633849f37a596417fe567ee1d3459dadef) - 0x52c60cddec157128b2c0c830393086633849f37a596417fe567ee1d3459dadef
+## Testnet
 
-[UpgradeCap](https://testnet.suivision.xyz/object/0x86c35ee446440c51d5b31779eea7819396c81e54149ce879d7ab119bb2f338f9) - 0x86c35ee446440c51d5b31779eea7819396c81e54149ce879d7ab119bb2f338f9
+[Package](https://testnet.suivision.xyz/package/0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3) - 0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3
 
-[AdminCap](https://testnet.suivision.xyz/object/0x7f367ee5713f2cf55a7606384d72b1a363a7dbc2b7f22e1d77a0ef0d5d4ad15c) - 0x7f367ee5713f2cf55a7606384d72b1a363a7dbc2b7f22e1d77a0ef0d5d4ad15c
-[UpdateCap](https://testnet.suivision.xyz/object/0x68bf7662667ee1e06646df1b242dcf5aa1dee0bd9db1e415797e24653b8bcb29) - 0x68bf7662667ee1e06646df1b242dcf5aa1dee0bd9db1e415797e24653b8bcb29
+[UpgradeCap](https://testnet.suivision.xyz/object/0xbf48b46081ce5125f50a8693f7417de970e1a5730783d5b8374b9fea5739f985) - 0xbf48b46081ce5125f50a8693f7417de970e1a5730783d5b8374b9fea5739f985
+
+[AdminCap](https://testnet.suivision.xyz/object/0x2b2115612751999b88d9e7fd518601325e5a23f66efe8eee6b678456ca041629) - 0x2b2115612751999b88d9e7fd518601325e5a23f66efe8eee6b678456ca041629
+[NotificationCap](https://testnet.suivision.xyz/object/0x94775980eb2f605da917496006a94eeeced78d34233f281052eb1ba917df732c) - 0x94775980eb2f605da917496006a94eeeced78d34233f281052eb1ba917df732c
+[TreasuryCap](https://testnet.suivision.xyz/object/0xc331df7319ddfcdc265887afeb36c86c37e4bb20832d95f25eeb2aa5b58be294) - 0xc331df7319ddfcdc265887afeb36c86c37e4bb20832d95f25eeb2aa5b58be294

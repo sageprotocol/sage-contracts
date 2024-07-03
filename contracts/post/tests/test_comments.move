@@ -13,7 +13,7 @@ module sage_post::test_comments {
 
     // --------------- Constants ---------------
 
-    const ADMIN: address = @0xde1;
+    const ADMIN: address = @admin;
 
     // --------------- Errors ---------------
 

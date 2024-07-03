@@ -11,7 +11,7 @@ module sage_channel::test_channel_actions {
     };
 
     use sage_admin::{
-        admin::{Self, AdminCap, UpdateCap}
+        admin::{Self, AdminCap}
     };
 
     use sage_channel::{
@@ -23,7 +23,7 @@ module sage_channel::test_channel_actions {
 
     // --------------- Constants ---------------
 
-    const ADMIN: address = @0xde1;
+    const ADMIN: address = @admin;
 
     // --------------- Errors ---------------
 
@@ -123,7 +123,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let channel_membership = channel_membership::get_membership(
+            let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
                 channel
             );
@@ -172,7 +172,7 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
-            let update_cap = ts::take_from_sender<UpdateCap>(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
             let channel_registry = &mut channel_registry_val;
             let channel_membership_registry = &mut channel_membership_registry_val;
@@ -200,7 +200,7 @@ module sage_channel::test_channel_actions {
             let new_avatar_hash = utf8(b"new_avatar_hash");
 
             channel_actions::update_avatar_admin(
-                &update_cap,
+                &admin_cap,
                 channel_name,
                 &mut channel,
                 new_avatar_hash
@@ -213,7 +213,7 @@ module sage_channel::test_channel_actions {
             assert!(channel_avatar_hash == new_avatar_hash, EChannelAvatarMismatch);
 
             ts::return_shared(clock);
-            ts::return_to_sender(scenario, update_cap);
+            ts::return_to_sender(scenario, admin_cap);
 
             channel_membership::destroy_for_testing(channel_membership_registry_val);
             channel_registry::destroy_for_testing(channel_registry_val);
@@ -244,7 +244,7 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
-            let update_cap = ts::take_from_sender<UpdateCap>(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
             let channel_registry = &mut channel_registry_val;
             let channel_membership_registry = &mut channel_membership_registry_val;
@@ -272,7 +272,7 @@ module sage_channel::test_channel_actions {
             let new_banner_hash = utf8(b"new_banner_hash");
 
             channel_actions::update_banner_admin(
-                &update_cap,
+                &admin_cap,
                 channel_name,
                 &mut channel,
                 new_banner_hash
@@ -285,7 +285,7 @@ module sage_channel::test_channel_actions {
             assert!(channel_banner_hash == new_banner_hash, EChannelBannerMismatch);
 
             ts::return_shared(clock);
-            ts::return_to_sender(scenario, update_cap);
+            ts::return_to_sender(scenario, admin_cap);
 
             channel_membership::destroy_for_testing(channel_membership_registry_val);
             channel_registry::destroy_for_testing(channel_registry_val);
@@ -316,7 +316,7 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
-            let update_cap = ts::take_from_sender<UpdateCap>(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
             let channel_registry = &mut channel_registry_val;
             let channel_membership_registry = &mut channel_membership_registry_val;
@@ -344,7 +344,7 @@ module sage_channel::test_channel_actions {
             let new_description = utf8(b"new_description");
 
             channel_actions::update_description_admin(
-                &update_cap,
+                &admin_cap,
                 channel_name,
                 &mut channel,
                 new_description
@@ -357,7 +357,7 @@ module sage_channel::test_channel_actions {
             assert!(channel_description == new_description, EChannelDescriptionMismatch);
 
             ts::return_shared(clock);
-            ts::return_to_sender(scenario, update_cap);
+            ts::return_to_sender(scenario, admin_cap);
 
             channel_membership::destroy_for_testing(channel_membership_registry_val);
             channel_registry::destroy_for_testing(channel_registry_val);

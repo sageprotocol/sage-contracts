@@ -13,7 +13,7 @@ module sage_channel::test_channel_registry {
 
     // --------------- Constants ---------------
 
-    const ADMIN: address = @0xde1;
+    const ADMIN: address = @admin;
 
     // --------------- Errors ---------------
 

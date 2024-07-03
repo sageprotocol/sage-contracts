@@ -2,11 +2,13 @@
 
 [move]
 version = 2
-manifest_digest = "AB74D16E91E775671DA5F6C8518FA38CBFFA6FB8A2A3EB6E327A8F1E6E194511"
-deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
+manifest_digest = "CDF08100159120C904CBA1D4D632520962FD6F5EBAC18CEFEBFAC96824C6595B"
+deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { name = "SageAdmin" },
+  { name = "SageChannel" },
   { name = "SageImmutable" },
+  { name = "SagePost" },
   { name = "Sui" },
 ]
 
@@ -23,10 +25,31 @@ dependencies = [
 ]
 
 [[move.package]]
+name = "SageChannel"
+source = { local = "../channel" }
+
+dependencies = [
+  { name = "SageAdmin" },
+  { name = "SageImmutable" },
+  { name = "Sui" },
+]
+
+[[move.package]]
 name = "SageImmutable"
 source = { local = "../immutable" }
 
 dependencies = [
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "SagePost"
+source = { local = "../post" }
+
+dependencies = [
+  { name = "SageAdmin" },
+  { name = "SageChannel" },
+  { name = "SageImmutable" },
   { name = "Sui" },
 ]
 
@@ -47,6 +70,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x30d05056b8e9ddf871b3d13762f466c2244b5aaca827a2bd5e0645b9db4234fd"
-latest-published-id = "0x30d05056b8e9ddf871b3d13762f466c2244b5aaca827a2bd5e0645b9db4234fd"
+original-published-id = "0xd699cf1f3199fef0f0edc779475ed89440f19d12c1b773e8975679fcf83dc142"
+latest-published-id = "0xd699cf1f3199fef0f0edc779475ed89440f19d12c1b773e8975679fcf83dc142"
 published-version = "1"
