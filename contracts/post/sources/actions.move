@@ -32,10 +32,12 @@ module sage_post::post_actions {
     public fun like(
         post_likes_registry: &mut PostLikesRegistry,
         user_post_likes_registry: &mut UserPostLikesRegistry,
-        post_id: ID,
+        post: Post,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
+
+        let post_id = post::get_id(post);
 
         let post_likes = post_likes::get_post_likes(
             post_likes_registry,

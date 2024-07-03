@@ -173,7 +173,7 @@ module sage::actions {
     public fun like_post(
         sage_post_likes: &mut SagePostLikes,
         sage_user_post_likes: &mut SageUserPostLikes,
-        post_id: ID,
+        post: Post,
         ctx: &mut TxContext
     ) {
         let post_likes_registry = field::borrow_mut(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {});
@@ -182,7 +182,7 @@ module sage::actions {
         post_actions::like(
             post_likes_registry,
             user_post_likes_registry,
-            post_id,
+            post,
             ctx
         );
     }

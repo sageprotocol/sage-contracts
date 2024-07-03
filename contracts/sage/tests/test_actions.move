@@ -322,7 +322,7 @@ module sage::test_sage_actions {
         {
             let clock: Clock = ts::take_shared(scenario);
 
-            let _channel = actions::create_channel(
+            let channel = actions::create_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
@@ -347,10 +347,23 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
+            let channel_posts_registry = actions::borrow_channel_posts_registry_for_testing(
+                &mut sage_channel_posts
+            );
+            let channel_posts = channel_posts::get_channel_posts(
+                channel_posts_registry,
+                channel
+            );
+
+            let post = channel_posts::borrow_post(
+                channel_posts,
+                post_id
+            );
+
             actions::like_post(
                 &mut sage_post_likes,
                 &mut sage_user_post_likes,
-                post_id,
+                post,
                 ts::ctx(scenario)
             );
 
