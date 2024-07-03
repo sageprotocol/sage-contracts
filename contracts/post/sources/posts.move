@@ -29,6 +29,13 @@ module sage_post::channel_posts {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_post(
+        channel_posts: &mut ChannelPosts,
+        post_id: ID
+    ): &mut Post {
+        channel_posts.posts.borrow_mut(post_id)
+    }
+
     public fun create_channel_posts_registry(
         _: &AdminCap,
         ctx: &mut TxContext
