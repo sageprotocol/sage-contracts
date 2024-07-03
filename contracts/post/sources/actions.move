@@ -87,7 +87,7 @@ module sage_post::post_actions {
             channel_name
         );
 
-        let channel_membership = channel_membership::get_membership(
+        let channel_membership = channel_membership::borrow_membership_mut(
             channel_membership_registry,
             channel
         );
