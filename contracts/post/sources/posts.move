@@ -32,8 +32,8 @@ module sage_post::channel_posts {
     public fun borrow_post(
         channel_posts: &mut ChannelPosts,
         post_id: ID
-    ): &mut Post {
-        channel_posts.posts.borrow_mut(post_id)
+    ): Post {
+        *channel_posts.posts.borrow(post_id)
     }
 
     public fun create_channel_posts_registry(
