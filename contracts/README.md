@@ -29,5 +29,5 @@ For local development and testing it may be easier to change all addresses in al
 Publishing the packages is not sufficient to initialize the entire project. Once the contracts are deployed the registries must be created for the contracts to function.
 
 ```sh
-$ sui client call --package <SAGE_PKG_ID> --module actions --function create_registries --args <ADMIN_PKG_ID> <SAGE_CHANNEL_ID> <SAGE_CHANNEL_MEMBERSHIP_ID> <SAGE_CHANNEL_POSTS_ID> <SAGE_POST_COMMENTS_ID> <SAGE_POST_LIKES_ID> <SAGE_USER_POSTS_ID> --gas-budget 100000000
+$ sui client call --package <SAGE_PKG_ID> --module actions --function create_registries --args <ADMIN_CAP_ID> <SAGE_CHANNEL_ID> <SAGE_CHANNEL_MEMBERSHIP_ID> <SAGE_CHANNEL_POSTS_ID> <SAGE_POST_COMMENTS_ID> <SAGE_POST_LIKES_ID> <SAGE_USER_POSTS_ID> --gas-budget 100000000
 ```
