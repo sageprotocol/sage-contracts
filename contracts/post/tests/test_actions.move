@@ -331,16 +331,18 @@ module sage_post::test_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let timestamp: u64 = 999;
+
             let post_comments_registry = &mut post_comments_registry_val;
             let post_likes_registry = &mut post_likes_registry_val;
 
             let (parent_post, parent_post_id) = post_actions::create(
-                &clock,
                 post_comments_registry,
                 post_likes_registry,
                 utf8(b"data"),
                 utf8(b"description"),
                 utf8(b"title"),
+                timestamp,
                 ts::ctx(scenario)
             );
 
@@ -398,27 +400,19 @@ module sage_post::test_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut clock = clock::create_for_testing(ts::ctx(scenario));
-
-            clock::set_for_testing(&mut clock, 0);
-            clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        let clock = {
-            let clock: Clock = ts::take_shared(scenario);
+            let timestamp: u64 = 999;
 
             let post_comments_registry = &mut post_comments_registry_val;
             let post_likes_registry = &mut post_likes_registry_val;
             let user_post_likes_registry = &mut user_post_likes_registry_val;
 
             let (post, post_id) = post_actions::create(
-                &clock,
                 post_comments_registry,
                 post_likes_registry,
                 utf8(b"data"),
                 utf8(b"description"),
                 utf8(b"title"),
+                timestamp,
                 ts::ctx(scenario)
             );
 
@@ -452,14 +446,10 @@ module sage_post::test_actions {
             );
 
             assert!(post_liked, EPostNotLiked);
-
-            clock
         };
 
         ts::next_tx(scenario, ADMIN);
         {
-            ts::return_shared(clock);
-
             channel_membership::destroy_for_testing(channel_membership_registry_val);
             channel_posts::destroy_for_testing(channel_posts_registry_val);
             channel_registry::destroy_for_testing(channel_registry_val);
