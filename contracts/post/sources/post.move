@@ -1,8 +1,6 @@
 module sage_post::post {
     use std::string::{String};
 
-    use sui::event;
-
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
@@ -22,18 +20,6 @@ module sage_post::post {
     }
 
     // --------------- Events ---------------
-
-    public struct PostCreated has copy, drop {
-        id: ID,
-        created_at: u64,
-        created_by: address,
-        data: String,
-        description: String,
-        is_deleted: bool,
-        is_edited: bool,
-        title: String,
-        updated_at: u64
-    }
 
     // --------------- Constructor ---------------
 
@@ -81,18 +67,6 @@ module sage_post::post {
             title,
             updated_at: timestamp
         };
-
-        event::emit(PostCreated {
-            id,
-            created_at: timestamp,
-            created_by: user,
-            data,
-            description,
-            is_deleted: false,
-            is_edited: false,
-            title,
-            updated_at: timestamp
-        });
 
         object::delete(uid);
 
