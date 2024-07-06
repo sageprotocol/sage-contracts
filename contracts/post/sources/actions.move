@@ -2,6 +2,7 @@ module sage_post::post_actions {
     use std::string::{String};
 
     use sui::clock::Clock;
+    use sui::event;
 
     use sage_channel::{
         channel_membership::{Self, ChannelMembershipRegistry},
@@ -24,6 +25,28 @@ module sage_post::post_actions {
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
+
+    public struct CommentCreated has copy, drop {
+        id: ID,
+        created_at: u64,
+        created_by: address,
+        data: String,
+        description: String,
+        parent_post_id: ID,
+        title: String,
+        updated_at: u64
+    }
+
+    public struct PostCreated has copy, drop {
+        id: ID,
+        channel_name: String,
+        created_at: u64,
+        created_by: address,
+        data: String,
+        description: String,
+        title: String,
+        updated_at: u64
+    }
 
     // --------------- Constructor ---------------
 
@@ -101,13 +124,15 @@ module sage_post::post_actions {
 
         assert!(is_member, EUserNotChannelMember);
 
+        let timestamp = clock.timestamp_ms();
+
         let (post, post_id) = create(
-            clock,
             post_comments_registry,
             post_likes_registry,
             data,
             description,
             title,
+            timestamp,
             ctx
         );
 
@@ -135,6 +160,17 @@ module sage_post::post_actions {
             post
         );
 
+        event::emit(PostCreated {
+            id: post_id,
+            channel_name,
+            created_at: timestamp,
+            created_by: user,
+            data,
+            description,
+            title,
+            updated_at: timestamp
+        });
+
         post_id
     }
 
@@ -150,13 +186,16 @@ module sage_post::post_actions {
     ): ID {
         let parent_id = post::get_id(parent_post);
 
+        let timestamp = clock.timestamp_ms();
+        let user = tx_context::sender(ctx);
+
         let (post, post_id) = create(
-            clock,
             post_comments_registry,
             post_likes_registry,
             data,
             description,
             title,
+            timestamp,
             ctx
         );
 
@@ -184,23 +223,32 @@ module sage_post::post_actions {
             post
         );
 
+        event::emit(CommentCreated {
+            id: post_id,
+            created_at: timestamp,
+            created_by: user,
+            data,
+            description,
+            parent_post_id: parent_id,
+            title,
+            updated_at: timestamp
+        });
+
         post_id
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
-        clock: &Clock,
         post_comments_registry: &mut PostCommentsRegistry,
         post_likes_registry: &mut PostLikesRegistry,
         data: String,
         description: String,
         title: String,
+        timestamp: u64,
         ctx: &mut TxContext
     ): (Post, ID) {
         let user = tx_context::sender(ctx);
-
-        let timestamp = clock.timestamp_ms();
 
         let (post, post_id) = post::create(
             user,
