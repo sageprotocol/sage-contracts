@@ -11,6 +11,7 @@ SageAdmin = { local = "../admin" }
 SageChannel = { local = "../channel" }
 SageImmutable = { local = "../immutable" }
 SagePost = { local = "../post" }
+SageUser = { local = "../user" }
 
 [addresses]
 # admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
@@ -19,6 +20,7 @@ sage_admin = "0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3
 sage_channel = "0xa4fb07b382fc4edbca371542d0e5e71a3afe75d45c493878a82e308ce36766e8"
 sage_immutable = "0xcb1235a19cc5129e9f6e9a1dd1ec21d141ad6ca3c0b9a281dc76952cb654b221"
 sage_post = "0x87af75ece4172f140495523fb22189c8f476e3b4a60bd467132b44c6bcffb3a4"
+# sage_user = ""
 
 # sage = "0xcc4d82b30ec0e96a565905c57878b084e8867189408955650d9949b9c9dbc433"
 
@@ -26,5 +28,6 @@ sage_post = "0x87af75ece4172f140495523fb22189c8f476e3b4a60bd467132b44c6bcffb3a4"
 # sage_channel = "0x0"
 # sage_immutable = "0x0"
 # sage_post = "0x0"
+sage_user = "0x0"
 
 sage = "0x0"
