@@ -1,5 +1,5 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/XXXX) - XXXX
+[Package](https://testnet.suivision.xyz/package/0x4dc95b5c1f1c797e3bb96b7a71eeafbf9ea9d21ca07e3fd5fb1505848f83610c) - 0x4dc95b5c1f1c797e3bb96b7a71eeafbf9ea9d21ca07e3fd5fb1505848f83610c
 
-[UpgradeCap](https://testnet.suivision.xyz/object/YYYY) - YYYY
+[UpgradeCap](https://testnet.suivision.xyz/object/0x33f2a9464a03e4a1c6a407ccf05b427b4bf646c135c8f32d2c68b6f1478823ff) - 0x33f2a9464a03e4a1c6a407ccf05b427b4bf646c135c8f32d2c68b6f1478823ff
