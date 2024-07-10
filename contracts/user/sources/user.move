@@ -105,6 +105,25 @@ module sage_user::user {
     // --------------- Test Functions ---------------
 
     #[test_only]
+    public fun create_for_testing(
+        address: address,
+        avatar_hash: String,
+        banner_hash: String,
+        created_at: u64,
+        description: String,
+        name: String
+    ): User {
+        create(
+            address,
+            avatar_hash,
+            banner_hash,
+            created_at,
+            description,
+            name
+        )
+    }
+
+    #[test_only]
     public fun is_valid_description_for_testing(
         name: &String
     ): bool {
