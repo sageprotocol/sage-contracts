@@ -18,7 +18,8 @@ module sage::test_sage_actions {
     use sage_post::{
         channel_posts::{Self},
         post_comments::{Self},
-        post_likes::{Self}
+        post_likes::{Self},
+        user_posts::{Self}
     };
 
     // --------------- Constants ---------------
@@ -28,9 +29,10 @@ module sage::test_sage_actions {
     // --------------- Errors ---------------
 
     const EChannelNotCreated: u64 = 0;
-    const EChannelPostNotCreated: u64 = 3;
-    const EPostCommentNotCreated: u64 = 4;
-    const EPostLikeNotCreated: u64 = 5;
+    const EChannelPostNotCreated: u64 = 1;
+    const EPostCommentNotCreated: u64 = 2;
+    const EPostLikeNotCreated: u64 = 3;
+    const EUserPostNotCreated: u64 = 4;
 
     // --------------- Test Functions ---------------
 
@@ -43,7 +45,9 @@ module sage::test_sage_actions {
             sage_channel_posts,
             sage_post_comments,
             sage_post_likes,
-            sage_user_post_likes
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -90,6 +94,8 @@ module sage::test_sage_actions {
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
+            actions::destroy_user_posts_for_testing(sage_user_posts);
+            actions::destroy_users_for_testing(sage_users);
 
             ts::return_shared(clock);
         };
@@ -114,7 +120,9 @@ module sage::test_sage_actions {
             mut sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
-            sage_user_post_likes
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -180,6 +188,8 @@ module sage::test_sage_actions {
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
+            actions::destroy_user_posts_for_testing(sage_user_posts);
+            actions::destroy_users_for_testing(sage_users);
 
             ts::return_shared(clock);
         };
@@ -196,7 +206,9 @@ module sage::test_sage_actions {
             mut sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
-            sage_user_post_likes
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -287,6 +299,91 @@ module sage::test_sage_actions {
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
+            actions::destroy_user_posts_for_testing(sage_user_posts);
+            actions::destroy_users_for_testing(sage_users);
+
+            ts::return_shared(clock);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_post_from_user() {
+        let (
+            mut scenario_val,
+            sage_channel,
+            sage_channel_membership,
+            sage_channel_posts,
+            mut sage_post_comments,
+            mut sage_post_likes,
+            sage_user_post_likes,
+            mut sage_user_posts,
+            mut sage_users
+        ) = test_common::setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let username = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let user = actions::create_user(
+                &clock,
+                &mut sage_users,
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                utf8(b"description"),
+                username,
+                ts::ctx(scenario)
+            );
+
+            let post_id = actions::post_from_user(
+                &clock,
+                &mut sage_post_comments,
+                &mut sage_post_likes,
+                &mut sage_user_posts,
+                &mut sage_users,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
+
+            let user_posts_registry = actions::borrow_user_posts_registry_for_testing(
+                &mut sage_user_posts
+            );
+
+            let user_posts = user_posts::get_user_posts(
+                user_posts_registry,
+                user
+            );
+
+            let has_post = user_posts::has_post(
+                user_posts,
+                post_id
+            );
+
+            assert!(has_post, EUserPostNotCreated);
+
+            actions::destroy_channel_for_testing(sage_channel);
+            actions::destroy_channel_membership_for_testing(sage_channel_membership);
+            actions::destroy_channel_posts_for_testing(sage_channel_posts);
+            actions::destroy_post_comments_for_testing(sage_post_comments);
+            actions::destroy_post_likes_for_testing(sage_post_likes);
+            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
+            actions::destroy_user_posts_for_testing(sage_user_posts);
+            actions::destroy_users_for_testing(sage_users);
 
             ts::return_shared(clock);
         };
@@ -303,7 +400,9 @@ module sage::test_sage_actions {
             mut sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
-            mut sage_user_post_likes
+            mut sage_user_post_likes,
+            sage_user_posts,
+            sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -401,6 +500,8 @@ module sage::test_sage_actions {
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
+            actions::destroy_user_posts_for_testing(sage_user_posts);
+            actions::destroy_users_for_testing(sage_users);
 
             ts::return_shared(clock);
         };

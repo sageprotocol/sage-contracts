@@ -19,7 +19,13 @@ module sage_post::test_actions {
         channel_posts::{Self, ChannelPostsRegistry},
         post_actions::{Self, EUserNotChannelMember},
         post_comments::{Self, PostCommentsRegistry},
-        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}
+        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
+        user_posts::{Self, UserPostsRegistry}
+    };
+
+    use sage_user::{
+        user_actions::{Self},
+        user_registry::{Self, UserRegistry}
     };
 
     // --------------- Constants ---------------
@@ -31,11 +37,12 @@ module sage_post::test_actions {
     const EChannelPostFailure: u64 = 0;
     const EPostCommentFailure: u64 = 1;
     const EPostNotLiked: u64 = 2;
+    const EUserPostFailure: u64 = 3;
 
     // --------------- Test Functions ---------------
 
     #[test_only]
-    fun setup_for_testing(): (Scenario, ChannelMembershipRegistry, ChannelPostsRegistry, ChannelRegistry, PostCommentsRegistry, PostLikesRegistry, UserPostLikesRegistry) {
+    fun setup_for_testing(): (Scenario, ChannelMembershipRegistry, ChannelPostsRegistry, ChannelRegistry, PostCommentsRegistry, PostLikesRegistry, UserPostLikesRegistry, UserPostsRegistry, UserRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
@@ -49,7 +56,9 @@ module sage_post::test_actions {
             channel_registry,
             post_comments_registry,
             post_likes_registry,
-            user_post_likes_registry
+            user_post_likes_registry,
+            user_posts_registry,
+            user_registry
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
@@ -77,13 +86,21 @@ module sage_post::test_actions {
                 &admin_cap,
                 ts::ctx(scenario)
             );
+            let user_posts_registry = user_posts::create_user_posts_registry(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+            let user_registry = user_registry::create_user_registry(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
 
             ts::return_to_sender(scenario, admin_cap);
 
-            (channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry, user_post_likes_registry)
+            (channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry, user_post_likes_registry, user_posts_registry, user_registry)
         };
 
-        (scenario_val, channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry, user_post_likes_registry)
+        (scenario_val, channel_membership_registry, channel_posts_registry, channel_registry, post_comments_registry, post_likes_registry, user_post_likes_registry, user_posts_registry, user_registry)
     }
 
     #[test]
@@ -95,7 +112,9 @@ module sage_post::test_actions {
             channel_registry_val,
             post_comments_registry_val,
             post_likes_registry_val,
-            user_post_likes_registry_val
+            user_post_likes_registry_val,
+            user_posts_registry_val,
+            user_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -107,6 +126,8 @@ module sage_post::test_actions {
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+            user_posts::destroy_for_testing(user_posts_registry_val);
+            user_registry::destroy_for_testing(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -122,7 +143,9 @@ module sage_post::test_actions {
             mut channel_registry_val,
             mut post_comments_registry_val,
             mut post_likes_registry_val,
-            user_post_likes_registry_val
+            user_post_likes_registry_val,
+            user_posts_registry_val,
+            user_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -204,6 +227,8 @@ module sage_post::test_actions {
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+            user_posts::destroy_for_testing(user_posts_registry_val);
+            user_registry::destroy_for_testing(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -219,7 +244,9 @@ module sage_post::test_actions {
             mut channel_registry_val,
             mut post_comments_registry_val,
             mut post_likes_registry_val,
-            user_post_likes_registry_val
+            user_post_likes_registry_val,
+            user_posts_registry_val,
+            user_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -295,6 +322,8 @@ module sage_post::test_actions {
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+            user_posts::destroy_for_testing(user_posts_registry_val);
+            user_registry::destroy_for_testing(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -309,7 +338,9 @@ module sage_post::test_actions {
             channel_registry_val,
             mut post_comments_registry_val,
             mut post_likes_registry_val,
-            user_post_likes_registry_val
+            user_post_likes_registry_val,
+            user_posts_registry_val,
+            user_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -379,6 +410,109 @@ module sage_post::test_actions {
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+            user_posts::destroy_for_testing(user_posts_registry_val);
+            user_registry::destroy_for_testing(user_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_post_from_user() {
+        let (
+            mut scenario_val,
+            channel_membership_registry_val,
+            channel_posts_registry_val,
+            channel_registry_val,
+            mut post_comments_registry_val,
+            mut post_likes_registry_val,
+            user_post_likes_registry_val,
+            mut user_posts_registry_val,
+            mut user_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let post_comments_registry = &mut post_comments_registry_val;
+        let post_likes_registry = &mut post_likes_registry_val;
+        let user_posts_registry = &mut user_posts_registry_val;
+        let user_registry = &mut user_registry_val;
+
+        let username = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let clock = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                username,
+                ts::ctx(scenario)
+            );
+
+            clock
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let post_id = post_actions::post_from_user(
+                &clock,
+                post_comments_registry,
+                post_likes_registry,
+                user_posts_registry,
+                user_registry,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
+
+            let username = user_registry::get_username(
+                user_registry,
+                ADMIN
+            );
+
+            let user = user_registry::get_user(
+                user_registry,
+                username
+            );
+
+            let user_posts = user_posts::get_user_posts(
+                user_posts_registry,
+                user
+            );
+
+            let has_post = user_posts::has_post(
+                user_posts,
+                post_id
+            );
+
+            assert!(has_post, EUserPostFailure);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(clock);
+
+            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            channel_posts::destroy_for_testing(channel_posts_registry_val);
+            channel_registry::destroy_for_testing(channel_registry_val);
+            post_comments::destroy_for_testing(post_comments_registry_val);
+            post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+            user_posts::destroy_for_testing(user_posts_registry_val);
+            user_registry::destroy_for_testing(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -393,7 +527,9 @@ module sage_post::test_actions {
             channel_registry_val,
             mut post_comments_registry_val,
             mut post_likes_registry_val,
-            mut user_post_likes_registry_val
+            mut user_post_likes_registry_val,
+            user_posts_registry_val,
+            user_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -455,6 +591,8 @@ module sage_post::test_actions {
             channel_registry::destroy_for_testing(channel_registry_val);
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
+            user_posts::destroy_for_testing(user_posts_registry_val);
+            user_registry::destroy_for_testing(user_registry_val);
         };
 
         ts::end(scenario_val);

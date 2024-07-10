@@ -13,7 +13,12 @@ module sage_post::post_actions {
         channel_posts::{Self, ChannelPostsRegistry},
         post::{Self, Post},
         post_comments::{Self, PostCommentsRegistry},
-        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry}
+        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
+        user_posts::{Self, UserPostsRegistry}
+    };
+
+    use sage_user::{
+        user_registry::{Self, UserRegistry}
     };
 
     // --------------- Constants ---------------
@@ -26,6 +31,17 @@ module sage_post::post_actions {
 
     // --------------- Events ---------------
 
+    public struct ChannelPostCreated has copy, drop {
+        id: ID,
+        channel_name: String,
+        created_at: u64,
+        created_by: address,
+        data: String,
+        description: String,
+        title: String,
+        updated_at: u64
+    }
+
     public struct CommentCreated has copy, drop {
         id: ID,
         created_at: u64,
@@ -37,9 +53,8 @@ module sage_post::post_actions {
         updated_at: u64
     }
 
-    public struct PostCreated has copy, drop {
+    public struct UserPostCreated has copy, drop {
         id: ID,
-        channel_name: String,
         created_at: u64,
         created_by: address,
         data: String,
@@ -160,7 +175,7 @@ module sage_post::post_actions {
             post
         );
 
-        event::emit(PostCreated {
+        event::emit(ChannelPostCreated {
             id: post_id,
             channel_name,
             created_at: timestamp,
@@ -230,6 +245,78 @@ module sage_post::post_actions {
             data,
             description,
             parent_post_id: parent_id,
+            title,
+            updated_at: timestamp
+        });
+
+        post_id
+    }
+
+    public fun post_from_user(
+        clock: &Clock,
+        post_comments_registry: &mut PostCommentsRegistry,
+        post_likes_registry: &mut PostLikesRegistry,
+        user_posts_registry: &mut UserPostsRegistry,
+        user_registry: &mut UserRegistry,
+        data: String,
+        description: String,
+        title: String,
+        ctx: &mut TxContext
+    ): ID {
+        let address = tx_context::sender(ctx);
+
+        let username = user_registry::get_username(
+            user_registry,
+            address
+        );
+
+        let user = user_registry::get_user(
+            user_registry,
+            username
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        let (post, post_id) = create(
+            post_comments_registry,
+            post_likes_registry,
+            data,
+            description,
+            title,
+            timestamp,
+            ctx
+        );
+
+        let has_record = user_posts::has_record(
+            user_posts_registry,
+            user
+        );
+
+        if (!has_record) {
+            user_posts::create(
+                user_posts_registry,
+                user,
+                ctx
+            );
+        };
+
+        let user_posts = user_posts::get_user_posts(
+            user_posts_registry,
+            user
+        );
+
+        user_posts::add(
+            user_posts,
+            post_id,
+            post
+        );
+
+        event::emit(UserPostCreated {
+            id: post_id,
+            created_at: timestamp,
+            created_by: address,
+            data,
+            description,
             title,
             updated_at: timestamp
         });
