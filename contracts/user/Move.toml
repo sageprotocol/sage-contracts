@@ -1,0 +1,18 @@
+[package]
+name = "SageUser"
+edition = "2024.beta"
+version = "0.0.1"
+# published-at = "0xFFF"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+
+SageAdmin = { local = "../admin" }
+
+[addresses]
+admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
+
+sage_admin = "0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3"
+# sage_user = "0xFFF"
+
+sage_user = "0x0"
