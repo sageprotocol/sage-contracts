@@ -45,6 +45,7 @@ module sage::test_sage_actions {
             sage_channel_posts,
             sage_post_comments,
             sage_post_likes,
+            sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
             sage_users
@@ -93,6 +94,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
+            actions::destroy_user_membership_for_testing(sage_user_membership);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
             actions::destroy_user_posts_for_testing(sage_user_posts);
             actions::destroy_users_for_testing(sage_users);
@@ -107,9 +109,15 @@ module sage::test_sage_actions {
     //
     // #[test]
     // fun test_join_channel() {}
-
+    //
     // #[test]
     // fun test_leave_channel() {}
+    //
+    // #[test]
+    // fun test_join_user() {}
+    //
+    // #[test]
+    // fun test_leave_user() {}
 
     #[test]
     fun test_post_from_channel() {
@@ -120,6 +128,7 @@ module sage::test_sage_actions {
             mut sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
+            sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
             sage_users
@@ -187,6 +196,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
+            actions::destroy_user_membership_for_testing(sage_user_membership);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
             actions::destroy_user_posts_for_testing(sage_user_posts);
             actions::destroy_users_for_testing(sage_users);
@@ -206,6 +216,7 @@ module sage::test_sage_actions {
             mut sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
+            sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
             sage_users
@@ -298,6 +309,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
+            actions::destroy_user_membership_for_testing(sage_user_membership);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
             actions::destroy_user_posts_for_testing(sage_user_posts);
             actions::destroy_users_for_testing(sage_users);
@@ -317,6 +329,7 @@ module sage::test_sage_actions {
             sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
+            sage_user_membership,
             sage_user_post_likes,
             mut sage_user_posts,
             mut sage_users
@@ -381,6 +394,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
+            actions::destroy_user_membership_for_testing(sage_user_membership);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
             actions::destroy_user_posts_for_testing(sage_user_posts);
             actions::destroy_users_for_testing(sage_users);
@@ -400,6 +414,7 @@ module sage::test_sage_actions {
             mut sage_channel_posts,
             mut sage_post_comments,
             mut sage_post_likes,
+            sage_user_membership,
             mut sage_user_post_likes,
             sage_user_posts,
             sage_users
@@ -499,6 +514,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
+            actions::destroy_user_membership_for_testing(sage_user_membership);
             actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
             actions::destroy_user_posts_for_testing(sage_user_posts);
             actions::destroy_users_for_testing(sage_users);
