@@ -6,12 +6,15 @@ module sage_user::user_actions {
 
     use sage_user::{
         user::{Self, User},
+        user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
+
+    const ENoSelfJoin: u64 = 0;
 
     // --------------- Name Tag ---------------
 
@@ -68,6 +71,66 @@ module sage_user::user_actions {
         });
 
         user
+    }
+
+    public fun join(
+        user_registry: &mut UserRegistry,
+        user_membership_registry: &mut UserMembershipRegistry,
+        address: address,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        assert!(self != address, ENoSelfJoin);
+
+        let username = user_registry::get_username(
+            user_registry,
+            address
+        );
+
+        let user = user_registry::get_user(
+            user_registry,
+            username
+        );
+
+        let user_membership = user_membership::borrow_membership_mut(
+            user_membership_registry,
+            user
+        );
+
+        user_membership::join(
+            user_membership,
+            address,
+            ctx
+        );
+    }
+
+    public fun leave(
+        user_registry: &mut UserRegistry,
+        user_membership_registry: &mut UserMembershipRegistry,
+        address: address,
+        ctx: &mut TxContext
+    ) {
+        let username = user_registry::get_username(
+            user_registry,
+            address
+        );
+
+        let user = user_registry::get_user(
+            user_registry,
+            username
+        );
+
+        let user_membership = user_membership::borrow_membership_mut(
+            user_membership_registry,
+            user
+        );
+
+        user_membership::leave(
+            user_membership,
+            address,
+            ctx
+        );
     }
 
     // --------------- Friend Functions ---------------
