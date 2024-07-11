@@ -298,7 +298,7 @@ module sage::actions {
 
     public fun join_user(
         sage_user: &mut SageUsers,
-        sage_user_membership: &mut SageChannelMembership,
+        sage_user_membership: &mut SageUserMembership,
         followed_user: address,
         ctx: &mut TxContext
     ) {
