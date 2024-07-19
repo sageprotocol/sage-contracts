@@ -161,6 +161,38 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
+            // create a post
+            let post_id = actions::post_from_channel(
+                &clock,
+                &mut sage_channel,
+                &mut sage_channel_membership,
+                &mut sage_channel_posts,
+                &mut sage_post_comments,
+                &mut sage_post_likes,
+                channel_name,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                ts::ctx(scenario)
+            );
+
+            let channel_posts_registry = actions::borrow_channel_posts_registry_for_testing(
+                &mut sage_channel_posts
+            );
+
+            let channel_posts = channel_posts::get_channel_posts(
+                channel_posts_registry,
+                channel
+            );
+
+            let has_post = channel_posts::has_post(
+                channel_posts,
+                post_id
+            );
+
+            assert!(has_post, EChannelPostNotCreated);
+
+            // create another post
             let post_id = actions::post_from_channel(
                 &clock,
                 &mut sage_channel,
