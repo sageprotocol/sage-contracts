@@ -6,7 +6,7 @@ module sage::actions {
     use sui::package::{claim_and_keep};
 
     use sage_admin::{
-        admin::{AdminCap}
+        admin::{AdminCap, NotificationCap}
     };
 
     use sage_channel::{
@@ -14,6 +14,12 @@ module sage::actions {
         channel_actions::{Self},
         channel_membership::{Self, ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry}
+    };
+
+    use sage_notification::{
+        notification::{Notification},
+        notification_actions::{Self},
+        notification_registry::{Self, NotificationRegistry}
     };
 
     use sage_post::{
@@ -47,6 +53,10 @@ module sage::actions {
     }
 
     public struct SageChannelPosts has key {
+        id: UID
+    }
+
+    public struct SageNotification has key {
         id: UID
     }
 
@@ -97,6 +107,9 @@ module sage::actions {
         let sage_channel_posts = SageChannelPosts {
             id: object::new(ctx)
         };
+        let sage_notification = SageNotification {
+            id: object::new(ctx)
+        };
         let sage_post_comments = SagePostComments {
             id: object::new(ctx)
         };
@@ -119,6 +132,7 @@ module sage::actions {
         transfer::share_object(sage_channel);
         transfer::share_object(sage_channel_membership);
         transfer::share_object(sage_channel_posts);
+        transfer::share_object(sage_notification);
         transfer::share_object(sage_post_comments);
         transfer::share_object(sage_post_likes);
         transfer::share_object(sage_user_membership);
@@ -134,6 +148,7 @@ module sage::actions {
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
         sage_channel_posts: &mut SageChannelPosts,
+        sage_notification: &mut SageNotification,
         sage_post_comments: &mut SagePostComments,
         sage_post_likes: &mut SagePostLikes,
         sage_user_membership: &mut SageUserMembership,
@@ -153,6 +168,11 @@ module sage::actions {
         );
 
         let channel_posts_registry = channel_posts::create_channel_posts_registry(
+            admin_cap,
+            ctx
+        );
+
+        let notification_registry = notification_registry::create_notification_registry(
             admin_cap,
             ctx
         );
@@ -190,6 +210,7 @@ module sage::actions {
         field::add(&mut sage_channel.id, RegistryKey<ChannelRegistry> {}, channel_registry);
         field::add(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {}, channel_membership_registry);
         field::add(&mut sage_channel_posts.id, RegistryKey<ChannelPostsRegistry> {}, channel_posts_registry);
+        field::add(&mut sage_notification.id, RegistryKey<NotificationRegistry> {}, notification_registry);
         field::add(&mut sage_post_comments.id, RegistryKey<PostCommentsRegistry> {}, post_comments_registry);
         field::add(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {}, post_likes_registry);
         field::add(&mut sage_user_membership.id, RegistryKey<UserMembershipRegistry> {}, user_membership_registry);
@@ -220,6 +241,26 @@ module sage::actions {
             banner_hash,
             description,
             ctx
+        )
+    }
+
+    public fun create_notification(
+        notification_cap: &NotificationCap,
+        clock: &Clock,
+        sage_notification: &mut SageNotification,
+        user: address,
+        message: String,
+        reward_amount: u64
+    ): Notification {
+        let notification_registry = field::borrow_mut(&mut sage_notification.id, RegistryKey<NotificationRegistry> {});
+
+        notification_actions::create(
+            notification_cap,
+            clock,
+            notification_registry,
+            user,
+            message,
+            reward_amount
         )
     }
 
@@ -427,11 +468,23 @@ module sage::actions {
     #[test_only]
     public fun init_for_testing(
         ctx: &mut TxContext
-    ): (SageChannel, SageChannelMembership, SageChannelPosts, SagePostComments, SagePostLikes, SageUserMembership, SageUserPostLikes, SageUserPosts, SageUsers) {
+    ): (
+        SageChannel,
+        SageChannelMembership,
+        SageChannelPosts,
+        SageNotification,
+        SagePostComments,
+        SagePostLikes,
+        SageUserMembership,
+        SageUserPostLikes,
+        SageUserPosts,
+        SageUsers
+    ) {
         (
             SageChannel { id: object::new(ctx) },
             SageChannelMembership { id: object::new(ctx) },
             SageChannelPosts { id: object::new(ctx) },
+            SageNotification { id: object::new(ctx) },
             SagePostComments { id: object::new(ctx) },
             SagePostLikes { id: object::new(ctx) },
             SageUserMembership { id: object::new(ctx) },
@@ -475,6 +528,18 @@ module sage::actions {
         );
 
         channel_posts_registry
+    }
+
+    #[test_only]
+    public fun borrow_notification_registry_for_testing(
+        sage_notification: &mut SageNotification
+    ): &mut NotificationRegistry {
+        let notification_registry = field::borrow_mut<RegistryKey<NotificationRegistry>, NotificationRegistry>(
+            &mut sage_notification.id,
+            RegistryKey<NotificationRegistry> {}
+        );
+
+        notification_registry
     }
 
     #[test_only]
@@ -578,6 +643,17 @@ module sage::actions {
         let SageChannelPosts {
             id
         } = sage_channel_posts;
+
+        object::delete(id);
+    }
+
+    #[test_only]
+    public fun destroy_notification_for_testing(
+        sage_notification: SageNotification
+    ) {
+        let SageNotification {
+            id
+        } = sage_notification;
 
         object::delete(id);
     }
