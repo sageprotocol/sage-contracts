@@ -1,5 +1,5 @@
 module sage_post::post {
-    use std::string::{String};
+    use std::string::{String, utf8};
 
     // --------------- Constants ---------------
 
@@ -8,7 +8,7 @@ module sage_post::post {
     // --------------- Name Tag ---------------
 
     public struct Post has copy, drop, store {
-        id: ID,
+        key: String,
         created_at: u64,
         created_by: address,
         data: String,
@@ -25,11 +25,11 @@ module sage_post::post {
 
     // --------------- Public Functions ---------------
 
-    public fun get_id(
+    public fun get_key(
         post: Post
-    ): ID {
+    ): String {
         let Post {
-            id,
+            key,
             created_at: _,
             created_by: _,
             data: _,
@@ -40,7 +40,7 @@ module sage_post::post {
             updated_at: _
         } = post;
 
-        id
+        key
     }
 
     // --------------- Friend Functions ---------------
@@ -52,12 +52,14 @@ module sage_post::post {
         title: String,
         timestamp: u64,
         ctx: &mut TxContext
-    ): (Post, ID) {
+    ): (Post, String) {
         let uid = object::new(ctx);
         let id = uid.to_inner();
 
+        let key = id_to_key(id);
+
         let post = Post {
-            id,
+            key,
             created_at: timestamp,
             created_by: user,
             data,
@@ -70,10 +72,38 @@ module sage_post::post {
 
         object::delete(uid);
 
-        (post, id)
+        (post, key)
     }
 
     // --------------- Internal Functions ---------------
+
+    fun id_to_key(
+        id: ID
+    ): String {
+        let bytes = id.to_bytes();
+
+        let len = bytes.length();
+        let mut index = 0;
+
+        let hex_chars = b"0123456789abcdef";
+        let mut hex_bytes = vector::empty<u8>();
+
+        while (index < len) {
+            let byte = &bytes[index];
+
+            let high_nibble = (*byte >> 4) & 0x0F;
+            let low_nibble = *byte & 0x0F;
+
+            vector::push_back(&mut hex_bytes, hex_chars[high_nibble as u64]);
+            vector::push_back(&mut hex_bytes, hex_chars[low_nibble as u64]);
+
+            index = index + 1;
+        };
+
+        let hex_string = utf8(hex_bytes);
+
+        hex_string
+    }
 
     // --------------- Test Functions ---------------
 }

@@ -383,7 +383,7 @@ module sage::actions {
         description: String,
         title: String,
         ctx: &mut TxContext
-    ): ID {
+    ): String {
         let channel_registry = field::borrow_mut(&mut sage_channel.id, RegistryKey<ChannelRegistry> {});
         let channel_membership_registry = field::borrow_mut(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {});
         let channel_posts_registry = field::borrow_mut(&mut sage_channel_posts.id, RegistryKey<ChannelPostsRegistry> {});
@@ -414,7 +414,7 @@ module sage::actions {
         description: String,
         title: String,
         ctx: &mut TxContext
-    ): ID {
+    ): String {
         let post_comments_registry = field::borrow_mut(&mut sage_post_comments.id, RegistryKey<PostCommentsRegistry> {});
         let post_likes_registry = field::borrow_mut(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {});
 
@@ -440,7 +440,7 @@ module sage::actions {
         description: String,
         title: String,
         ctx: &mut TxContext
-    ): ID {
+    ): String {
         let post_comments_registry = field::borrow_mut(&mut sage_post_comments.id, RegistryKey<PostCommentsRegistry> {});
         let post_likes_registry = field::borrow_mut(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {});
         let user_posts_registry = field::borrow_mut(&mut sage_user_posts.id, RegistryKey<UserPostsRegistry> {});

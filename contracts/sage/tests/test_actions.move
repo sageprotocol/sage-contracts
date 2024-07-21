@@ -266,7 +266,7 @@ module sage::test_sage_actions {
             );
 
             // create a post
-            let post_id = actions::post_from_channel(
+            let post_key = actions::post_from_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
@@ -291,13 +291,13 @@ module sage::test_sage_actions {
 
             let has_post = channel_posts::has_post(
                 channel_posts,
-                post_id
+                post_key
             );
 
             assert!(has_post, EChannelPostNotCreated);
 
             // create another post
-            let post_id = actions::post_from_channel(
+            let post_key = actions::post_from_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
@@ -322,7 +322,7 @@ module sage::test_sage_actions {
 
             let has_post = channel_posts::has_post(
                 channel_posts,
-                post_id
+                post_key
             );
 
             assert!(has_post, EChannelPostNotCreated);
@@ -387,7 +387,7 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
-            let parent_post_id = actions::post_from_channel(
+            let parent_post_key = actions::post_from_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
@@ -412,10 +412,10 @@ module sage::test_sage_actions {
 
             let parent_post = channel_posts::borrow_post(
                 channel_posts,
-                parent_post_id
+                parent_post_key
             );
 
-            let post_id = actions::post_from_post(
+            let post_key = actions::post_from_post(
                 &clock,
                 &mut sage_post_comments,
                 &mut sage_post_likes,
@@ -432,12 +432,12 @@ module sage::test_sage_actions {
 
             let post_comments = post_comments::get_post_comments(
                 post_comments_registry,
-                parent_post_id
+                parent_post_key
             );
 
             let has_post = post_comments::has_post(
                 post_comments,
-                post_id
+                post_key
             );
 
             assert!(has_post, EPostCommentNotCreated);
@@ -501,7 +501,7 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
-            let post_id = actions::post_from_user(
+            let post_key = actions::post_from_user(
                 &clock,
                 &mut sage_post_comments,
                 &mut sage_post_likes,
@@ -524,7 +524,7 @@ module sage::test_sage_actions {
 
             let has_post = user_posts::has_post(
                 user_posts,
-                post_id
+                post_key
             );
 
             assert!(has_post, EUserPostNotCreated);
@@ -589,7 +589,7 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
-            let post_id = actions::post_from_channel(
+            let post_key = actions::post_from_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
@@ -613,7 +613,7 @@ module sage::test_sage_actions {
 
             let post = channel_posts::borrow_post(
                 channel_posts,
-                post_id
+                post_key
             );
 
             actions::like_post(
@@ -632,7 +632,7 @@ module sage::test_sage_actions {
 
             let post_likes = post_likes::get_post_likes(
                 post_likes_registry,
-                post_id
+                post_key
             );
             let user_post_likes = post_likes::get_user_post_likes(
                 user_post_likes_registry,
@@ -645,7 +645,7 @@ module sage::test_sage_actions {
             );
             let has_user_like_record = post_likes::has_user_likes(
                 user_post_likes,
-                post_id
+                post_key
             );
 
             assert!(has_post_like_record, EPostLikeNotCreated);
