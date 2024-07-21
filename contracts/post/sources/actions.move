@@ -76,6 +76,8 @@ module sage_post::post_actions {
     ) {
         let user = tx_context::sender(ctx);
 
+        // TODO: check if post exists
+
         let post_likes = post_likes::get_post_likes(
             post_likes_registry,
             post_key
@@ -270,6 +272,8 @@ module sage_post::post_actions {
         ctx: &mut TxContext
     ): String {
         let address = tx_context::sender(ctx);
+
+        // TODO: check if user exists
 
         let username = user_registry::get_username(
             user_registry,
