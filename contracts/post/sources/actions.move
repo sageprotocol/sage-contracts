@@ -25,7 +25,8 @@ module sage_post::post_actions {
 
     // --------------- Errors ---------------
 
-    const EUserNotChannelMember: u64 = 0;
+    const EChannelDoesNotExist: u64 = 0;
+    const EUserNotChannelMember: u64 = 1;
 
     // --------------- Name Tag ---------------
 
@@ -70,12 +71,10 @@ module sage_post::post_actions {
     public fun like(
         post_likes_registry: &mut PostLikesRegistry,
         user_post_likes_registry: &mut UserPostLikesRegistry,
-        post: Post,
+        post_key: String,
         ctx: &mut TxContext
     ) {
         let user = tx_context::sender(ctx);
-
-        let post_key = post::get_key(post);
 
         let post_likes = post_likes::get_post_likes(
             post_likes_registry,
@@ -120,7 +119,12 @@ module sage_post::post_actions {
         title: String,
         ctx: &mut TxContext
     ): String {
-        let user = tx_context::sender(ctx);
+        let has_record = channel_registry::has_record(
+            channel_registry,
+            channel_name
+        );
+
+        assert!(has_record, EChannelDoesNotExist);
 
         let channel = channel_registry::get_channel(
             channel_registry,
@@ -131,6 +135,8 @@ module sage_post::post_actions {
             channel_membership_registry,
             channel
         );
+
+        let user = tx_context::sender(ctx);
 
         let is_member = channel_membership::is_member(
             channel_membership,
@@ -193,16 +199,16 @@ module sage_post::post_actions {
         clock: &Clock,
         post_comments_registry: &mut PostCommentsRegistry,
         post_likes_registry: &mut PostLikesRegistry,
-        parent_post: Post,
+        parent_key: String,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): String {
-        let parent_key = post::get_key(parent_post);
-
         let timestamp = clock.timestamp_ms();
         let user = tx_context::sender(ctx);
+
+        // TODO: check if parent post exists
 
         let (post, post_key) = create(
             post_comments_registry,

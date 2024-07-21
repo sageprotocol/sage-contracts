@@ -24,7 +24,6 @@ module sage::actions {
 
     use sage_post::{
         channel_posts::{Self, ChannelPostsRegistry},
-        post::{Post},
         post_actions::{Self},
         post_comments::{Self, PostCommentsRegistry},
         post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
@@ -289,7 +288,7 @@ module sage::actions {
     public fun like_post(
         sage_post_likes: &mut SagePostLikes,
         sage_user_post_likes: &mut SageUserPostLikes,
-        post: Post,
+        post_key: String,
         ctx: &mut TxContext
     ) {
         let post_likes_registry = field::borrow_mut(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {});
@@ -298,7 +297,7 @@ module sage::actions {
         post_actions::like(
             post_likes_registry,
             user_post_likes_registry,
-            post,
+            post_key,
             ctx
         );
     }
@@ -409,7 +408,7 @@ module sage::actions {
         clock: &Clock,
         sage_post_comments: &mut SagePostComments,
         sage_post_likes: &mut SagePostLikes,
-        parent_post: Post,
+        parent_key: String,
         data: String,
         description: String,
         title: String,
@@ -422,7 +421,7 @@ module sage::actions {
             clock,
             post_comments_registry,
             post_likes_registry,
-            parent_post,
+            parent_key,
             data,
             description,
             title,

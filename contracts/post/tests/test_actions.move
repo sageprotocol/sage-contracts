@@ -186,7 +186,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let post_id = post_actions::post_from_channel(
+            let post_key = post_actions::post_from_channel(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -212,7 +212,7 @@ module sage_post::test_post_actions {
 
             let has_post = channel_posts::has_post(
                 channel_posts,
-                post_id
+                post_key
             );
 
             assert!(has_post, EChannelPostFailure);
@@ -367,7 +367,7 @@ module sage_post::test_post_actions {
             let post_comments_registry = &mut post_comments_registry_val;
             let post_likes_registry = &mut post_likes_registry_val;
 
-            let (parent_post, parent_post_id) = post_actions::create(
+            let (_parent_post, parent_post_key) = post_actions::create(
                 post_comments_registry,
                 post_likes_registry,
                 utf8(b"data"),
@@ -377,11 +377,11 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let post_id = post_actions::post_from_post(
+            let post_key = post_actions::post_from_post(
                 &clock,
                 post_comments_registry,
                 post_likes_registry,
-                parent_post,
+                parent_post_key,
                 utf8(b"data"),
                 utf8(b"description"),
                 utf8(b"title"),
@@ -390,12 +390,12 @@ module sage_post::test_post_actions {
 
             let post_comments = post_comments::get_post_comments(
                 post_comments_registry,
-                parent_post_id
+                parent_post_key
             );
 
             let has_post = post_comments::has_post(
                 post_comments,
-                post_id
+                post_key
             );
 
             assert!(has_post, EPostCommentFailure);
@@ -467,7 +467,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let post_id = post_actions::post_from_user(
+            let post_key = post_actions::post_from_user(
                 &clock,
                 post_comments_registry,
                 post_likes_registry,
@@ -496,7 +496,7 @@ module sage_post::test_post_actions {
 
             let has_post = user_posts::has_post(
                 user_posts,
-                post_id
+                post_key
             );
 
             assert!(has_post, EUserPostFailure);
@@ -542,7 +542,7 @@ module sage_post::test_post_actions {
             let post_likes_registry = &mut post_likes_registry_val;
             let user_post_likes_registry = &mut user_post_likes_registry_val;
 
-            let (post, post_id) = post_actions::create(
+            let (_post, post_key) = post_actions::create(
                 post_comments_registry,
                 post_likes_registry,
                 utf8(b"data"),
@@ -555,13 +555,13 @@ module sage_post::test_post_actions {
             post_actions::like(
                 post_likes_registry,
                 user_post_likes_registry,
-                post,
+                post_key,
                 ts::ctx(scenario)
             );
 
             let post_likes = post_likes::get_post_likes(
                 post_likes_registry,
-                post_id
+                post_key
             );
 
             let post_liked = post_likes::has_post_likes(
@@ -578,7 +578,7 @@ module sage_post::test_post_actions {
 
             let post_liked = post_likes::has_user_likes(
                 user_post_likes,
-                post_id
+                post_key
             );
 
             assert!(post_liked, EPostNotLiked);

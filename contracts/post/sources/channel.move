@@ -7,7 +7,7 @@ module sage_post::channel_posts {
 
     use sage_immutable::{immutable_table::{Self, ImmutableTable}};
 
-    use sage_post::{ post::{Post}};
+    use sage_post::{post::{Post}};
 
     // --------------- Constants ---------------
 
