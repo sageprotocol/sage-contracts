@@ -1,5 +1,5 @@
 #[test_only]
-module sage_post::test_actions {
+module sage_post::test_post_actions {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts, Scenario};

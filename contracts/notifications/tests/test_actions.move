@@ -1,5 +1,5 @@
  #[test_only]
-module sage_notification::test_actions {
+module sage_notification::test_notification_actions {
     use std::string::{utf8};
 
     use sui::clock::{Self, Clock};
