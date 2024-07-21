@@ -2,7 +2,7 @@
 name = "SageNotification"
 edition = "2024.beta"
 version = "0.0.1"
-# published-at = "0x3ffa5c80146adca690cd23e0ebcf8643f7f456775a13f87535efc84db639723b"
+published-at = "0x176e585caad48c0aab8fd0f0322c24ea75d69fa36fd06b1889e174ce6dc52c75"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
@@ -16,6 +16,6 @@ notification = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f656
 
 sage_admin = "0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3"
 sage_immutable = "0xcb1235a19cc5129e9f6e9a1dd1ec21d141ad6ca3c0b9a281dc76952cb654b221"
-# sage_notification = ""
+sage_notification = "0x176e585caad48c0aab8fd0f0322c24ea75d69fa36fd06b1889e174ce6dc52c75"
 
-sage_notification = "0x0"
+# sage_notification = "0x0"
