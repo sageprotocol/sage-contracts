@@ -2,7 +2,7 @@
 
 [move]
 version = 2
-manifest_digest = "C68066364E051B636CC1A1AFB5204DA914186D97568476DBC4110AF62EDB8E10"
+manifest_digest = "2926555A8F4D07A0B0FB1B1F41E1737223D0FADD79025914B643A0EFEC9540E2"
 deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { name = "SageAdmin" },
@@ -47,6 +47,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x03b16bc6ee3fdaad64402bbc3dc89daa05a9c275327f0e4e13b9736f2c610c6d"
-latest-published-id = "0x03b16bc6ee3fdaad64402bbc3dc89daa05a9c275327f0e4e13b9736f2c610c6d"
+original-published-id = "0x176e585caad48c0aab8fd0f0322c24ea75d69fa36fd06b1889e174ce6dc52c75"
+latest-published-id = "0x176e585caad48c0aab8fd0f0322c24ea75d69fa36fd06b1889e174ce6dc52c75"
 published-version = "1"

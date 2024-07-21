@@ -1,11 +1,13 @@
 module sage_post::channel_posts {
+    use std::string::{String};
+
     use sage_admin::{admin::{AdminCap}};
 
     use sage_channel::{channel::{Channel}};
 
     use sage_immutable::{immutable_table::{Self, ImmutableTable}};
 
-    use sage_post::{ post::{Post}};
+    use sage_post::{post::{Post}};
 
     // --------------- Constants ---------------
 
@@ -20,7 +22,7 @@ module sage_post::channel_posts {
     }
 
     public struct ChannelPosts has store {
-        posts: ImmutableTable<ID, Post>
+        posts: ImmutableTable<String, Post>
     }
 
     // --------------- Events ---------------
@@ -31,9 +33,9 @@ module sage_post::channel_posts {
 
     public fun borrow_post(
         channel_posts: &mut ChannelPosts,
-        post_id: ID
+        post_key: String
     ): Post {
-        *channel_posts.posts.borrow(post_id)
+        *channel_posts.posts.borrow(post_key)
     }
 
     public fun create_channel_posts_registry(
@@ -54,9 +56,9 @@ module sage_post::channel_posts {
 
     public fun has_post(
         channel_posts: &mut ChannelPosts,
-        post_id: ID
+        post_key: String
     ): bool {
-        channel_posts.posts.contains(post_id)
+        channel_posts.posts.contains(post_key)
     }
 
     public fun has_record(
@@ -70,10 +72,10 @@ module sage_post::channel_posts {
 
     public(package) fun add(
         channel_posts: &mut ChannelPosts,
-        post_id: ID,
+        post_key: String,
         post: Post
     ) {
-        channel_posts.posts.add(post_id, post);
+        channel_posts.posts.add(post_key, post);
     }
 
     public(package) fun create(

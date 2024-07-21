@@ -1,4 +1,6 @@
 module sage_post::post_likes {
+    use std::string::{String};
+
     use sui::event;
 
     use sage_admin::{admin::{AdminCap}};
@@ -17,7 +19,7 @@ module sage_post::post_likes {
     // --------------- Name Tag ---------------
 
     public struct PostLikesRegistry has store {
-        registry: ImmutableTable<ID, PostLikes>
+        registry: ImmutableTable<String, PostLikes>
     }
 
     public struct PostLikes has store {
@@ -29,13 +31,13 @@ module sage_post::post_likes {
     }
 
     public struct UserPostLikes has store {
-        likes: ImmutableVector<ID>
+        likes: ImmutableVector<String>
     }
 
     // --------------- Events ---------------
 
     public struct PostLiked has copy, drop {
-        id: ID,
+        key: String,
         user: address
     }
 
@@ -63,9 +65,9 @@ module sage_post::post_likes {
 
     public fun get_post_likes(
         post_likes_registry: &mut PostLikesRegistry,
-        post_id: ID
+        post_key: String
     ): &mut PostLikes {
-        post_likes_registry.registry.borrow_mut(post_id)
+        post_likes_registry.registry.borrow_mut(post_key)
     }
 
     public fun get_user_post_likes(
@@ -96,16 +98,16 @@ module sage_post::post_likes {
 
     public fun has_user_likes(
         user_post_likes: &UserPostLikes,
-        post_id: ID
+        post_key: String
     ): bool {
-        user_post_likes.likes.contains(&post_id)
+        user_post_likes.likes.contains(&post_key)
     }
 
     public fun has_post_likes_record(
         post_likes_registry: &PostLikesRegistry,
-        post_id: ID
+        post_key: String
     ): bool {
-        post_likes_registry.registry.contains(post_id)
+        post_likes_registry.registry.contains(post_key)
     }
 
     public fun has_user_likes_record(
@@ -120,7 +122,7 @@ module sage_post::post_likes {
     public(package) fun add(
         post_likes: &mut PostLikes,
         user_post_likes: &mut UserPostLikes,
-        post_id: ID,
+        post_key: String,
         user: address
     ) {
         let has_liked = post_likes.has_post_likes(
@@ -130,29 +132,29 @@ module sage_post::post_likes {
         assert!(!has_liked, EUserAlreadyLiked);
 
         let has_liked = user_post_likes.has_user_likes(
-            post_id
+            post_key
         );
 
         assert!(!has_liked, EUserAlreadyLiked);
 
         post_likes.likes.push_back(user);
-        user_post_likes.likes.push_back(post_id);
+        user_post_likes.likes.push_back(post_key);
 
         event::emit(PostLiked {
-            id: post_id,
+            key: post_key,
             user
         });
     }
 
     public(package) fun create_post_likes(
         post_likes_registry: &mut PostLikesRegistry,
-        post_id: ID
+        post_key: String
     ) {
         let post_likes = PostLikes {
             likes: immutable_vector::empty<address>()
         };
 
-        post_likes_registry.registry.add(post_id, post_likes);
+        post_likes_registry.registry.add(post_key, post_likes);
     }
 
     public(package) fun create_user_post_likes(
@@ -160,7 +162,7 @@ module sage_post::post_likes {
         user: address
     ) {
         let user_post_likes = UserPostLikes {
-            likes: immutable_vector::empty<ID>()
+            likes: immutable_vector::empty<String>()
         };
 
         user_post_likes_registry.registry.add(user, user_post_likes);

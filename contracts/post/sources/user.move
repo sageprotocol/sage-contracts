@@ -1,4 +1,6 @@
 module sage_post::user_posts {
+    use std::string::{String};
+
     use sage_admin::{admin::{AdminCap}};
 
     use sage_immutable::{immutable_table::{Self, ImmutableTable}};
@@ -20,7 +22,7 @@ module sage_post::user_posts {
     }
 
     public struct UserPosts has store {
-        posts: ImmutableTable<ID, Post>
+        posts: ImmutableTable<String, Post>
     }
 
     // --------------- Events ---------------
@@ -31,9 +33,9 @@ module sage_post::user_posts {
 
     public fun borrow_post(
         user_posts: &mut UserPosts,
-        post_id: ID
+        post_key: String
     ): Post {
-        *user_posts.posts.borrow(post_id)
+        *user_posts.posts.borrow(post_key)
     }
 
     public fun create_user_posts_registry(
@@ -54,9 +56,9 @@ module sage_post::user_posts {
 
     public fun has_post(
         user_posts: &mut UserPosts,
-        post_id: ID
+        post_key: String
     ): bool {
-        user_posts.posts.contains(post_id)
+        user_posts.posts.contains(post_key)
     }
 
     public fun has_record(
@@ -70,10 +72,10 @@ module sage_post::user_posts {
 
     public(package) fun add(
         user_posts: &mut UserPosts,
-        post_id: ID,
+        post_key: String,
         post: Post
     ) {
-        user_posts.posts.add(post_id, post);
+        user_posts.posts.add(post_key, post);
     }
 
     public(package) fun create(

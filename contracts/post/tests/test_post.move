@@ -42,7 +42,7 @@ module sage_post::test_post {
     }
 
     #[test]
-    fun test_get_id() {
+    fun test_get_key() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -51,7 +51,7 @@ module sage_post::test_post {
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
-            let (post, created_id) = post::create(
+            let (post, created_key) = post::create(
                 user,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -60,9 +60,9 @@ module sage_post::test_post {
                 ts::ctx(scenario)
             );
 
-            let retrieved_id = post::get_id(post);
+            let retrieved_key = post::get_key(post);
 
-            assert!(created_id == retrieved_id, EPostMismatch);
+            assert!(created_key == retrieved_key, EPostMismatch);
         };
 
         ts::end(scenario_val);

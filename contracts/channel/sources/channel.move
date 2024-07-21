@@ -178,7 +178,7 @@ module sage_channel::channel {
         name: &String
     ): bool {
         let len = name.length();
-        let name_bytes = name.bytes();
+        let name_bytes = name.as_bytes();
         let mut index = 0;
 
         if (!(len >= CHANNEL_NAME_MIN_LENGTH && len <= CHANNEL_NAME_MAX_LENGTH)) {
