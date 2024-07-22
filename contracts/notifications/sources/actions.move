@@ -22,12 +22,6 @@ module sage_notification::notification_actions {
     public struct NotificationCreated has copy, drop {
         created_at: u64,
         created_for: address,
-        message: String
-    }
-
-    public struct NotificationWithRewardCreated has copy, drop {
-        created_at: u64,
-        created_for: address,
         message: String,
         reward_amount: u64
     }
@@ -76,22 +70,16 @@ module sage_notification::notification_actions {
             notification
         );
 
-        if (reward_amount == 0) {
-            event::emit(NotificationCreated {
-                created_at: timestamp,
-                created_for: user,
-                message
-            });
-        } else {
+        if (reward_amount != 0) {
             // send token here
-
-            event::emit(NotificationWithRewardCreated {
-                created_at: timestamp,
-                created_for: user,
-                message,
-                reward_amount
-            });
         };
+
+        event::emit(NotificationCreated {
+            created_at: timestamp,
+            created_for: user,
+            message,
+            reward_amount
+        });
 
         notification
     }
