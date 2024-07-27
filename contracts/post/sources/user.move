@@ -3,9 +3,10 @@ module sage_post::user_posts {
 
     use sage_admin::{admin::{AdminCap}};
 
-    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
-
-    use sage_post::{post::{Post}};
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable},
+        immutable_vector::{Self, ImmutableVector}
+    };
 
     use sage_user::{user::{User}};
 
@@ -18,11 +19,7 @@ module sage_post::user_posts {
     // --------------- Name Tag ---------------
 
     public struct UserPostsRegistry has store {
-        registry: ImmutableTable<User, UserPosts>
-    }
-
-    public struct UserPosts has store {
-        posts: ImmutableTable<String, Post>
+        registry: ImmutableTable<User, ImmutableVector<String>>
     }
 
     // --------------- Events ---------------
@@ -31,11 +28,11 @@ module sage_post::user_posts {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_post(
-        user_posts: &mut UserPosts,
-        post_key: String
-    ): Post {
-        *user_posts.posts.borrow(post_key)
+    public fun borrow_user_post_keys(
+        user_posts_registry: &mut UserPostsRegistry,
+        user: User
+    ): &mut ImmutableVector<String> {
+        user_posts_registry.registry.borrow_mut(user)
     }
 
     public fun create_user_posts_registry(
@@ -47,18 +44,16 @@ module sage_post::user_posts {
         }
     }
 
-    public fun get_user_posts(
-        user_posts_registry: &mut UserPostsRegistry,
-        user: User
-    ): &mut UserPosts {
-        user_posts_registry.registry.borrow_mut(user)
-    }
-
     public fun has_post(
-        user_posts: &mut UserPosts,
+        user_posts_registry: &mut UserPostsRegistry,
+        user: User,
         post_key: String
     ): bool {
-        user_posts.posts.contains(post_key)
+        let user_post_keys = *user_posts_registry.registry.borrow(
+            user
+        );
+
+        user_post_keys.contains(&post_key)
     }
 
     public fun has_record(
@@ -71,32 +66,60 @@ module sage_post::user_posts {
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
-        user_posts: &mut UserPosts,
-        post_key: String,
-        post: Post
-    ) {
-        user_posts.posts.add(post_key, post);
-    }
-
-    public(package) fun create(
         user_posts_registry: &mut UserPostsRegistry,
         user: User,
-        ctx: &mut TxContext
+        post_key: String
     ) {
-        let has_record = has_record(user_posts_registry, user);
+        let has_record = has_record(
+            user_posts_registry,
+            user
+        );
 
-        assert!(!has_record, EUserPostsExists);
-
-        let user_posts = UserPosts {
-            posts: immutable_table::new(ctx)
+        if (!has_record) {
+            create(
+                user_posts_registry,
+                user
+            );
         };
 
-        user_posts_registry.registry.add(user, user_posts);
+        let user_post_keys = borrow_user_post_keys(
+            user_posts_registry,
+            user
+        );
+
+        user_post_keys.push_back(post_key);
     }
 
     // --------------- Internal Functions ---------------
 
+    fun create(
+        user_posts_registry: &mut UserPostsRegistry,
+        user: User
+    ) {
+        let has_record = has_record(
+            user_posts_registry,
+            user
+        );
+
+        assert!(!has_record, EUserPostsExists);
+
+        let user_post_keys = immutable_vector::empty();
+
+        user_posts_registry.registry.add(user, user_post_keys);
+    }
+
     // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun create_for_testing(
+        user_posts_registry: &mut UserPostsRegistry,
+        user: User
+    ) {
+        create(
+            user_posts_registry,
+            user
+        );
+    }
 
     #[test_only]
     public fun destroy_for_testing(
@@ -108,5 +131,4 @@ module sage_post::user_posts {
 
         registry.destroy_for_testing();
     }
-
 }

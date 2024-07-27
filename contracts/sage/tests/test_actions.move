@@ -27,6 +27,7 @@ module sage::test_sage_actions {
         channel_posts::{Self},
         post_comments::{Self},
         post_likes::{Self},
+        post_registry::{Self},
         user_posts::{Self}
     };
 
@@ -39,10 +40,11 @@ module sage::test_sage_actions {
 
     const EChannelNotCreated: u64 = 0;
     const EChannelPostNotCreated: u64 = 1;
-    const EPostCommentNotCreated: u64 = 2;
-    const EPostLikeNotCreated: u64 = 3;
-    const EUserNotificationsMismatch: u64 = 4;
-    const EUserPostNotCreated: u64 = 5;
+    const EPostNotCreated: u64 = 2;
+    const EPostCommentNotCreated: u64 = 3;
+    const EPostLikeNotCreated: u64 = 4;
+    const EUserNotificationsMismatch: u64 = 5;
+    const EUserPostNotCreated: u64 = 6;
 
     // --------------- Test Functions ---------------
 
@@ -54,6 +56,7 @@ module sage::test_sage_actions {
             mut sage_channel_membership,
             sage_channel_posts,
             sage_notification,
+            sage_post,
             sage_post_comments,
             sage_post_likes,
             sage_user_membership,
@@ -104,6 +107,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_membership_for_testing(sage_channel_membership);
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_notification_for_testing(sage_notification);
+            actions::destroy_post_for_testing(sage_post);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_membership_for_testing(sage_user_membership);
@@ -125,6 +129,7 @@ module sage::test_sage_actions {
             sage_channel_membership,
             sage_channel_posts,
             mut sage_notification,
+            sage_post,
             sage_post_comments,
             sage_post_likes,
             sage_user_membership,
@@ -190,6 +195,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_membership_for_testing(sage_channel_membership);
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_notification_for_testing(sage_notification);
+            actions::destroy_post_for_testing(sage_post);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_membership_for_testing(sage_user_membership);
@@ -230,8 +236,9 @@ module sage::test_sage_actions {
             mut sage_channel_membership,
             mut sage_channel_posts,
             sage_notification,
-            mut sage_post_comments,
-            mut sage_post_likes,
+            mut sage_post,
+            sage_post_comments,
+            sage_post_likes,
             sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
@@ -265,14 +272,12 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
-            // create a post
             let post_key = actions::post_from_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
                 &mut sage_channel_posts,
-                &mut sage_post_comments,
-                &mut sage_post_likes,
+                &mut sage_post,
                 channel_name,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -280,48 +285,24 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
-            let channel_posts_registry = actions::borrow_channel_posts_registry_for_testing(
-                &mut sage_channel_posts
+            let post_registry = actions::borrow_post_registry_for_testing(
+                &mut sage_post
             );
 
-            let channel_posts = channel_posts::get_channel_posts(
-                channel_posts_registry,
-                channel
-            );
-
-            let has_post = channel_posts::has_post(
-                channel_posts,
+            let has_record = post_registry::has_record(
+                post_registry,
                 post_key
             );
 
-            assert!(has_post, EChannelPostNotCreated);
-
-            // create another post
-            let post_key = actions::post_from_channel(
-                &clock,
-                &mut sage_channel,
-                &mut sage_channel_membership,
-                &mut sage_channel_posts,
-                &mut sage_post_comments,
-                &mut sage_post_likes,
-                channel_name,
-                utf8(b"data"),
-                utf8(b"description"),
-                utf8(b"title"),
-                ts::ctx(scenario)
-            );
+            assert!(has_record, EPostNotCreated);
 
             let channel_posts_registry = actions::borrow_channel_posts_registry_for_testing(
                 &mut sage_channel_posts
             );
 
-            let channel_posts = channel_posts::get_channel_posts(
-                channel_posts_registry,
-                channel
-            );
-
             let has_post = channel_posts::has_post(
-                channel_posts,
+                channel_posts_registry,
+                channel,
                 post_key
             );
 
@@ -331,6 +312,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_membership_for_testing(sage_channel_membership);
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_notification_for_testing(sage_notification);
+            actions::destroy_post_for_testing(sage_post);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_membership_for_testing(sage_user_membership);
@@ -352,8 +334,9 @@ module sage::test_sage_actions {
             mut sage_channel_membership,
             mut sage_channel_posts,
             sage_notification,
+            mut sage_post,
             mut sage_post_comments,
-            mut sage_post_likes,
+            sage_post_likes,
             sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
@@ -392,8 +375,7 @@ module sage::test_sage_actions {
                 &mut sage_channel,
                 &mut sage_channel_membership,
                 &mut sage_channel_posts,
-                &mut sage_post_comments,
-                &mut sage_post_likes,
+                &mut sage_post,
                 channel_name,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -403,8 +385,8 @@ module sage::test_sage_actions {
 
             let post_key = actions::post_from_post(
                 &clock,
+                &mut sage_post,
                 &mut sage_post_comments,
-                &mut sage_post_likes,
                 parent_post_key,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -412,17 +394,24 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
+            let post_registry = actions::borrow_post_registry_for_testing(
+                &mut sage_post
+            );
+
+            let has_record = post_registry::has_record(
+                post_registry,
+                post_key
+            );
+
+            assert!(has_record, EPostNotCreated);
+
             let post_comments_registry = actions::borrow_posts_comments_registry_for_testing(
                 &mut sage_post_comments
             );
 
-            let post_comments = post_comments::get_post_comments(
-                post_comments_registry,
-                parent_post_key
-            );
-
             let has_post = post_comments::has_post(
-                post_comments,
+                post_comments_registry,
+                parent_post_key,
                 post_key
             );
 
@@ -432,6 +421,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_membership_for_testing(sage_channel_membership);
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_notification_for_testing(sage_notification);
+            actions::destroy_post_for_testing(sage_post);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_membership_for_testing(sage_user_membership);
@@ -453,8 +443,9 @@ module sage::test_sage_actions {
             sage_channel_membership,
             sage_channel_posts,
             sage_notification,
-            mut sage_post_comments,
-            mut sage_post_likes,
+            mut sage_post,
+            sage_post_comments,
+            sage_post_likes,
             sage_user_membership,
             sage_user_post_likes,
             mut sage_user_posts,
@@ -489,8 +480,7 @@ module sage::test_sage_actions {
 
             let post_key = actions::post_from_user(
                 &clock,
-                &mut sage_post_comments,
-                &mut sage_post_likes,
+                &mut sage_post,
                 &mut sage_user_posts,
                 &mut sage_users,
                 utf8(b"data"),
@@ -499,17 +489,24 @@ module sage::test_sage_actions {
                 ts::ctx(scenario)
             );
 
+            let post_registry = actions::borrow_post_registry_for_testing(
+                &mut sage_post
+            );
+
+            let has_record = post_registry::has_record(
+                post_registry,
+                post_key
+            );
+
+            assert!(has_record, EPostNotCreated);
+
             let user_posts_registry = actions::borrow_user_posts_registry_for_testing(
                 &mut sage_user_posts
             );
 
-            let user_posts = user_posts::get_user_posts(
-                user_posts_registry,
-                user
-            );
-
             let has_post = user_posts::has_post(
-                user_posts,
+                user_posts_registry,
+                user,
                 post_key
             );
 
@@ -519,6 +516,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_membership_for_testing(sage_channel_membership);
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_notification_for_testing(sage_notification);
+            actions::destroy_post_for_testing(sage_post);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_membership_for_testing(sage_user_membership);
@@ -540,7 +538,8 @@ module sage::test_sage_actions {
             mut sage_channel_membership,
             mut sage_channel_posts,
             sage_notification,
-            mut sage_post_comments,
+            mut sage_post,
+            sage_post_comments,
             mut sage_post_likes,
             sage_user_membership,
             mut sage_user_post_likes,
@@ -580,8 +579,7 @@ module sage::test_sage_actions {
                 &mut sage_channel,
                 &mut sage_channel_membership,
                 &mut sage_channel_posts,
-                &mut sage_post_comments,
-                &mut sage_post_likes,
+                &mut sage_post,
                 channel_name,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -590,6 +588,7 @@ module sage::test_sage_actions {
             );
 
             actions::like_post(
+                &mut sage_post,
                 &mut sage_post_likes,
                 &mut sage_user_post_likes,
                 post_key,
@@ -603,11 +602,11 @@ module sage::test_sage_actions {
                 &mut sage_user_post_likes
             );
 
-            let post_likes = post_likes::get_post_likes(
+            let post_likes = post_likes::borrow_post_likes(
                 post_likes_registry,
                 post_key
             );
-            let user_post_likes = post_likes::get_user_post_likes(
+            let user_post_likes = post_likes::borrow_user_post_likes(
                 user_post_likes_registry,
                 ADMIN
             );
@@ -628,6 +627,7 @@ module sage::test_sage_actions {
             actions::destroy_channel_membership_for_testing(sage_channel_membership);
             actions::destroy_channel_posts_for_testing(sage_channel_posts);
             actions::destroy_notification_for_testing(sage_notification);
+            actions::destroy_post_for_testing(sage_post);
             actions::destroy_post_comments_for_testing(sage_post_comments);
             actions::destroy_post_likes_for_testing(sage_post_likes);
             actions::destroy_user_membership_for_testing(sage_user_membership);

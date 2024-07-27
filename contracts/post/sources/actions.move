@@ -11,9 +11,10 @@ module sage_post::post_actions {
 
     use sage_post::{
         channel_posts::{Self, ChannelPostsRegistry},
-        post::{Self, Post},
+        post::{Self},
         post_comments::{Self, PostCommentsRegistry},
         post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
+        post_registry::{Self, PostRegistry},
         user_posts::{Self, UserPostsRegistry}
     };
 
@@ -25,8 +26,11 @@ module sage_post::post_actions {
 
     // --------------- Errors ---------------
 
-    const EChannelDoesNotExist: u64 = 0;
-    const EUserNotChannelMember: u64 = 1;
+    const EChannelDoesNotExist: u64 = 370;
+    const EParentPostDoesNotExist: u64 = 371;
+    const EPostDoesNotExist: u64 = 372;
+    const EUserDoesNotExist: u64 = 373;
+    const EUserNotChannelMember: u64 = 374;
 
     // --------------- Name Tag ---------------
 
@@ -69,40 +73,24 @@ module sage_post::post_actions {
     // --------------- Public Functions ---------------
 
     public fun like(
+        post_registry: &mut PostRegistry,
         post_likes_registry: &mut PostLikesRegistry,
         user_post_likes_registry: &mut UserPostLikesRegistry,
         post_key: String,
         ctx: &mut TxContext
     ) {
-        let user = tx_context::sender(ctx);
-
-        // TODO: check if post exists
-
-        let post_likes = post_likes::get_post_likes(
-            post_likes_registry,
+        let has_record = post_registry::has_record(
+            post_registry,
             post_key
         );
 
-        let has_user_likes = post_likes::has_user_likes_record(
-            user_post_likes_registry,
-            user
-        );
+        assert!(has_record, EPostDoesNotExist);
 
-        if (!has_user_likes) {
-            post_likes::create_user_post_likes(
-                user_post_likes_registry,
-                user
-            );
-        };
-
-        let user_post_likes = post_likes::get_user_post_likes(
-            user_post_likes_registry,
-            user
-        );
+        let user = tx_context::sender(ctx);
 
         post_likes::add(
-            post_likes,
-            user_post_likes,
+            post_likes_registry,
+            user_post_likes_registry,
             post_key,
             user
         );
@@ -113,8 +101,7 @@ module sage_post::post_actions {
         channel_registry: &mut ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_posts_registry: &mut ChannelPostsRegistry,
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
+        post_registry: &mut PostRegistry,
         channel_name: String,
         data: String,
         description: String,
@@ -149,9 +136,8 @@ module sage_post::post_actions {
 
         let timestamp = clock.timestamp_ms();
 
-        let (post, post_key) = create(
-            post_comments_registry,
-            post_likes_registry,
+        let (post, post_key) = post::create(
+            user,
             data,
             description,
             title,
@@ -159,28 +145,16 @@ module sage_post::post_actions {
             ctx
         );
 
-        let has_record = channel_posts::has_record(
-            channel_posts_registry,
-            channel
-        );
-
-        if (!has_record) {
-            channel_posts::create(
-                channel_posts_registry,
-                channel,
-                ctx
-            );
-        };
-
-        let channel_posts = channel_posts::get_channel_posts(
-            channel_posts_registry,
-            channel
+        post_registry::add(
+            post_registry,
+            post_key,
+            post
         );
 
         channel_posts::add(
-            channel_posts,
-            post_key,
-            post
+            channel_posts_registry,
+            channel,
+            post_key
         );
 
         event::emit(ChannelPostCreated {
@@ -199,8 +173,8 @@ module sage_post::post_actions {
 
     public fun post_from_post(
         clock: &Clock,
+        post_registry: &mut PostRegistry,
         post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
         parent_key: String,
         data: String,
         description: String,
@@ -210,11 +184,15 @@ module sage_post::post_actions {
         let timestamp = clock.timestamp_ms();
         let user = tx_context::sender(ctx);
 
-        // TODO: check if parent post exists
+        let has_record = post_registry::has_record(
+            post_registry,
+            parent_key
+        );
 
-        let (post, post_key) = create(
-            post_comments_registry,
-            post_likes_registry,
+        assert!(has_record, EParentPostDoesNotExist);
+
+        let (post, post_key) = post::create(
+            user,
             data,
             description,
             title,
@@ -222,28 +200,16 @@ module sage_post::post_actions {
             ctx
         );
 
-        let has_record = post_comments::has_record(
-            post_comments_registry,
-            parent_key
-        );
-
-        if (!has_record) {
-            post_comments::create(
-                post_comments_registry,
-                parent_key,
-                ctx
-            );
-        };
-
-        let post_comments = post_comments::get_post_comments(
-            post_comments_registry,
-            parent_key
+        post_registry::add(
+            post_registry,
+            post_key,
+            post
         );
 
         post_comments::add(
-            post_comments,
-            post_key,
-            post
+            post_comments_registry,
+            parent_key,
+            post_key
         );
 
         event::emit(CommentCreated {
@@ -262,8 +228,7 @@ module sage_post::post_actions {
 
     public fun post_from_user(
         clock: &Clock,
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
+        post_registry: &mut PostRegistry,
         user_posts_registry: &mut UserPostsRegistry,
         user_registry: &mut UserRegistry,
         data: String,
@@ -273,7 +238,12 @@ module sage_post::post_actions {
     ): String {
         let address = tx_context::sender(ctx);
 
-        // TODO: check if user exists
+        let has_record = user_registry::has_address_record(
+            user_registry,
+            address
+        );
+
+        assert!(has_record, EUserDoesNotExist);
 
         let username = user_registry::get_username(
             user_registry,
@@ -287,9 +257,8 @@ module sage_post::post_actions {
 
         let timestamp = clock.timestamp_ms();
 
-        let (post, post_key) = create(
-            post_comments_registry,
-            post_likes_registry,
+        let (post, post_key) = post::create(
+            address,
             data,
             description,
             title,
@@ -297,28 +266,16 @@ module sage_post::post_actions {
             ctx
         );
 
-        let has_record = user_posts::has_record(
-            user_posts_registry,
-            user
-        );
-
-        if (!has_record) {
-            user_posts::create(
-                user_posts_registry,
-                user,
-                ctx
-            );
-        };
-
-        let user_posts = user_posts::get_user_posts(
-            user_posts_registry,
-            user
+        post_registry::add(
+            post_registry,
+            post_key,
+            post
         );
 
         user_posts::add(
-            user_posts,
-            post_key,
-            post
+            user_posts_registry,
+            user,
+            post_key
         );
 
         event::emit(UserPostCreated {
@@ -335,40 +292,6 @@ module sage_post::post_actions {
     }
 
     // --------------- Friend Functions ---------------
-
-    public(package) fun create(
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
-        data: String,
-        description: String,
-        title: String,
-        timestamp: u64,
-        ctx: &mut TxContext
-    ): (Post, String) {
-        let user = tx_context::sender(ctx);
-
-        let (post, post_key) = post::create(
-            user,
-            data,
-            description,
-            title,
-            timestamp,
-            ctx
-        );
-
-        post_comments::create(
-            post_comments_registry,
-            post_key,
-            ctx
-        );
-
-        post_likes::create_post_likes(
-            post_likes_registry,
-            post_key
-        );
-
-        (post, post_key)
-    }
 
     // --------------- Internal Functions ---------------
 

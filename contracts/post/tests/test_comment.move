@@ -77,7 +77,16 @@ module sage_post::test_comments {
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
-            let (post, post_id) = post::create(
+            let (_parent_post, parent_post_key) = post::create(
+                user,
+                utf8(b"data"),
+                utf8(b"description"),
+                utf8(b"title"),
+                timestamp,
+                ts::ctx(scenario)
+            );
+
+            let (_post, post_key) = post::create(
                 user,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -88,29 +97,19 @@ module sage_post::test_comments {
 
             let post_comments_registry = &mut post_comments_registry_val;
 
-            post_comments::create(
-                post_comments_registry,
-                post_id,
-                ts::ctx(scenario)
-            );
-
-            let has_record = post_comments::has_record(
-                post_comments_registry,
-                post_id
-            );
-
-            assert!(has_record, EPostCommentsNotCreated);
-
-            let post_comments = post_comments::get_post_comments(
-                post_comments_registry,
-                post_id
-            );
-
             post_comments::add(
-                post_comments,
-                post_id,
-                post
+                post_comments_registry,
+                parent_post_key,
+                post_key
             );
+
+            let has_post = post_comments::has_post(
+                post_comments_registry,
+                parent_post_key,
+                post_key
+            );
+
+            assert!(has_post, EPostCommentsNotCreated);
         };
 
         ts::next_tx(scenario, ADMIN);
