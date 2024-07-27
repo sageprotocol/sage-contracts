@@ -12,7 +12,7 @@ module sage_notification::notification_registry {
 
     // --------------- Errors ---------------
 
-    const EUserNotificationsExists: u64 = 0;
+    const EUserNotificationsExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 

@@ -15,8 +15,8 @@ module sage_user::user_registry {
 
     // --------------- Errors ---------------
 
-    const EAddressRecordExists: u64 = 0;
-    const EUsernameRecordExists: u64 = 1;
+    const EAddressRecordExists: u64 = 370;
+    const EUsernameRecordExists: u64 = 371;
 
     // --------------- Name Tag ---------------
 

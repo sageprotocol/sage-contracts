@@ -11,7 +11,7 @@ module sage_channel::channel_registry {
 
     // --------------- Errors ---------------
 
-    const EChannelRecordExists: u64 = 0;
+    const EChannelRecordExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 

@@ -10,7 +10,7 @@ module sage_channel::channel {
 
     // --------------- Errors ---------------
 
-    const EInvalidChannelName: u64 = 0;
+    const EInvalidChannelName: u64 = 370;
 
     // --------------- Name Tag ---------------
 

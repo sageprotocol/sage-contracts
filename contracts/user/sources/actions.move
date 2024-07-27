@@ -14,7 +14,7 @@ module sage_user::user_actions {
 
     // --------------- Errors ---------------
 
-    const ENoSelfJoin: u64 = 0;
+    const ENoSelfJoin: u64 = 370;
 
     // --------------- Name Tag ---------------
 

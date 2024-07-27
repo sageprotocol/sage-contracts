@@ -16,8 +16,8 @@ module sage_user::user_membership {
 
     // --------------- Errors ---------------
 
-    const EUserMemberExists: u64 = 0;
-    const EUserMemberDoesNotExist: u64 = 1;
+    const EUserMemberExists: u64 = 370;
+    const EUserMemberDoesNotExist: u64 = 371;
 
     // --------------- Name Tag ---------------
 
