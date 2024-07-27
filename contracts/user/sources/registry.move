@@ -31,6 +31,20 @@ module sage_user::user_registry {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_user(
+        user_registry: &mut UserRegistry,
+        name: String
+    ): User {
+        *user_registry.user_registry.borrow(name)
+    }
+
+    public fun borrow_username(
+        user_registry: &mut UserRegistry,
+        address: address
+    ): String {
+        *user_registry.address_registry.borrow(address)
+    }
+
     public fun create_user_registry(
         _: &AdminCap,
         ctx: &mut TxContext
@@ -39,20 +53,6 @@ module sage_user::user_registry {
             address_registry: table::new(ctx),
             user_registry: table::new(ctx)
         }
-    }
-
-    public fun get_user(
-        user_registry: &mut UserRegistry,
-        name: String
-    ): User {
-        *user_registry.user_registry.borrow(name)
-    }
-
-    public fun get_username(
-        user_registry: &mut UserRegistry,
-        address: address
-    ): String {
-        *user_registry.address_registry.borrow(address)
     }
 
     public fun has_address_record(

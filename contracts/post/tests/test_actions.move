@@ -247,7 +247,7 @@ module sage_post::test_post_actions {
 
             assert!(has_record, EPostNotCreated);
 
-            let channel = channel_registry::get_channel(
+            let channel = channel_registry::borrow_channel(
                 channel_registry,
                 channel_name
             );
@@ -552,12 +552,12 @@ module sage_post::test_post_actions {
 
             assert!(has_record, EPostNotCreated);
 
-            let username = user_registry::get_username(
+            let username = user_registry::borrow_username(
                 user_registry,
                 ADMIN
             );
 
-            let user = user_registry::get_user(
+            let user = user_registry::borrow_user(
                 user_registry,
                 username
             );

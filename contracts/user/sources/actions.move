@@ -83,12 +83,12 @@ module sage_user::user_actions {
 
         assert!(self != address, ENoSelfJoin);
 
-        let username = user_registry::get_username(
+        let username = user_registry::borrow_username(
             user_registry,
             address
         );
 
-        let user = user_registry::get_user(
+        let user = user_registry::borrow_user(
             user_registry,
             username
         );
@@ -111,12 +111,12 @@ module sage_user::user_actions {
         address: address,
         ctx: &mut TxContext
     ) {
-        let username = user_registry::get_username(
+        let username = user_registry::borrow_username(
             user_registry,
             address
         );
 
-        let user = user_registry::get_user(
+        let user = user_registry::borrow_user(
             user_registry,
             username
         );

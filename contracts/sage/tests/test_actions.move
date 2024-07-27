@@ -96,7 +96,7 @@ module sage::test_sage_actions {
                 &mut sage_channel
             );
 
-            let retrieved_channel_name = channel_registry::get_channel_name(
+            let retrieved_channel_name = channel_registry::borrow_channel_name(
                 channel_registry,
                 channel
             );

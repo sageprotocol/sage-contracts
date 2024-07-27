@@ -115,7 +115,7 @@ module sage_post::post_actions {
 
         assert!(has_record, EChannelDoesNotExist);
 
-        let channel = channel_registry::get_channel(
+        let channel = channel_registry::borrow_channel(
             channel_registry,
             channel_name
         );
@@ -245,12 +245,12 @@ module sage_post::post_actions {
 
         assert!(has_record, EUserDoesNotExist);
 
-        let username = user_registry::get_username(
+        let username = user_registry::borrow_username(
             user_registry,
             address
         );
 
-        let user = user_registry::get_user(
+        let user = user_registry::borrow_user(
             user_registry,
             username
         );
