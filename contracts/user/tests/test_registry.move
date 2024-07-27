@@ -98,7 +98,7 @@ module sage_user::test_user_registry {
                 user
             );
 
-            let retrieved_user = user_registry::get_user(
+            let retrieved_user = user_registry::borrow_user(
                 user_registry,
                 name
             );
@@ -143,7 +143,7 @@ module sage_user::test_user_registry {
                 user
             );
 
-            let retrieved_username = user_registry::get_username(
+            let retrieved_username = user_registry::borrow_username(
                 user_registry,
                 ADMIN
             );

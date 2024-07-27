@@ -87,7 +87,7 @@ module sage_post::test_like {
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
-            let (_post, post_id) = post::create(
+            let (_post, post_key) = post::create(
                 user,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -99,56 +99,20 @@ module sage_post::test_like {
             let post_likes_registry = &mut post_likes_registry_val;
             let user_post_likes_registry = &mut user_post_likes_registry_val;
 
-            post_likes::create_post_likes(
-                post_likes_registry,
-                post_id
-            );
-
-            post_likes::create_user_post_likes(
-                user_post_likes_registry,
-                user
-            );
-
-            let post_likes = post_likes::get_post_likes(
-                post_likes_registry,
-                post_id
-            );
-
-            let has_record = post_likes::has_post_likes(
-                post_likes,
-                user
-            );
-
-            assert!(!has_record, EPostLikesMismatch);
-
-            let likes_count = post_likes::get_post_likes_count(
-                post_likes
-            );
-
-            assert!(likes_count == 0, EPostLikesMismatch);
-
-            let user_post_likes = post_likes::get_user_post_likes(
-                user_post_likes_registry,
-                user
-            );
-
-            let has_record = post_likes::has_user_likes(
-                user_post_likes,
-                post_id
-            );
-
-            assert!(!has_record, EPostLikesMismatch);
-
-            let likes_count = post_likes::get_user_likes_count(
-                user_post_likes
-            );
-
-            assert!(likes_count == 0, EPostLikesMismatch);
-
             post_likes::add(
-                post_likes,
-                user_post_likes,
-                post_id,
+                post_likes_registry,
+                user_post_likes_registry,
+                post_key,
+                user
+            );
+
+            let post_likes = post_likes::borrow_post_likes(
+                post_likes_registry,
+                post_key
+            );
+
+            let user_post_likes = post_likes::borrow_user_post_likes(
+                user_post_likes_registry,
                 user
             );
 
@@ -167,7 +131,7 @@ module sage_post::test_like {
 
             let has_record = post_likes::has_user_likes(
                 user_post_likes,
-                post_id
+                post_key
             );
 
             assert!(has_record, EPostLikesMismatch);

@@ -5,24 +5,21 @@ module sage_post::channel_posts {
 
     use sage_channel::{channel::{Channel}};
 
-    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
-
-    use sage_post::{post::{Post}};
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable},
+        immutable_vector::{Self, ImmutableVector}
+    };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const EChannelPostsExists: u64 = 0;
+    const EChannelPostsExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
     public struct ChannelPostsRegistry has store {
-        registry: ImmutableTable<Channel, ChannelPosts>
-    }
-
-    public struct ChannelPosts has store {
-        posts: ImmutableTable<String, Post>
+        registry: ImmutableTable<Channel, ImmutableVector<String>>
     }
 
     // --------------- Events ---------------
@@ -31,11 +28,11 @@ module sage_post::channel_posts {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_post(
-        channel_posts: &mut ChannelPosts,
-        post_key: String
-    ): Post {
-        *channel_posts.posts.borrow(post_key)
+    public fun borrow_channel_post_keys(
+        channel_posts_registry: &mut ChannelPostsRegistry,
+        channel: Channel
+    ): &mut ImmutableVector<String> {
+        channel_posts_registry.registry.borrow_mut(channel)
     }
 
     public fun create_channel_posts_registry(
@@ -47,18 +44,16 @@ module sage_post::channel_posts {
         }
     }
 
-    public fun get_channel_posts(
-        channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel
-    ): &mut ChannelPosts {
-        channel_posts_registry.registry.borrow_mut(channel)
-    }
-
     public fun has_post(
-        channel_posts: &mut ChannelPosts,
+        channel_posts_registry: &mut ChannelPostsRegistry,
+        channel: Channel,
         post_key: String
     ): bool {
-        channel_posts.posts.contains(post_key)
+        let channel_post_keys = *channel_posts_registry.registry.borrow(
+            channel
+        );
+
+        channel_post_keys.contains(&post_key)
     }
 
     public fun has_record(
@@ -71,30 +66,44 @@ module sage_post::channel_posts {
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
-        channel_posts: &mut ChannelPosts,
-        post_key: String,
-        post: Post
-    ) {
-        channel_posts.posts.add(post_key, post);
-    }
-
-    public(package) fun create(
         channel_posts_registry: &mut ChannelPostsRegistry,
         channel: Channel,
-        ctx: &mut TxContext
+        post_key: String
+    ) {
+        let has_record = has_record(
+            channel_posts_registry,
+            channel
+        );
+
+        if (!has_record) {
+            create(
+                channel_posts_registry,
+                channel
+            );
+        };
+
+        let channel_post_keys = borrow_channel_post_keys(
+            channel_posts_registry,
+            channel
+        );
+
+        channel_post_keys.push_back(post_key);
+    }
+
+    // --------------- Internal Functions ---------------
+
+    fun create(
+        channel_posts_registry: &mut ChannelPostsRegistry,
+        channel: Channel
     ) {
         let has_record = has_record(channel_posts_registry, channel);
 
         assert!(!has_record, EChannelPostsExists);
 
-        let channel_posts = ChannelPosts {
-            posts: immutable_table::new(ctx)
-        };
+        let channel_post_keys = immutable_vector::empty();
 
-        channel_posts_registry.registry.add(channel, channel_posts);
+        channel_posts_registry.registry.add(channel, channel_post_keys);
     }
-
-    // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 

@@ -98,10 +98,9 @@ module sage_post::test_user_posts {
 
             assert!(!has_record, EUserPostsExists);
 
-            user_posts::create(
+            user_posts::create_for_testing(
                 user_posts_registry,
-                user,
-                ts::ctx(scenario)
+                user
             );
 
             let has_record = user_posts::has_record(
@@ -141,22 +140,16 @@ module sage_post::test_user_posts {
 
             let user_posts_registry = &mut user_posts_registry_val;
 
-            user_posts::create(
-                user_posts_registry,
-                user,
-                ts::ctx(scenario)
-            );
-
-            let user_posts = user_posts::get_user_posts(
+            user_posts::create_for_testing(
                 user_posts_registry,
                 user
             );
 
             let timestamp: u64 = 999;
-            let user: address = @0xaaa;
+            let address: address = @0xaaa;
 
-            let (post, post_id) = post::create(
-                user,
+            let (_post, post_key) = post::create(
+                address,
                 utf8(b"data"),
                 utf8(b"description"),
                 utf8(b"title"),
@@ -165,14 +158,15 @@ module sage_post::test_user_posts {
             );
 
             user_posts::add(
-                user_posts,
-                post_id,
-                post
+                user_posts_registry,
+                user,
+                post_key
             );
 
             let has_post = user_posts::has_post(
-                user_posts,
-                post_id
+                user_posts_registry,
+                user,
+                post_key
             );
 
             assert!(has_post, EUserPostMismatch);

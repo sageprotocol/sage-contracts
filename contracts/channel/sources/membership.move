@@ -18,8 +18,8 @@ module sage_channel::channel_membership {
 
     // --------------- Errors ---------------
 
-    const EChannelMemberExists: u64 = 0;
-    const EchannelMemberDoesNotExist: u64 = 1;
+    const EChannelMemberExists: u64 = 370;
+    const EChannelMemberDoesNotExist: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -108,7 +108,7 @@ module sage_channel::channel_membership {
             user
         );
 
-        assert!(is_member, EchannelMemberDoesNotExist);
+        assert!(is_member, EChannelMemberDoesNotExist);
 
         channel_membership.membership.remove(user);
 

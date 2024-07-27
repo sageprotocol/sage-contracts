@@ -30,14 +30,7 @@ module sage_post::post {
     ): String {
         let Post {
             key,
-            created_at: _,
-            created_by: _,
-            data: _,
-            description: _,
-            is_deleted: _,
-            is_edited: _,
-            title: _,
-            updated_at: _
+            ..
         } = post;
 
         key

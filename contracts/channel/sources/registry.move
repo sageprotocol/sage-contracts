@@ -11,7 +11,7 @@ module sage_channel::channel_registry {
 
     // --------------- Errors ---------------
 
-    const EChannelRecordExists: u64 = 0;
+    const EChannelRecordExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
@@ -26,6 +26,20 @@ module sage_channel::channel_registry {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_channel(
+        channel_registry: &mut ChannelRegistry,
+        channel_name: String
+    ): Channel {
+        *channel_registry.registry.borrow(channel_name)
+    }
+
+    public fun borrow_channel_name(
+        channel_registry: &mut ChannelRegistry,
+        channel: Channel
+    ): String {
+        *channel_registry.reverse_registry.borrow(channel)
+    }
+
     public fun create_channel_registry(
         _: &AdminCap,
         ctx: &mut TxContext
@@ -34,20 +48,6 @@ module sage_channel::channel_registry {
             registry: immutable_table::new(ctx),
             reverse_registry: immutable_table::new(ctx)
         }
-    }
-
-    public fun get_channel(
-        channel_registry: &mut ChannelRegistry,
-        channel_name: String
-    ): Channel {
-        *channel_registry.registry.borrow(channel_name)
-    }
-
-    public fun get_channel_name(
-        channel_registry: &mut ChannelRegistry,
-        channel: Channel
-    ): String {
-        *channel_registry.reverse_registry.borrow(channel)
     }
 
     public fun has_record(

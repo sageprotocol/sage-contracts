@@ -19,9 +19,7 @@ module sage_post::test_channel_posts {
 
     // --------------- Errors ---------------
 
-    const EChannelPostsExists: u64 = 0;
-    const EChannelPostsDoesNotExist: u64 = 1;
-    const EChannelPostMismatch: u64 = 3;
+    const EChannelPostMismatch: u64 = 0;
 
     // --------------- Test Functions ---------------
 
@@ -67,56 +65,6 @@ module sage_post::test_channel_posts {
         ts::end(scenario_val);
     }
 
-     #[test]
-    fun test_channel_posts_create() {
-        let (
-            mut scenario_val,
-            mut channel_posts_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let created_at: u64 = 999;
-
-            let channel = channel::create_for_testing(
-                utf8(b"channel-name"),
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
-
-            let channel_posts_registry = &mut channel_posts_registry_val;
-
-            let has_record = channel_posts::has_record(
-                channel_posts_registry,
-                channel
-            );
-
-            assert!(!has_record, EChannelPostsExists);
-
-            channel_posts::create(
-                channel_posts_registry,
-                channel,
-                ts::ctx(scenario)
-            );
-
-            let has_record = channel_posts::has_record(
-                channel_posts_registry,
-                channel
-            );
-
-            assert!(has_record, EChannelPostsDoesNotExist);
-
-            channel_posts::destroy_for_testing(channel_posts_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
     #[test]
     fun test_channel_posts_add() {
         let (
@@ -141,21 +89,10 @@ module sage_post::test_channel_posts {
 
             let channel_posts_registry = &mut channel_posts_registry_val;
 
-            channel_posts::create(
-                channel_posts_registry,
-                channel,
-                ts::ctx(scenario)
-            );
-
-            let channel_posts = channel_posts::get_channel_posts(
-                channel_posts_registry,
-                channel
-            );
-
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
-            let (post, post_id) = post::create(
+            let (_post, post_key) = post::create(
                 user,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -165,14 +102,15 @@ module sage_post::test_channel_posts {
             );
 
             channel_posts::add(
-                channel_posts,
-                post_id,
-                post
+                channel_posts_registry,
+                channel,
+                post_key
             );
 
             let has_post = channel_posts::has_post(
-                channel_posts,
-                post_id
+                channel_posts_registry,
+                channel,
+                post_key
             );
 
             assert!(has_post, EChannelPostMismatch);

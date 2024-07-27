@@ -66,7 +66,7 @@ module sage_channel::channel_actions {
         channel_name: String,
         ctx: &mut TxContext
     ) {
-        let channel = channel_registry::get_channel(
+        let channel = channel_registry::borrow_channel(
             channel_registry,
             channel_name
         );
@@ -89,7 +89,7 @@ module sage_channel::channel_actions {
         channel_name: String,
         ctx: &mut TxContext
     ) {
-        let channel = channel_registry::get_channel(
+        let channel = channel_registry::borrow_channel(
             channel_registry,
             channel_name
         );

@@ -12,7 +12,7 @@ module sage_notification::notification_registry {
 
     // --------------- Errors ---------------
 
-    const EUserNotificationsExists: u64 = 0;
+    const EUserNotificationsExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
@@ -30,6 +30,13 @@ module sage_notification::notification_registry {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_user_notifications(
+        notification_registry: &mut NotificationRegistry,
+        user: address
+    ): &mut UserNotifications {
+        notification_registry.registry.borrow_mut(user)
+    }
+
     public fun create_notification_registry(
         _: &AdminCap,
         ctx: &mut TxContext
@@ -37,13 +44,6 @@ module sage_notification::notification_registry {
         NotificationRegistry {
             registry: immutable_table::new(ctx)
         }
-    }
-
-    public fun borrow_user_notifications(
-        notification_registry: &mut NotificationRegistry,
-        user: address
-    ): &mut UserNotifications {
-        notification_registry.registry.borrow_mut(user)
     }
 
     public fun get_user_notifications_count(

@@ -11,7 +11,7 @@ module sage_post::post_registry {
 
     // --------------- Errors ---------------
 
-    const EPostRecordExists: u64 = 0;
+    const EPostRecordExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
@@ -25,6 +25,13 @@ module sage_post::post_registry {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_post(
+        post_registry: &mut PostRegistry,
+        post_key: String
+    ): Post {
+        *post_registry.registry.borrow(post_key)
+    }
+
     public fun create_post_registry(
         _: &AdminCap,
         ctx: &mut TxContext
@@ -32,13 +39,6 @@ module sage_post::post_registry {
         PostRegistry {
             registry: immutable_table::new(ctx)
         }
-    }
-
-    public fun get_post(
-        post_registry: &mut PostRegistry,
-        post_key: String
-    ): Post {
-        *post_registry.registry.borrow(post_key)
     }
 
     public fun has_record(

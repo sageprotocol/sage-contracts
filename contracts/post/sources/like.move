@@ -14,7 +14,7 @@ module sage_post::post_likes {
 
     // --------------- Errors ---------------
 
-    const EUserAlreadyLiked: u64 = 0;
+    const EUserAlreadyLiked: u64 = 370;
 
     // --------------- Name Tag ---------------
 
@@ -45,6 +45,20 @@ module sage_post::post_likes {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_post_likes(
+        post_likes_registry: &mut PostLikesRegistry,
+        post_key: String
+    ): &mut PostLikes {
+        post_likes_registry.registry.borrow_mut(post_key)
+    }
+
+    public fun borrow_user_post_likes(
+        user_post_likes_registry: &mut UserPostLikesRegistry,
+        user: address
+    ): &mut UserPostLikes {
+        user_post_likes_registry.registry.borrow_mut(user)
+    }
+
     public fun create_post_likes_registry(
         _: &AdminCap,
         ctx: &mut TxContext
@@ -61,20 +75,6 @@ module sage_post::post_likes {
         UserPostLikesRegistry {
             registry: immutable_table::new(ctx)
         }
-    }
-
-    public fun get_post_likes(
-        post_likes_registry: &mut PostLikesRegistry,
-        post_key: String
-    ): &mut PostLikes {
-        post_likes_registry.registry.borrow_mut(post_key)
-    }
-
-    public fun get_user_post_likes(
-        user_post_likes_registry: &mut UserPostLikesRegistry,
-        user: address
-    ): &mut UserPostLikes {
-        user_post_likes_registry.registry.borrow_mut(user)
     }
 
     public fun get_post_likes_count(
@@ -120,11 +120,45 @@ module sage_post::post_likes {
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
-        post_likes: &mut PostLikes,
-        user_post_likes: &mut UserPostLikes,
+        post_likes_registry: &mut PostLikesRegistry,
+        user_post_likes_registry: &mut UserPostLikesRegistry,
         post_key: String,
         user: address
     ) {
+        let has_record = has_post_likes_record(
+            post_likes_registry,
+            post_key
+        );
+
+        if (!has_record) {
+            create_post_likes(
+                post_likes_registry,
+                post_key
+            );
+        };
+
+        let has_record = has_user_likes_record(
+            user_post_likes_registry,
+            user
+        );
+
+        if (!has_record) {
+            create_user_post_likes(
+                user_post_likes_registry,
+                user
+            );
+        };
+
+        let post_likes = borrow_post_likes(
+            post_likes_registry,
+            post_key
+        );
+
+        let user_post_likes = borrow_user_post_likes(
+            user_post_likes_registry,
+            user
+        );
+
         let has_liked = post_likes.has_post_likes(
             user
         );
@@ -146,7 +180,9 @@ module sage_post::post_likes {
         });
     }
 
-    public(package) fun create_post_likes(
+    // --------------- Internal Functions ---------------
+
+    fun create_post_likes(
         post_likes_registry: &mut PostLikesRegistry,
         post_key: String
     ) {
@@ -157,7 +193,7 @@ module sage_post::post_likes {
         post_likes_registry.registry.add(post_key, post_likes);
     }
 
-    public(package) fun create_user_post_likes(
+    fun create_user_post_likes(
         user_post_likes_registry: &mut UserPostLikesRegistry,
         user: address
     ) {
@@ -167,8 +203,6 @@ module sage_post::post_likes {
 
         user_post_likes_registry.registry.add(user, user_post_likes);
     }
-
-    // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 

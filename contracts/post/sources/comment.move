@@ -3,24 +3,21 @@ module sage_post::post_comments {
 
     use sage_admin::{admin::{AdminCap}};
 
-    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
-
-    use sage_post::{post::{Post}};
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable},
+        immutable_vector::{Self, ImmutableVector}
+    };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const EPostCommentsExists: u64 = 0;
+    const EPostCommentsExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
     public struct PostCommentsRegistry has store {
-        registry: ImmutableTable<String, PostComments>
-    }
-
-    public struct PostComments has store {
-        comments: ImmutableTable<String, Post>
+        registry: ImmutableTable<String, ImmutableVector<String>>
     }
 
     // --------------- Events ---------------
@@ -28,6 +25,13 @@ module sage_post::post_comments {
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun borrow_post_comment_keys(
+        post_comments_registry: &mut PostCommentsRegistry,
+        post_key: String
+    ): &mut ImmutableVector<String> {
+        post_comments_registry.registry.borrow_mut(post_key)
+    }
 
     public fun create_post_comments_registry(
         _: &AdminCap,
@@ -38,18 +42,16 @@ module sage_post::post_comments {
         }
     }
 
-    public fun get_post_comments(
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_key: String
-    ): &mut PostComments {
-        post_comments_registry.registry.borrow_mut(post_key)
-    }
-
     public fun has_post(
-        post_comments: &mut PostComments,
+        post_comments_registry: &mut PostCommentsRegistry,
+        parent_post_key: String,
         post_key: String
     ): bool {
-        post_comments.comments.contains(post_key)
+        let parent_post_comment_keys = *post_comments_registry.registry.borrow(
+            parent_post_key
+        );
+
+        parent_post_comment_keys.contains(&post_key)
     }
 
     public fun has_record(
@@ -62,30 +64,47 @@ module sage_post::post_comments {
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
-        post_comments: &mut PostComments,
-        post_key: String,
-        post: Post
-    ) {
-        post_comments.comments.add(post_key, post);
-    }
-
-    public(package) fun create(
         post_comments_registry: &mut PostCommentsRegistry,
-        post_key: String,
-        ctx: &mut TxContext
+        parent_post_key: String,
+        post_key: String
     ) {
-        let has_record = has_record(post_comments_registry, post_key);
+        let has_record = has_record(
+            post_comments_registry,
+            parent_post_key
+        );
 
-        assert!(!has_record, EPostCommentsExists);
-
-        let post_comments = PostComments {
-            comments: immutable_table::new(ctx)
+        if (!has_record) {
+            create(
+                post_comments_registry,
+                parent_post_key
+            );
         };
 
-        post_comments_registry.registry.add(post_key, post_comments);
+        let parent_post_comment_keys = borrow_post_comment_keys(
+            post_comments_registry,
+            parent_post_key
+        );
+
+        parent_post_comment_keys.push_back(post_key);
     }
 
     // --------------- Internal Functions ---------------
+
+    fun create(
+        post_comments_registry: &mut PostCommentsRegistry,
+        parent_post_key: String
+    ) {
+        let has_record = has_record(
+            post_comments_registry,
+            parent_post_key
+        );
+
+        assert!(!has_record, EPostCommentsExists);
+
+        let parent_post_comment_keys = immutable_vector::empty();
+
+        post_comments_registry.registry.add(parent_post_key, parent_post_comment_keys);
+    }
 
     // --------------- Test Functions ---------------
 

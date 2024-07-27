@@ -5,7 +5,7 @@ module sage_notification::notification {
 
     // --------------- Errors ---------------
 
-    const ENegativeReward: u64 = 0;
+    const ENegativeReward: u64 = 370;
 
     // --------------- Name Tag ---------------
 

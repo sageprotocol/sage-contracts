@@ -10,8 +10,8 @@ module sage_user::user {
 
     // --------------- Errors ---------------
 
-    const EInvalidDescription: u64 = 0;
-    const EInvalidUsername: u64 = 1;
+    const EInvalidDescription: u64 = 370;
+    const EInvalidUsername: u64 = 371;
 
     // --------------- Name Tag ---------------
 
