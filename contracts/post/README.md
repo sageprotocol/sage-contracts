@@ -1,5 +1,5 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/0x9661da8a9b7940bf81420774ad4b73988896c4dc5aa740ad6f2ab68d7f1fdf2b) - 0x9661da8a9b7940bf81420774ad4b73988896c4dc5aa740ad6f2ab68d7f1fdf2b
+[Package](https://testnet.suivision.xyz/package/0x2080103ae14b6a64843023549304413f226d59ef24b67da218cc9e5b5e6a7e7d) - 0x2080103ae14b6a64843023549304413f226d59ef24b67da218cc9e5b5e6a7e7d
 
-[UpgradeCap](https://testnet.suivision.xyz/object/0x950bcbf8fa0a4af4cb9d769a995789ce0adeb0fb576484ac9e91800f323439c0) - 0x950bcbf8fa0a4af4cb9d769a995789ce0adeb0fb576484ac9e91800f323439c0
+[UpgradeCap](https://testnet.suivision.xyz/object/0xea299235910f3f9ecbe22d043586b43eb0affd60e391ed8bb666987349118da5) - 0xea299235910f3f9ecbe22d043586b43eb0affd60e391ed8bb666987349118da5
