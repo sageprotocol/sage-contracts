@@ -87,7 +87,7 @@ module sage_post::test_like {
             let timestamp: u64 = 999;
             let user: address = @0xaaa;
 
-            let (_post, post_id) = post::create(
+            let (_post, post_key) = post::create(
                 user,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -102,13 +102,13 @@ module sage_post::test_like {
             post_likes::add(
                 post_likes_registry,
                 user_post_likes_registry,
-                post_id,
+                post_key,
                 user
             );
 
             let post_likes = post_likes::borrow_post_likes(
                 post_likes_registry,
-                post_id
+                post_key
             );
 
             let user_post_likes = post_likes::borrow_user_post_likes(
@@ -131,7 +131,7 @@ module sage_post::test_like {
 
             let has_record = post_likes::has_user_likes(
                 user_post_likes,
-                post_id
+                post_key
             );
 
             assert!(has_record, EPostLikesMismatch);
