@@ -14,7 +14,7 @@ module sage_post::user_posts {
 
     // --------------- Errors ---------------
 
-    const EUserPostsExists: u64 = 0;
+    const EUserPostsExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 

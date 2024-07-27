@@ -12,7 +12,7 @@ module sage_post::post_comments {
 
     // --------------- Errors ---------------
 
-    const EPostCommentsExists: u64 = 0;
+    const EPostCommentsExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 

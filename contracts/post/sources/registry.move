@@ -11,7 +11,7 @@ module sage_post::post_registry {
 
     // --------------- Errors ---------------
 
-    const EPostRecordExists: u64 = 0;
+    const EPostRecordExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 

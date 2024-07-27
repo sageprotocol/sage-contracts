@@ -14,7 +14,7 @@ module sage_post::post_likes {
 
     // --------------- Errors ---------------
 
-    const EUserAlreadyLiked: u64 = 0;
+    const EUserAlreadyLiked: u64 = 370;
 
     // --------------- Name Tag ---------------
 
