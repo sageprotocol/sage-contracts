@@ -58,11 +58,7 @@ module sage_channel::channel {
     ): String {
         let Channel {
             avatar_hash,
-            banner_hash: _,
-            created_at: _,
-            created_by: _,
-            description: _,
-            name: _
+            ..
         } = channel;
 
         avatar_hash
@@ -72,12 +68,8 @@ module sage_channel::channel {
         channel: Channel
     ): String {
         let Channel {
-            avatar_hash: _,
             banner_hash,
-            created_at: _,
-            created_by: _,
-            description: _,
-            name: _
+            ..
         } = channel;
 
         banner_hash
@@ -87,12 +79,8 @@ module sage_channel::channel {
         channel: Channel
     ): String {
         let Channel {
-            avatar_hash: _,
-            banner_hash: _,
-            created_at: _,
-            created_by: _,
             description,
-            name: _
+            ..
         } = channel;
 
         description

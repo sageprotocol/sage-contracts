@@ -96,7 +96,7 @@ module sage_channel::test_channel_registry {
                 channel
             );
 
-            let retrieved_channel = channel_registry::get_channel(
+            let retrieved_channel = channel_registry::borrow_channel(
                 channel_registry,
                 channel_name
             );
@@ -140,7 +140,7 @@ module sage_channel::test_channel_registry {
                 channel
             );
 
-            let retrieved_channel_name = channel_registry::get_channel_name(
+            let retrieved_channel_name = channel_registry::borrow_channel_name(
                 channel_registry,
                 channel
             );
