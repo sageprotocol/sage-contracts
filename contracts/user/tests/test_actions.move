@@ -148,6 +148,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
+        let other_name = utf8(b"other-name");
+
         ts::next_tx(scenario, ADMIN);
         let (other_user, user_registry, user_membership_registry) = {
             let mut clock = clock::create_for_testing(ts::ctx(scenario));
@@ -156,7 +158,6 @@ module sage_user::test_user_actions {
             let user_membership_registry = &mut user_membership_registry_val;
 
             let created_at: u64 = 999;
-            let other_name = utf8(b"other-name");
 
             let other_user = user::create(
                 OTHER,
@@ -205,7 +206,7 @@ module sage_user::test_user_actions {
             user_actions::join(
                 user_registry,
                 user_membership_registry,
-                OTHER,
+                other_name,
                 ts::ctx(scenario)
             );
 
