@@ -11,6 +11,10 @@ module sage_user::user_registry {
         user::{User}
     };
 
+    use sage_utils::{
+        string_helpers::{Self}
+    };
+
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
@@ -81,12 +85,16 @@ module sage_user::user_registry {
 
         assert!(!address_record_exists, EAddressRecordExists);
 
-        let username_record_exists = user_registry.has_username_record(username);
+        let lowercase_username = string_helpers::to_lowercase(
+            &username
+        );
+
+        let username_record_exists = user_registry.has_username_record(lowercase_username);
 
         assert!(!username_record_exists, EUsernameRecordExists);
 
-        user_registry.address_registry.add(address, username);
-        user_registry.user_registry.add(username, user);
+        user_registry.address_registry.add(address, lowercase_username);
+        user_registry.user_registry.add(lowercase_username, user);
     }
 
     // --------------- Internal Functions ---------------

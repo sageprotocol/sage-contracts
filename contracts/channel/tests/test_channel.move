@@ -15,7 +15,6 @@ module sage_channel::test_channel {
     const EChannelAvatarMismatch: u64 = 0;
     const EChannelBannerMismatch: u64 = 1;
     const EChannelDescriptionMismatch: u64 = 2;
-    const EChannelNameInvalid: u64 = 3;
 
     // --------------- Test Functions ---------------
 
@@ -159,113 +158,6 @@ module sage_channel::test_channel {
             let channel_description = channel::get_description(channel);
 
             assert!(channel_description == new_channel_description, EChannelDescriptionMismatch);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_channel_name_validity() {
-        let mut scenario_val = ts::begin(ADMIN);
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"ab");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"abcdefghijklmnopqrstu");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"abcdefghijklmnopqrst");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == true, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"abcdefghij-klmnopqrs");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == true, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"ab-");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"-ab");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"a_b");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"ab?");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"ab\"ab");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == false, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"ab123");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == true, EChannelNameInvalid);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let name = utf8(b"987ab");
-
-            let is_valid = channel::is_valid_channel_name_for_testing(&name);
-
-            assert!(is_valid == true, EChannelNameInvalid);
         };
 
         ts::end(scenario_val);

@@ -1,6 +1,10 @@
 module sage_user::user {
     use std::string::{String};
 
+    use sage_utils::{
+        string_helpers::{Self}
+    };
+
     // --------------- Constants ---------------
 
     const DESCRIPTION_MAX_LENGTH: u64 = 370;
@@ -41,7 +45,11 @@ module sage_user::user {
         description: String,
         name: String
     ): User {
-        let is_valid_name = is_valid_username(&name);
+        let is_valid_name = string_helpers::is_valid_name(
+            &name,
+            USERNAME_MIN_LENGTH,
+            USERNAME_MAX_LENGTH
+        );
 
         assert!(is_valid_name, EInvalidUsername);
 
@@ -60,6 +68,17 @@ module sage_user::user {
         }
     }
 
+    public(package) fun get_address(
+        user: User
+    ): address {
+        let User {
+            address,
+            ..
+        } = user;
+
+        address
+    }
+
     // --------------- Internal Functions ---------------
 
     fun is_valid_description(
@@ -69,34 +88,6 @@ module sage_user::user {
 
         if (len > DESCRIPTION_MAX_LENGTH) {
             return false
-        };
-
-        true
-    }
-
-    fun is_valid_username(
-        name: &String
-    ): bool {
-        let len = name.length();
-        let name_bytes = name.bytes();
-        let mut index = 0;
-
-        if (!(len >= USERNAME_MIN_LENGTH && len <= USERNAME_MAX_LENGTH)) {
-            return false
-        };
-
-        while (index < len) {
-            let character = name_bytes[index];
-            let is_valid_character =
-                (0x61 <= character && character <= 0x7A)                   // a-z
-                || (0x30 <= character && character <= 0x39)                // 0-9
-                || (character == 0x2D && index != 0 && index != len - 1);  // '-' not at beginning or end
-
-            if (!is_valid_character) {
-                return false
-            };
-
-            index = index + 1;
         };
 
         true
@@ -128,12 +119,5 @@ module sage_user::user {
         name: &String
     ): bool {
         is_valid_description(name)
-    }
-
-    #[test_only]
-    public fun is_valid_username_for_testing(
-        name: &String
-    ): bool {
-        is_valid_username(name)
     }
 }

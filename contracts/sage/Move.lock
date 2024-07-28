@@ -2,7 +2,7 @@
 
 [move]
 version = 2
-manifest_digest = "60ABD395BBF8346AC4C67013A7592C396CE08DD7313BA184ACAD86DA6F1E1A81"
+manifest_digest = "34F1F4A5123C997C9A199309EF1BB995D6D9731ECB8DA98EAE824FBCDFD0A3D9"
 deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { name = "SageAdmin" },
@@ -33,6 +33,7 @@ source = { local = "../channel" }
 dependencies = [
   { name = "SageAdmin" },
   { name = "SageImmutable" },
+  { name = "SageUtils" },
   { name = "Sui" },
 ]
 
@@ -72,6 +73,15 @@ source = { local = "../user" }
 
 dependencies = [
   { name = "SageAdmin" },
+  { name = "SageUtils" },
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "SageUtils"
+source = { local = "../utils" }
+
+dependencies = [
   { name = "Sui" },
 ]
 
@@ -92,6 +102,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x896ebce9391c4c634f7ce0a11cbf9bcb9a38fd9b150acd35335cc1f380340aac"
-latest-published-id = "0x896ebce9391c4c634f7ce0a11cbf9bcb9a38fd9b150acd35335cc1f380340aac"
+original-published-id = "0xf75be7a4bef33c5c346466d0e56777c3b112aa81b81a00d32145e90fc9306610"
+latest-published-id = "0xf75be7a4bef33c5c346466d0e56777c3b112aa81b81a00d32145e90fc9306610"
 published-version = "1"

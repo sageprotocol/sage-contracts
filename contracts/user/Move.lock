@@ -2,10 +2,11 @@
 
 [move]
 version = 2
-manifest_digest = "F5CDAF815C4F7086A1D7EBA3B57AB183C05BDA66D6A419F3E3ADF5DA5E318CA5"
-deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
+manifest_digest = "6228EDB741670B37B844F9E3948F7B3D17F511BE8D7C038ABF8B6E8C1C9DC92C"
+deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { name = "SageAdmin" },
+  { name = "SageUtils" },
   { name = "Sui" },
 ]
 
@@ -16,6 +17,14 @@ source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testn
 [[move.package]]
 name = "SageAdmin"
 source = { local = "../admin" }
+
+dependencies = [
+  { name = "Sui" },
+]
+
+[[move.package]]
+name = "SageUtils"
+source = { local = "../utils" }
 
 dependencies = [
   { name = "Sui" },
@@ -38,6 +47,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x6ce4326870a80bd16233d1df8c5519f6254ed73e3e786c5297309bcf4f1acaed"
-latest-published-id = "0x6ce4326870a80bd16233d1df8c5519f6254ed73e3e786c5297309bcf4f1acaed"
+original-published-id = "0xbfe48a13f435061289b89f4eb749f215b49a5c2709e616f2612b8eafc90cb734"
+latest-published-id = "0xbfe48a13f435061289b89f4eb749f215b49a5c2709e616f2612b8eafc90cb734"
 published-version = "1"
