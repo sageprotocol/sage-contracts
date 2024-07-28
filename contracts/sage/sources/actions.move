@@ -358,7 +358,7 @@ module sage::actions {
     public fun join_user(
         sage_user: &mut SageUsers,
         sage_user_membership: &mut SageUserMembership,
-        followed_user: address,
+        username: String,
         ctx: &mut TxContext
     ) {
         let user_registry = field::borrow_mut(&mut sage_user.id, RegistryKey<UserRegistry> {});
@@ -367,7 +367,7 @@ module sage::actions {
         user_actions::join(
             user_registry,
             user_membership_registry,
-            followed_user,
+            username,
             ctx
         );
     }
@@ -375,7 +375,7 @@ module sage::actions {
     public fun leave_user(
         sage_user: &mut SageUsers,
         sage_user_membership: &mut SageUserMembership,
-        followed_user: address,
+        username: String,
         ctx: &mut TxContext
     ) {
         let user_registry = field::borrow_mut(&mut sage_user.id, RegistryKey<UserRegistry> {});
@@ -384,7 +384,7 @@ module sage::actions {
         user_actions::leave(
             user_registry,
             user_membership_registry,
-            followed_user,
+            username,
             ctx
         );
     }
