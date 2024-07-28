@@ -15,6 +15,7 @@ module sage_user::test_user_membership {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const OTHER: address = @0xbabe;
 
     // --------------- Errors ---------------
 
@@ -130,10 +131,33 @@ module sage_user::test_user_membership {
 
         let scenario = &mut scenario_val;
 
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, OTHER);
+        let other_user = {
+            let other_username = utf8(b"other-name");
+            let created_at: u64 = 999;
+
+            let other_user = user::create(
+                ADMIN,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                created_at,
+                utf8(b"description"),
+                other_username
+            );
+
+            user_membership::create(
+                user_membership_registry,
+                other_user,
+                ts::ctx(scenario)
+            );
+
+            other_user
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
-            let user_membership_registry = &mut user_membership_registry_val;
-
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
 
@@ -154,7 +178,7 @@ module sage_user::test_user_membership {
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                user
+                other_user
             );
 
             user_membership::join(
