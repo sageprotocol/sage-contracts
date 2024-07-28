@@ -45,16 +45,16 @@ module sage_channel::channel_actions {
             created_by
         );
 
-        channel_registry::add(
-            channel_registry,
-            channel_name,
-            channel
-        );
-
         channel_membership::create(
             channel_membership_registry,
             channel,
             ctx
+        );
+
+        channel_registry::add(
+            channel_registry,
+            channel_name,
+            channel
         );
 
         channel

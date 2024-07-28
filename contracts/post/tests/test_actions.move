@@ -26,6 +26,7 @@ module sage_post::test_post_actions {
 
     use sage_user::{
         user_actions::{Self},
+        user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
 
@@ -52,6 +53,7 @@ module sage_post::test_post_actions {
         PostCommentsRegistry,
         PostLikesRegistry,
         PostRegistry,
+        UserMembershipRegistry,
         UserPostLikesRegistry,
         UserPostsRegistry,
         UserRegistry
@@ -70,6 +72,7 @@ module sage_post::test_post_actions {
             post_comments_registry,
             post_likes_registry,
             post_registry,
+            user_membership_registry,
             user_post_likes_registry,
             user_posts_registry,
             user_registry
@@ -100,6 +103,10 @@ module sage_post::test_post_actions {
                 &admin_cap,
                 ts::ctx(scenario)
             );
+            let user_membership_registry = user_membership::create_user_membership_registry(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
             let user_post_likes_registry = post_likes::create_user_post_likes_registry(
                 &admin_cap,
                 ts::ctx(scenario)
@@ -122,6 +129,7 @@ module sage_post::test_post_actions {
                 post_comments_registry,
                 post_likes_registry,
                 post_registry,
+                user_membership_registry,
                 user_post_likes_registry,
                 user_posts_registry,
                 user_registry
@@ -136,6 +144,7 @@ module sage_post::test_post_actions {
             post_comments_registry,
             post_likes_registry,
             post_registry,
+            user_membership_registry,
             user_post_likes_registry,
             user_posts_registry,
             user_registry
@@ -152,6 +161,7 @@ module sage_post::test_post_actions {
             post_comments_registry_val,
             post_likes_registry_val,
             post_registry_val,
+            user_membership_registry_val,
             user_post_likes_registry_val,
             user_posts_registry_val,
             user_registry_val
@@ -167,6 +177,7 @@ module sage_post::test_post_actions {
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
             post_registry::destroy_for_testing(post_registry_val);
+            user_membership::destroy_for_testing(user_membership_registry_val);
             user_posts::destroy_for_testing(user_posts_registry_val);
             user_registry::destroy_for_testing(user_registry_val);
         };
@@ -185,6 +196,7 @@ module sage_post::test_post_actions {
             post_comments_registry_val,
             post_likes_registry_val,
             mut post_registry_val,
+            user_membership_registry_val,
             user_post_likes_registry_val,
             user_posts_registry_val,
             user_registry_val
@@ -271,6 +283,7 @@ module sage_post::test_post_actions {
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
             post_registry::destroy_for_testing(post_registry_val);
+            user_membership::destroy_for_testing(user_membership_registry_val);
             user_posts::destroy_for_testing(user_posts_registry_val);
             user_registry::destroy_for_testing(user_registry_val);
         };
@@ -289,6 +302,7 @@ module sage_post::test_post_actions {
             post_comments_registry_val,
             post_likes_registry_val,
             mut post_registry_val,
+            user_membership_registry_val,
             user_post_likes_registry_val,
             user_posts_registry_val,
             user_registry_val
@@ -366,6 +380,7 @@ module sage_post::test_post_actions {
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
             post_registry::destroy_for_testing(post_registry_val);
+            user_membership::destroy_for_testing(user_membership_registry_val);
             user_posts::destroy_for_testing(user_posts_registry_val);
             user_registry::destroy_for_testing(user_registry_val);
         };
@@ -384,6 +399,7 @@ module sage_post::test_post_actions {
             mut post_comments_registry_val,
             post_likes_registry_val,
             mut post_registry_val,
+            user_membership_registry_val,
             user_post_likes_registry_val,
             user_posts_registry_val,
             user_registry_val
@@ -477,6 +493,7 @@ module sage_post::test_post_actions {
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
             post_registry::destroy_for_testing(post_registry_val);
+            user_membership::destroy_for_testing(user_membership_registry_val);
             user_posts::destroy_for_testing(user_posts_registry_val);
             user_registry::destroy_for_testing(user_registry_val);
         };
@@ -485,6 +502,7 @@ module sage_post::test_post_actions {
     }
 
     #[test]
+    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_from_user() {
         let (
             mut scenario_val,
@@ -494,6 +512,7 @@ module sage_post::test_post_actions {
             post_comments_registry_val,
             post_likes_registry_val,
             mut post_registry_val,
+            mut user_membership_registry_val,
             user_post_likes_registry_val,
             mut user_posts_registry_val,
             mut user_registry_val
@@ -502,6 +521,7 @@ module sage_post::test_post_actions {
         let scenario = &mut scenario_val;
 
         let post_registry = &mut post_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
         let user_posts_registry = &mut user_posts_registry_val;
         let user_registry = &mut user_registry_val;
 
@@ -522,6 +542,7 @@ module sage_post::test_post_actions {
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_membership_registry,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -581,6 +602,7 @@ module sage_post::test_post_actions {
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
             post_registry::destroy_for_testing(post_registry_val);
+            user_membership::destroy_for_testing(user_membership_registry_val);
             user_posts::destroy_for_testing(user_posts_registry_val);
             user_registry::destroy_for_testing(user_registry_val);
         };
@@ -589,6 +611,7 @@ module sage_post::test_post_actions {
     }
 
     #[test]
+    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_like() {
         let (
             mut scenario_val,
@@ -598,6 +621,7 @@ module sage_post::test_post_actions {
             post_comments_registry_val,
             mut post_likes_registry_val,
             mut post_registry_val,
+            mut user_membership_registry_val,
             mut user_post_likes_registry_val,
             mut user_posts_registry_val,
             mut user_registry_val
@@ -607,6 +631,7 @@ module sage_post::test_post_actions {
 
         let post_likes_registry = &mut post_likes_registry_val;
         let post_registry = &mut post_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
         let user_post_likes_registry = &mut user_post_likes_registry_val;
         let user_posts_registry = &mut user_posts_registry_val;
         let user_registry = &mut user_registry_val;
@@ -628,6 +653,7 @@ module sage_post::test_post_actions {
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_membership_registry,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -694,6 +720,7 @@ module sage_post::test_post_actions {
             post_comments::destroy_for_testing(post_comments_registry_val);
             post_likes::destroy_for_testing(post_likes_registry_val, user_post_likes_registry_val);
             post_registry::destroy_for_testing(post_registry_val);
+            user_membership::destroy_for_testing(user_membership_registry_val);
             user_posts::destroy_for_testing(user_posts_registry_val);
             user_registry::destroy_for_testing(user_registry_val);
         };

@@ -75,48 +75,6 @@ module sage_user::user_membership {
         user_membership.membership.contains(user)
     }
 
-    public fun join(
-        user_membership: &mut UserMembership,
-        followed_user: address,
-        ctx: &mut TxContext
-    ) {
-        let user = tx_context::sender(ctx);
-
-        join_user(
-            user_membership,
-            user
-        );
-
-        event::emit(UserMembershipUpdate {
-            followed_user,
-            message: USER_JOIN,
-            user
-        });
-    }
-
-    public fun leave(
-        user_membership: &mut UserMembership,
-        followed_user: address,
-        ctx: &mut TxContext
-    ) {
-        let user = tx_context::sender(ctx);
-
-        let is_member = is_member(
-            user_membership,
-            user
-        );
-
-        assert!(is_member, EUserMemberDoesNotExist);
-
-        user_membership.membership.remove(user);
-
-        event::emit(UserMembershipUpdate {
-            followed_user,
-            message: USER_LEAVE,
-            user
-        });
-    }
-
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
@@ -129,6 +87,48 @@ module sage_user::user_membership {
         };
 
         user_membership_registry.registry.add(user, user_membership);
+    }
+
+    public(package) fun join(
+        user_membership: &mut UserMembership,
+        followed_user: address,
+        ctx: &TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        join_user(
+            user_membership,
+            self
+        );
+
+        event::emit(UserMembershipUpdate {
+            followed_user,
+            message: USER_JOIN,
+            user: self
+        });
+    }
+
+    public(package) fun leave(
+        user_membership: &mut UserMembership,
+        followed_user: address,
+        ctx: &TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        let is_member = is_member(
+            user_membership,
+            self
+        );
+
+        assert!(is_member, EUserMemberDoesNotExist);
+
+        user_membership.membership.remove(self);
+
+        event::emit(UserMembershipUpdate {
+            followed_user,
+            message: USER_LEAVE,
+            user: self
+        });
     }
 
     // --------------- Internal Functions ---------------

@@ -186,12 +186,12 @@ module sage_channel::test_channel_registry {
                 channel
             );
 
-            let retrieved_channel_name = channel_registry::borrow_channel_name(
+            let channel_key = channel_registry::borrow_channel_key(
                 channel_registry,
                 channel
             );
 
-            assert!(retrieved_channel_name == channel_name, EChannelNameMismatch);
+            assert!(channel_key == channel_name, EChannelNameMismatch);
 
             channel_registry::destroy_for_testing(channel_registry_val);
         };
@@ -212,13 +212,13 @@ module sage_channel::test_channel_registry {
         {
             let channel_registry = &mut channel_registry_val;
 
-            let lower_name = utf8(b"channel-name");
-            let upper_name = utf8(b"CHANNEL-NAME");
+            let channel_key = utf8(b"channel-name");
+            let channel_name = utf8(b"CHANNEL-NAME");
 
             let created_at: u64 = 999;
 
             let channel = channel::create(
-                upper_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -228,16 +228,16 @@ module sage_channel::test_channel_registry {
 
             channel_registry::add(
                 channel_registry,
-                upper_name,
+                channel_name,
                 channel
             );
 
-            let retrieved_channel_name = channel_registry::borrow_channel_name(
+            let retrieved_channel_key = channel_registry::borrow_channel_key(
                 channel_registry,
                 channel
             );
 
-            assert!(retrieved_channel_name == lower_name, EChannelNameMismatch);
+            assert!(retrieved_channel_key == channel_key, EChannelNameMismatch);
 
             channel_registry::destroy_for_testing(channel_registry_val);
         };
