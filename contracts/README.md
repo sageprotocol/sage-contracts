@@ -6,18 +6,19 @@ The order which the contracts are published is important, and errors will be enc
 
 1. Admin
 2. Immutable
-3. Channel
-4. User
-5. Post
-6. Notification
-7. Sage
+3. Utils
+4. Channel
+5. User
+6. Post
+7. Notification
+8. Sage
 
 This is due to dependencies between the packages:
 
 - "Sage" depends on Admin, Immutable, Channel, Notification, Post, and User.
 - "Post" depends on Admin, Immutable, Channel, and User.
-- "Channel" depends on Admin and Immutable.
-- "User" depends on Admin and Immutable.
+- "Channel" depends on Admin, Immutable, and Utils.
+- "User" depends on Admin, Immutable, and Utils.
 
 After each dependent contract is published or upgraded it is important to update the "published-at" and relevant address declaration in all files that depend on the package.
 
