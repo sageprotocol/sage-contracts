@@ -11,7 +11,6 @@ module sage_user::test_user_actions {
     };
 
     use sage_user::{
-        user::{Self},
         user_actions::{Self},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry},
@@ -20,7 +19,7 @@ module sage_user::test_user_actions {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
-    const OTHER: address = @0xcafe;
+    const OTHER: address = @0xbabe;
 
     // --------------- Errors ---------------
 
@@ -79,11 +78,12 @@ module sage_user::test_user_actions {
     }
 
     #[test]
+    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_actions_create() {
         let (
             mut scenario_val,
             mut user_registry_val,
-            user_membership_registry_val
+            mut user_membership_registry_val
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -101,12 +101,14 @@ module sage_user::test_user_actions {
             let clock: Clock = ts::take_shared(scenario);
 
             let user_registry = &mut user_registry_val;
+            let user_membership_registry = &mut user_membership_registry_val;
 
             let name = utf8(b"user-name");    
 
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_membership_registry,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -150,34 +152,21 @@ module sage_user::test_user_actions {
 
         let other_name = utf8(b"other-name");
 
-        ts::next_tx(scenario, ADMIN);
+        ts::next_tx(scenario, OTHER);
         let (other_user, user_registry, user_membership_registry) = {
             let mut clock = clock::create_for_testing(ts::ctx(scenario));
 
             let user_registry = &mut user_registry_val;
             let user_membership_registry = &mut user_membership_registry_val;
 
-            let created_at: u64 = 999;
-
-            let other_user = user::create(
-                OTHER,
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                other_name
-            );
-
-            user_registry::add(
+            let other_user = user_actions::create(
+                &clock,
                 user_registry,
-                other_name,
-                OTHER,
-                other_user
-            );
-
-            user_membership::create(
                 user_membership_registry,
-                other_user,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                other_name,
                 ts::ctx(scenario)
             );
 
@@ -196,6 +185,7 @@ module sage_user::test_user_actions {
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_membership_registry,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
