@@ -37,35 +37,36 @@ module sage_post::post_actions {
     // --------------- Events ---------------
 
     public struct ChannelPostCreated has copy, drop {
-        key: String,
-        channel_name: String,
+        channel_key: String,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
+        post_key: String,
         title: String,
         updated_at: u64
     }
 
     public struct CommentCreated has copy, drop {
-        key: String,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
         parent_post_key: String,
+        post_key: String,
         title: String,
         updated_at: u64
     }
 
     public struct UserPostCreated has copy, drop {
-        key: String,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
+        post_key: String,
         title: String,
-        updated_at: u64
+        updated_at: u64,
+        user_key: address
     }
 
     // --------------- Constructor ---------------
@@ -102,7 +103,7 @@ module sage_post::post_actions {
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_posts_registry: &mut ChannelPostsRegistry,
         post_registry: &mut PostRegistry,
-        channel_name: String,
+        channel_key: String,
         data: String,
         description: String,
         title: String,
@@ -110,14 +111,14 @@ module sage_post::post_actions {
     ): String {
         let has_record = channel_registry::has_record(
             channel_registry,
-            channel_name
+            channel_key
         );
 
         assert!(has_record, EChannelDoesNotExist);
 
         let channel = channel_registry::borrow_channel(
             channel_registry,
-            channel_name
+            channel_key
         );
 
         let channel_membership = channel_membership::borrow_membership_mut(
@@ -158,12 +159,12 @@ module sage_post::post_actions {
         );
 
         event::emit(ChannelPostCreated {
-            key: post_key,
-            channel_name,
+            channel_key,
             created_at: timestamp,
             created_by: user,
             data,
             description,
+            post_key,
             title,
             updated_at: timestamp
         });
@@ -213,12 +214,12 @@ module sage_post::post_actions {
         );
 
         event::emit(CommentCreated {
-            key: post_key,
             created_at: timestamp,
             created_by: user,
             data,
             description,
             parent_post_key: parent_key,
+            post_key,
             title,
             updated_at: timestamp
         });
@@ -279,13 +280,14 @@ module sage_post::post_actions {
         );
 
         event::emit(UserPostCreated {
-            key: post_key,
             created_at: timestamp,
             created_by: address,
             data,
             description,
+            post_key,
             title,
-            updated_at: timestamp
+            updated_at: timestamp,
+            user_key: address
         });
 
         post_key

@@ -96,12 +96,12 @@ module sage::test_sage_actions {
                 &mut sage_channel
             );
 
-            let retrieved_channel_name = channel_registry::borrow_channel_name(
+            let channel_key = channel_registry::borrow_channel_key(
                 channel_registry,
                 channel
             );
 
-            assert!(channel_name == retrieved_channel_name, EChannelNotCreated);
+            assert!(channel_name == channel_key, EChannelNotCreated);
 
             actions::destroy_channel_for_testing(sage_channel);
             actions::destroy_channel_membership_for_testing(sage_channel_membership);

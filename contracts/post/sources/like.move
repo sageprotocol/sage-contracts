@@ -37,7 +37,7 @@ module sage_post::post_likes {
     // --------------- Events ---------------
 
     public struct PostLiked has copy, drop {
-        key: String,
+        post_key: String,
         user: address
     }
 
@@ -175,7 +175,7 @@ module sage_post::post_likes {
         user_post_likes.likes.push_back(post_key);
 
         event::emit(PostLiked {
-            key: post_key,
+            post_key,
             user
         });
     }
