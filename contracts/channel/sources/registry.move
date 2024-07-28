@@ -32,12 +32,12 @@ module sage_channel::channel_registry {
 
     public fun borrow_channel(
         channel_registry: &mut ChannelRegistry,
-        channel_name: String
+        channel_key: String
     ): Channel {
-        *channel_registry.registry.borrow(channel_name)
+        *channel_registry.registry.borrow(channel_key)
     }
 
-    public fun borrow_channel_name(
+    public fun borrow_channel_key(
         channel_registry: &mut ChannelRegistry,
         channel: Channel
     ): String {
@@ -56,9 +56,9 @@ module sage_channel::channel_registry {
 
     public fun has_record(
         channel_registry: &ChannelRegistry,
-        channel_name: String
+        channel_key: String
     ): bool {
-        channel_registry.registry.contains(channel_name)
+        channel_registry.registry.contains(channel_key)
     }
 
     // --------------- Friend Functions ---------------
