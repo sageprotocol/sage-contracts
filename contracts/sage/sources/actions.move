@@ -282,6 +282,7 @@ module sage::actions {
     public fun create_user(
         clock: &Clock,
         sage_users: &mut SageUsers,
+        sage_user_membership: &mut SageUserMembership,
         avatar_hash: String,
         banner_hash: String,
         description: String,
@@ -289,10 +290,12 @@ module sage::actions {
         ctx: &mut TxContext
     ): User {
         let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
+        let user_membership_registry = field::borrow_mut(&mut sage_user_membership.id, RegistryKey<UserMembershipRegistry> {});
 
         user_actions::create(
             clock,
             user_registry,
+            user_membership_registry,
             avatar_hash,
             banner_hash,
             description,

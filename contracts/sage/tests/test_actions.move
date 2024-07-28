@@ -446,7 +446,7 @@ module sage::test_sage_actions {
             mut sage_post,
             sage_post_comments,
             sage_post_likes,
-            sage_user_membership,
+            mut sage_user_membership,
             sage_user_post_likes,
             mut sage_user_posts,
             mut sage_users
@@ -471,6 +471,7 @@ module sage::test_sage_actions {
             let user = actions::create_user(
                 &clock,
                 &mut sage_users,
+                &mut sage_user_membership,
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
                 utf8(b"description"),
