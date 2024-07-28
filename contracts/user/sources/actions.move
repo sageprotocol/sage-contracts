@@ -76,22 +76,19 @@ module sage_user::user_actions {
     public fun join(
         user_registry: &mut UserRegistry,
         user_membership_registry: &mut UserMembershipRegistry,
-        address: address,
+        username: String,
         ctx: &mut TxContext
     ) {
         let self = tx_context::sender(ctx);
-
-        assert!(self != address, ENoSelfJoin);
-
-        let username = user_registry::borrow_username(
-            user_registry,
-            address
-        );
 
         let user = user_registry::borrow_user(
             user_registry,
             username
         );
+
+        let address = user::get_address(user);
+
+        assert!(self != address, ENoSelfJoin);
 
         let user_membership = user_membership::borrow_membership_mut(
             user_membership_registry,
@@ -108,18 +105,15 @@ module sage_user::user_actions {
     public fun leave(
         user_registry: &mut UserRegistry,
         user_membership_registry: &mut UserMembershipRegistry,
-        address: address,
+        username: String,
         ctx: &mut TxContext
     ) {
-        let username = user_registry::borrow_username(
-            user_registry,
-            address
-        );
-
         let user = user_registry::borrow_user(
             user_registry,
             username
         );
+
+        let address = user::get_address(user);
 
         let user_membership = user_membership::borrow_membership_mut(
             user_membership_registry,
