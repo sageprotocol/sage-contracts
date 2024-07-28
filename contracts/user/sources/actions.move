@@ -36,6 +36,7 @@ module sage_user::user_actions {
     public fun create(
         clock: &Clock,
         user_registry: &mut UserRegistry,
+        user_membership_registry: &mut UserMembershipRegistry,
         avatar_hash: String,
         banner_hash: String,
         description: String,
@@ -52,6 +53,12 @@ module sage_user::user_actions {
             created_at,
             description,
             name
+        );
+
+        user_membership::create(
+            user_membership_registry,
+            user,
+            ctx
         );
 
         user_registry::add(
