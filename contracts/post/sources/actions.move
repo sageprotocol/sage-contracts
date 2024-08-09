@@ -76,10 +76,20 @@ module sage_post::post_actions {
     public fun like(
         post_registry: &mut PostRegistry,
         post_likes_registry: &mut PostLikesRegistry,
+        user_registry: &mut UserRegistry,
         user_post_likes_registry: &mut UserPostLikesRegistry,
         post_key: String,
         ctx: &mut TxContext
     ) {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let has_record = post_registry::has_record(
             post_registry,
             post_key
@@ -103,12 +113,22 @@ module sage_post::post_actions {
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_posts_registry: &mut ChannelPostsRegistry,
         post_registry: &mut PostRegistry,
+        user_registry: &mut UserRegistry,
         channel_key: String,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): String {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let has_record = channel_registry::has_record(
             channel_registry,
             channel_key
@@ -176,14 +196,22 @@ module sage_post::post_actions {
         clock: &Clock,
         post_registry: &mut PostRegistry,
         post_comments_registry: &mut PostCommentsRegistry,
+        user_registry: &mut UserRegistry,
         parent_key: String,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): String {
+        let self = tx_context::sender(ctx);
         let timestamp = clock.timestamp_ms();
-        let user = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
 
         let has_record = post_registry::has_record(
             post_registry,
@@ -193,7 +221,7 @@ module sage_post::post_actions {
         assert!(has_record, EParentPostDoesNotExist);
 
         let (post, post_key) = post::create(
-            user,
+            self,
             data,
             description,
             title,
@@ -215,7 +243,7 @@ module sage_post::post_actions {
 
         event::emit(CommentCreated {
             created_at: timestamp,
-            created_by: user,
+            created_by: self,
             data,
             description,
             parent_post_key: parent_key,
@@ -235,20 +263,28 @@ module sage_post::post_actions {
         data: String,
         description: String,
         title: String,
+        user_address: address,
         ctx: &mut TxContext
     ): String {
-        let address = tx_context::sender(ctx);
+        let self = tx_context::sender(ctx);
 
-        let has_record = user_registry::has_address_record(
+        let self_exists = user_registry::has_address_record(
             user_registry,
-            address
+            self
         );
 
-        assert!(has_record, EUserDoesNotExist);
+        assert!(self_exists, EUserDoesNotExist);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            user_address
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
 
         let username = user_registry::borrow_username(
             user_registry,
-            address
+            user_address
         );
 
         let user = user_registry::borrow_user(
@@ -259,7 +295,7 @@ module sage_post::post_actions {
         let timestamp = clock.timestamp_ms();
 
         let (post, post_key) = post::create(
-            address,
+            self,
             data,
             description,
             title,
@@ -281,13 +317,13 @@ module sage_post::post_actions {
 
         event::emit(UserPostCreated {
             created_at: timestamp,
-            created_by: address,
+            created_by: self,
             data,
             description,
             post_key,
             title,
             updated_at: timestamp,
-            user_key: address
+            user_key: user_address
         });
 
         post_key

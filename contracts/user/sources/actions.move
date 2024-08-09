@@ -15,6 +15,7 @@ module sage_user::user_actions {
     // --------------- Errors ---------------
 
     const ENoSelfJoin: u64 = 370;
+    const EUserDoesNotExist: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -43,11 +44,11 @@ module sage_user::user_actions {
         name: String,
         ctx: &mut TxContext
     ): User {
-        let address = tx_context::sender(ctx);
+        let self = tx_context::sender(ctx);
         let created_at = clock.timestamp_ms();
 
         let user = user::create(
-            address,
+            self,
             avatar_hash,
             banner_hash,
             created_at,
@@ -64,12 +65,12 @@ module sage_user::user_actions {
         user_registry::add(
             user_registry,
             name,
-            address,
+            self,
             user
         );
 
         event::emit(UserCreated {
-            address,
+            address: self,
             avatar_hash,
             banner_hash,
             created_at,
@@ -88,14 +89,21 @@ module sage_user::user_actions {
     ) {
         let self = tx_context::sender(ctx);
 
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let user = user_registry::borrow_user(
             user_registry,
             username
         );
 
-        let address = user::get_address(user);
+        let user_address = user::get_address(user);
 
-        assert!(self != address, ENoSelfJoin);
+        assert!(self != user_address, ENoSelfJoin);
 
         let user_membership = user_membership::borrow_membership_mut(
             user_membership_registry,
@@ -104,7 +112,7 @@ module sage_user::user_actions {
 
         user_membership::join(
             user_membership,
-            address,
+            user_address,
             ctx
         );
     }
@@ -115,12 +123,21 @@ module sage_user::user_actions {
         username: String,
         ctx: &mut TxContext
     ) {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let user = user_registry::borrow_user(
             user_registry,
             username
         );
 
-        let address = user::get_address(user);
+        let user_address = user::get_address(user);
 
         let user_membership = user_membership::borrow_membership_mut(
             user_membership_registry,
@@ -129,7 +146,7 @@ module sage_user::user_actions {
 
         user_membership::leave(
             user_membership,
-            address,
+            user_address,
             ctx
         );
     }
