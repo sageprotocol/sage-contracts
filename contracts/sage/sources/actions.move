@@ -6,7 +6,7 @@ module sage::actions {
     use sui::package::{claim_and_keep};
 
     use sage_admin::{
-        admin::{AdminCap, NotificationCap}
+        admin::{AdminCap, InviteCap, NotificationCap}
     };
 
     use sage_channel::{
@@ -530,6 +530,20 @@ module sage::actions {
             user_address,
             ctx
         )
+    }
+
+    public fun set_invite_config(
+        invite_cap: &InviteCap,
+        sage_invite_config: &mut SageInviteConfig,
+        required: bool
+    ) {
+        let invite_config = field::borrow_mut(&mut sage_invite_config.id, RegistryKey<InviteConfig> {});
+
+        user_invite::set_invite_config(
+            invite_cap,
+            invite_config,
+            required
+        );
     }
 
     // --------------- Friend Functions ---------------

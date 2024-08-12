@@ -45,12 +45,13 @@ module sage::test_sage_actions {
 
     const EChannelNotCreated: u64 = 370;
     const EChannelPostNotCreated: u64 = 371;
-    const EPostNotCreated: u64 = 372;
-    const EPostCommentNotCreated: u64 = 373;
-    const EPostLikeNotCreated: u64 = 374;
-    const EUserNotificationsMismatch: u64 = 375;
-    const EUserNotCreated: u64 = 376;
-    const EUserPostNotCreated: u64 = 377;
+    const EInviteNotSet: u64 = 372;
+    const EPostNotCreated: u64 = 373;
+    const EPostCommentNotCreated: u64 = 374;
+    const EPostLikeNotCreated: u64 = 375;
+    const EUserNotificationsMismatch: u64 = 376;
+    const EUserNotCreated: u64 = 377;
+    const EUserPostNotCreated: u64 = 378;
 
     // --------------- Test Functions ---------------
 
@@ -938,6 +939,72 @@ module sage::test_sage_actions {
             );
 
             ts::return_shared(clock);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_set_invite_config() {
+        let (
+            mut scenario_val,
+            sage_channel,
+            sage_channel_membership,
+            sage_channel_posts,
+            mut sage_invite_config,
+            sage_notification,
+            sage_post,
+            sage_post_comments,
+            sage_post_likes,
+            sage_user_invite,
+            sage_user_membership,
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
+        ) = test_common::setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            actions::set_invite_config(
+                &invite_cap,
+                &mut sage_invite_config,
+                false
+            );
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            let is_invite_required = user_invite::is_invite_required(
+                invite_config
+            );
+
+            assert!(!is_invite_required, EInviteNotSet);
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
         };
 
         ts::end(scenario_val);
