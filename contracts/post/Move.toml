@@ -2,7 +2,7 @@
 name = "SagePost"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0xd4f78cfc30c05eb48f89632bf331d0823e7c46d00c53b9ff7fc0c4bc1505d647"
+published-at = "0xa01b4fa7506cac4c43cf2b3953c729c007dd40f3c9ca64773c1fc40fcbb105cb"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
@@ -14,13 +14,16 @@ SageUser = { local = "../user" }
 
 [addresses]
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
+server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
-sage_admin = "0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3"
-sage_channel = "0xac936243d7e196f118dfa30c530654d8f049a34e3175bc449ed42ee20cf86a16"
+sage_admin = "0x756c7229c6dc1121998b551eb3737806a1ad37393fec8411e14ab17da1996755"
+sage_channel = "0xd6c18e744d93987d271889ed2679045882f3351989dfe6860f46638c822298ac"
 sage_immutable = "0xcb1235a19cc5129e9f6e9a1dd1ec21d141ad6ca3c0b9a281dc76952cb654b221"
-sage_post = "0xd4f78cfc30c05eb48f89632bf331d0823e7c46d00c53b9ff7fc0c4bc1505d647"
-sage_user = "0xbd6849ed68217bbdf04ecda8fefdb591db68ec8ee2701225efcbeb30e140675a"
+sage_post = "0xa01b4fa7506cac4c43cf2b3953c729c007dd40f3c9ca64773c1fc40fcbb105cb"
+sage_user = "0xbe02a9910081c7e808713dd0850c8c2e04cdfa4a7991f86a250561d4d79b7ad8"
 
+# sage_admin = "0x0"
 # sage_channel = "0x0"
+# sage_immutable = "0x0"
 # sage_post = "0x0"
 # sage_user = "0x0"

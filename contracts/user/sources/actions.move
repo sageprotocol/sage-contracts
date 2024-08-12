@@ -6,6 +6,7 @@ module sage_user::user_actions {
 
     use sage_user::{
         user::{Self, User},
+        user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
@@ -14,7 +15,11 @@ module sage_user::user_actions {
 
     // --------------- Errors ---------------
 
-    const ENoSelfJoin: u64 = 370;
+    const EInviteNotFound: u64 = 370;
+    const ENoInvite: u64 = 371;
+    const ENotInvited: u64 = 372;
+    const ENoSelfJoin: u64 = 373;
+    const EUserDoesNotExist: u64 = 374;
 
     // --------------- Name Tag ---------------
 
@@ -26,6 +31,7 @@ module sage_user::user_actions {
         banner_hash: String,
         created_at: u64,
         description: String,
+        invited_by: Option<address>,
         name: String
     }
 
@@ -36,18 +42,68 @@ module sage_user::user_actions {
     public fun create(
         clock: &Clock,
         user_registry: &mut UserRegistry,
+        user_invite_registry: &mut UserInviteRegistry,
         user_membership_registry: &mut UserMembershipRegistry,
+        invite_config: &InviteConfig,
+        invite_code: String,
+        invite_key: String,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         name: String,
         ctx: &mut TxContext
     ): User {
-        let address = tx_context::sender(ctx);
+        let is_invite_included = invite_key.length() > 0;
+
+        let is_invite_required = user_invite::is_invite_required(
+            invite_config
+        );
+
+        assert!(
+            !is_invite_required || (is_invite_required && is_invite_included),
+            ENoInvite
+        );
+
+        let invited_by = if (is_invite_included) {
+            let has_record = user_invite::has_record(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(has_record, EInviteNotFound);
+
+            let (hash, user) = user_invite::get_destructured_invite(
+                user_invite_registry,
+                invite_key
+            );
+
+            let is_invite_valid = if (!is_invite_required) {
+                true
+            } else {
+                user_invite::is_invite_valid(
+                    invite_code,
+                    invite_key,
+                    hash
+                )
+            };
+
+            assert!(is_invite_valid, ENotInvited);
+
+            user_invite::delete_invite(
+                user_invite_registry,
+                invite_key
+            );
+
+            option::some(user)
+        } else {
+            option::none()
+        };
+
+        let self = tx_context::sender(ctx);
         let created_at = clock.timestamp_ms();
 
         let user = user::create(
-            address,
+            self,
             avatar_hash,
             banner_hash,
             created_at,
@@ -64,16 +120,17 @@ module sage_user::user_actions {
         user_registry::add(
             user_registry,
             name,
-            address,
+            self,
             user
         );
 
         event::emit(UserCreated {
-            address,
+            address: self,
             avatar_hash,
             banner_hash,
             created_at,
             description,
+            invited_by,
             name
         });
 
@@ -88,14 +145,21 @@ module sage_user::user_actions {
     ) {
         let self = tx_context::sender(ctx);
 
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let user = user_registry::borrow_user(
             user_registry,
             username
         );
 
-        let address = user::get_address(user);
+        let user_address = user::get_address(user);
 
-        assert!(self != address, ENoSelfJoin);
+        assert!(self != user_address, ENoSelfJoin);
 
         let user_membership = user_membership::borrow_membership_mut(
             user_membership_registry,
@@ -104,7 +168,7 @@ module sage_user::user_actions {
 
         user_membership::join(
             user_membership,
-            address,
+            user_address,
             ctx
         );
     }
@@ -115,12 +179,21 @@ module sage_user::user_actions {
         username: String,
         ctx: &mut TxContext
     ) {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let user = user_registry::borrow_user(
             user_registry,
             username
         );
 
-        let address = user::get_address(user);
+        let user_address = user::get_address(user);
 
         let user_membership = user_membership::borrow_membership_mut(
             user_membership_registry,
@@ -129,7 +202,7 @@ module sage_user::user_actions {
 
         user_membership::leave(
             user_membership,
-            address,
+            user_address,
             ctx
         );
     }

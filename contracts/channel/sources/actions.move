@@ -11,9 +11,15 @@ module sage_channel::channel_actions {
         channel_registry::{Self, ChannelRegistry}
     };
 
+    use sage_user::{
+        user_registry::{Self, UserRegistry}
+    };
+
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
+
+    const EUserDoesNotExist: u64 = 370;
 
     // --------------- Name Tag ---------------
 
@@ -27,12 +33,22 @@ module sage_channel::channel_actions {
         clock: &Clock,
         channel_registry: &mut ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
+        user_registry: &mut UserRegistry,
         channel_name: String,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         ctx: &mut TxContext,
     ): Channel {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let created_at = clock.timestamp_ms();
         let created_by = tx_context::sender(ctx);
 
@@ -63,9 +79,19 @@ module sage_channel::channel_actions {
     public fun join(
         channel_registry: &mut ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
+        user_registry: &mut UserRegistry,
         channel_name: String,
         ctx: &mut TxContext
     ) {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let channel = channel_registry::borrow_channel(
             channel_registry,
             channel_name
@@ -86,9 +112,19 @@ module sage_channel::channel_actions {
     public fun leave(
         channel_registry: &mut ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
+        user_registry: &mut UserRegistry,
         channel_name: String,
         ctx: &mut TxContext
     ) {
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let channel = channel_registry::borrow_channel(
             channel_registry,
             channel_name

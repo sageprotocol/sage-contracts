@@ -77,48 +77,6 @@ module sage_channel::channel_membership {
         channel_membership.membership.contains(user)
     }
 
-    public fun join(
-        channel_membership: &mut ChannelMembership,
-        channel_name: String,
-        ctx: &mut TxContext
-    ) {
-        let user = tx_context::sender(ctx);
-
-        join_channel(
-            channel_membership,
-            user
-        );
-
-        event::emit(ChannelMembershipUpdate {
-            channel_name,
-            message: CHANNEL_JOIN,
-            user
-        });
-    }
-
-    public fun leave(
-        channel_membership: &mut ChannelMembership,
-        channel_name: String,
-        ctx: &mut TxContext
-    ) {
-        let user = tx_context::sender(ctx);
-
-        let is_member = is_member(
-            channel_membership,
-            user
-        );
-
-        assert!(is_member, EChannelMemberDoesNotExist);
-
-        channel_membership.membership.remove(user);
-
-        event::emit(ChannelMembershipUpdate {
-            channel_name,
-            message: CHANNEL_LEAVE,
-            user
-        });
-    }
-
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
@@ -139,6 +97,48 @@ module sage_channel::channel_membership {
         );
 
         channel_membership_registry.registry.add(channel, channel_membership);
+    }
+
+    public(package) fun join(
+        channel_membership: &mut ChannelMembership,
+        channel_name: String,
+        ctx: &TxContext
+    ) {
+        let user = tx_context::sender(ctx);
+
+        join_channel(
+            channel_membership,
+            user
+        );
+
+        event::emit(ChannelMembershipUpdate {
+            channel_name,
+            message: CHANNEL_JOIN,
+            user
+        });
+    }
+
+    public(package) fun leave(
+        channel_membership: &mut ChannelMembership,
+        channel_name: String,
+        ctx: &TxContext
+    ) {
+        let user = tx_context::sender(ctx);
+
+        let is_member = is_member(
+            channel_membership,
+            user
+        );
+
+        assert!(is_member, EChannelMemberDoesNotExist);
+
+        channel_membership.membership.remove(user);
+
+        event::emit(ChannelMembershipUpdate {
+            channel_name,
+            message: CHANNEL_LEAVE,
+            user
+        });
     }
 
     // --------------- Internal Functions ---------------

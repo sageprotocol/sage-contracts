@@ -12,7 +12,7 @@ module sage::test_sage_actions {
     };
 
     use sage_admin::{
-        admin::{Self, NotificationCap}
+        admin::{Self, InviteCap, NotificationCap}
     };
 
     use sage_channel::{
@@ -31,22 +31,129 @@ module sage::test_sage_actions {
         user_posts::{Self}
     };
 
+    use sage_user::{
+        user_invite::{Self},
+        user_registry::{Self}
+    };
+
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
-    const NOTIFICATION: address = @notification;
+    const SERVER: address = @server;
 
     // --------------- Errors ---------------
 
-    const EChannelNotCreated: u64 = 0;
-    const EChannelPostNotCreated: u64 = 1;
-    const EPostNotCreated: u64 = 2;
-    const EPostCommentNotCreated: u64 = 3;
-    const EPostLikeNotCreated: u64 = 4;
-    const EUserNotificationsMismatch: u64 = 5;
-    const EUserPostNotCreated: u64 = 6;
+    const EChannelNotCreated: u64 = 370;
+    const EChannelPostNotCreated: u64 = 371;
+    const EInviteNotSet: u64 = 372;
+    const EPostNotCreated: u64 = 373;
+    const EPostCommentNotCreated: u64 = 374;
+    const EPostLikeNotCreated: u64 = 375;
+    const EUserNotificationsMismatch: u64 = 376;
+    const EUserNotCreated: u64 = 377;
+    const EUserPostNotCreated: u64 = 378;
 
     // --------------- Test Functions ---------------
+
+    #[test]
+    fun test_create_user() {
+        let (
+            mut scenario_val,
+            sage_channel,
+            sage_channel_membership,
+            sage_channel_posts,
+            mut sage_invite_config,
+            sage_notification,
+            sage_post,
+            sage_post_comments,
+            sage_post_likes,
+            mut sage_user_invite,
+            mut sage_user_membership,
+            sage_user_post_likes,
+            sage_user_posts,
+            mut sage_users
+        ) = test_common::setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let username = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            actions::create_user(
+                &clock,
+                &mut sage_users,
+                &mut sage_user_invite,
+                &mut sage_user_membership,
+                &mut sage_invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                username,
+                ts::ctx(scenario)
+            );
+
+            let user_registry = actions::borrow_users_registry_for_testing(
+                &mut sage_users
+            );
+
+            let has_record = user_registry::has_username_record(
+                user_registry,
+                username
+            );
+
+            assert!(has_record, EUserNotCreated);
+
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
+
+            ts::return_shared(clock);
+        };
+
+        ts::end(scenario_val);
+    }
 
     #[test]
     fun test_create_channel() {
@@ -55,14 +162,16 @@ module sage::test_sage_actions {
             mut sage_channel,
             mut sage_channel_membership,
             sage_channel_posts,
+            mut sage_invite_config,
             sage_notification,
             sage_post,
             sage_post_comments,
             sage_post_likes,
-            sage_user_membership,
+            mut sage_user_invite,
+            mut sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
-            sage_users
+            mut sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -77,14 +186,47 @@ module sage::test_sage_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
+
+            actions::create_user(
+                &clock,
+                &mut sage_users,
+                &mut sage_user_invite,
+                &mut sage_user_membership,
+                &mut sage_invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
 
             let channel = actions::create_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
+                &mut sage_users,
                 channel_name,
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
@@ -103,17 +245,21 @@ module sage::test_sage_actions {
 
             assert!(channel_name == channel_key, EChannelNotCreated);
 
-            actions::destroy_channel_for_testing(sage_channel);
-            actions::destroy_channel_membership_for_testing(sage_channel_membership);
-            actions::destroy_channel_posts_for_testing(sage_channel_posts);
-            actions::destroy_notification_for_testing(sage_notification);
-            actions::destroy_post_for_testing(sage_post);
-            actions::destroy_post_comments_for_testing(sage_post_comments);
-            actions::destroy_post_likes_for_testing(sage_post_likes);
-            actions::destroy_user_membership_for_testing(sage_user_membership);
-            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
-            actions::destroy_user_posts_for_testing(sage_user_posts);
-            actions::destroy_users_for_testing(sage_users);
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
 
             ts::return_shared(clock);
         };
@@ -128,10 +274,12 @@ module sage::test_sage_actions {
             sage_channel,
             sage_channel_membership,
             sage_channel_posts,
+            sage_invite_config,
             mut sage_notification,
             sage_post,
             sage_post_comments,
             sage_post_likes,
+            sage_user_invite,
             sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
@@ -145,7 +293,7 @@ module sage::test_sage_actions {
             admin::init_for_testing(ts::ctx(scenario));
         };
 
-        ts::next_tx(scenario, NOTIFICATION);
+        ts::next_tx(scenario, SERVER);
         let notification_cap = {
             let notification_cap = ts::take_from_sender<NotificationCap>(scenario);
 
@@ -191,22 +339,26 @@ module sage::test_sage_actions {
 
             assert!(notifications_count == 1, EUserNotificationsMismatch);
 
-            actions::destroy_channel_for_testing(sage_channel);
-            actions::destroy_channel_membership_for_testing(sage_channel_membership);
-            actions::destroy_channel_posts_for_testing(sage_channel_posts);
-            actions::destroy_notification_for_testing(sage_notification);
-            actions::destroy_post_for_testing(sage_post);
-            actions::destroy_post_comments_for_testing(sage_post_comments);
-            actions::destroy_post_likes_for_testing(sage_post_likes);
-            actions::destroy_user_membership_for_testing(sage_user_membership);
-            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
-            actions::destroy_user_posts_for_testing(sage_user_posts);
-            actions::destroy_users_for_testing(sage_users);
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
 
             ts::return_shared(clock);
         };
 
-        ts::next_tx(scenario, NOTIFICATION);
+        ts::next_tx(scenario, SERVER);
         {
             ts::return_to_sender(scenario, notification_cap);
         };
@@ -235,14 +387,16 @@ module sage::test_sage_actions {
             mut sage_channel,
             mut sage_channel_membership,
             mut sage_channel_posts,
+            mut sage_invite_config,
             sage_notification,
             mut sage_post,
             sage_post_comments,
             sage_post_likes,
-            sage_user_membership,
+            mut sage_user_invite,
+            mut sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
-            sage_users
+            mut sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -257,14 +411,47 @@ module sage::test_sage_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
+
+            actions::create_user(
+                &clock,
+                &mut sage_users,
+                &mut sage_user_invite,
+                &mut sage_user_membership,
+                &mut sage_invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
 
             let channel = actions::create_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
+                &mut sage_users,
                 channel_name,
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
@@ -278,6 +465,7 @@ module sage::test_sage_actions {
                 &mut sage_channel_membership,
                 &mut sage_channel_posts,
                 &mut sage_post,
+                &mut sage_users,
                 channel_name,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -308,17 +496,21 @@ module sage::test_sage_actions {
 
             assert!(has_post, EChannelPostNotCreated);
 
-            actions::destroy_channel_for_testing(sage_channel);
-            actions::destroy_channel_membership_for_testing(sage_channel_membership);
-            actions::destroy_channel_posts_for_testing(sage_channel_posts);
-            actions::destroy_notification_for_testing(sage_notification);
-            actions::destroy_post_for_testing(sage_post);
-            actions::destroy_post_comments_for_testing(sage_post_comments);
-            actions::destroy_post_likes_for_testing(sage_post_likes);
-            actions::destroy_user_membership_for_testing(sage_user_membership);
-            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
-            actions::destroy_user_posts_for_testing(sage_user_posts);
-            actions::destroy_users_for_testing(sage_users);
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
 
             ts::return_shared(clock);
         };
@@ -333,14 +525,16 @@ module sage::test_sage_actions {
             mut sage_channel,
             mut sage_channel_membership,
             mut sage_channel_posts,
+            mut sage_invite_config,
             sage_notification,
             mut sage_post,
             mut sage_post_comments,
             sage_post_likes,
-            sage_user_membership,
+            mut sage_user_invite,
+            mut sage_user_membership,
             sage_user_post_likes,
             sage_user_posts,
-            sage_users
+            mut sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -355,14 +549,47 @@ module sage::test_sage_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
+
+            actions::create_user(
+                &clock,
+                &mut sage_users,
+                &mut sage_user_invite,
+                &mut sage_user_membership,
+                &mut sage_invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
 
             let _channel = actions::create_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
+                &mut sage_users,
                 channel_name,
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
@@ -376,6 +603,7 @@ module sage::test_sage_actions {
                 &mut sage_channel_membership,
                 &mut sage_channel_posts,
                 &mut sage_post,
+                &mut sage_users,
                 channel_name,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -387,6 +615,7 @@ module sage::test_sage_actions {
                 &clock,
                 &mut sage_post,
                 &mut sage_post_comments,
+                &mut sage_users,
                 parent_post_key,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -417,17 +646,21 @@ module sage::test_sage_actions {
 
             assert!(has_post, EPostCommentNotCreated);
 
-            actions::destroy_channel_for_testing(sage_channel);
-            actions::destroy_channel_membership_for_testing(sage_channel_membership);
-            actions::destroy_channel_posts_for_testing(sage_channel_posts);
-            actions::destroy_notification_for_testing(sage_notification);
-            actions::destroy_post_for_testing(sage_post);
-            actions::destroy_post_comments_for_testing(sage_post_comments);
-            actions::destroy_post_likes_for_testing(sage_post_likes);
-            actions::destroy_user_membership_for_testing(sage_user_membership);
-            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
-            actions::destroy_user_posts_for_testing(sage_user_posts);
-            actions::destroy_users_for_testing(sage_users);
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
 
             ts::return_shared(clock);
         };
@@ -442,10 +675,12 @@ module sage::test_sage_actions {
             sage_channel,
             sage_channel_membership,
             sage_channel_posts,
+            mut sage_invite_config,
             sage_notification,
             mut sage_post,
             sage_post_comments,
             sage_post_likes,
+            mut sage_user_invite,
             mut sage_user_membership,
             sage_user_post_likes,
             mut sage_user_posts,
@@ -464,6 +699,23 @@ module sage::test_sage_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
@@ -471,7 +723,11 @@ module sage::test_sage_actions {
             let user = actions::create_user(
                 &clock,
                 &mut sage_users,
+                &mut sage_user_invite,
                 &mut sage_user_membership,
+                &mut sage_invite_config,
+                utf8(b""),
+                utf8(b""),
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
                 utf8(b"description"),
@@ -487,6 +743,7 @@ module sage::test_sage_actions {
                 utf8(b"data"),
                 utf8(b"description"),
                 utf8(b"title"),
+                ADMIN,
                 ts::ctx(scenario)
             );
 
@@ -513,17 +770,21 @@ module sage::test_sage_actions {
 
             assert!(has_post, EUserPostNotCreated);
 
-            actions::destroy_channel_for_testing(sage_channel);
-            actions::destroy_channel_membership_for_testing(sage_channel_membership);
-            actions::destroy_channel_posts_for_testing(sage_channel_posts);
-            actions::destroy_notification_for_testing(sage_notification);
-            actions::destroy_post_for_testing(sage_post);
-            actions::destroy_post_comments_for_testing(sage_post_comments);
-            actions::destroy_post_likes_for_testing(sage_post_likes);
-            actions::destroy_user_membership_for_testing(sage_user_membership);
-            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
-            actions::destroy_user_posts_for_testing(sage_user_posts);
-            actions::destroy_users_for_testing(sage_users);
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
 
             ts::return_shared(clock);
         };
@@ -538,14 +799,16 @@ module sage::test_sage_actions {
             mut sage_channel,
             mut sage_channel_membership,
             mut sage_channel_posts,
+            mut sage_invite_config,
             sage_notification,
             mut sage_post,
             sage_post_comments,
             mut sage_post_likes,
-            sage_user_membership,
+            mut sage_user_invite,
+            mut sage_user_membership,
             mut sage_user_post_likes,
             sage_user_posts,
-            sage_users
+            mut sage_users
         ) = test_common::setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -560,14 +823,47 @@ module sage::test_sage_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
+
+            actions::create_user(
+                &clock,
+                &mut sage_users,
+                &mut sage_user_invite,
+                &mut sage_user_membership,
+                &mut sage_invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
 
             let _channel = actions::create_channel(
                 &clock,
                 &mut sage_channel,
                 &mut sage_channel_membership,
+                &mut sage_users,
                 channel_name,
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
@@ -581,6 +877,7 @@ module sage::test_sage_actions {
                 &mut sage_channel_membership,
                 &mut sage_channel_posts,
                 &mut sage_post,
+                &mut sage_users,
                 channel_name,
                 utf8(b"data"),
                 utf8(b"description"),
@@ -591,6 +888,7 @@ module sage::test_sage_actions {
             actions::like_post(
                 &mut sage_post,
                 &mut sage_post_likes,
+                &mut sage_users,
                 &mut sage_user_post_likes,
                 post_key,
                 ts::ctx(scenario)
@@ -624,19 +922,89 @@ module sage::test_sage_actions {
             assert!(has_post_like_record, EPostLikeNotCreated);
             assert!(has_user_like_record, EPostLikeNotCreated);
 
-            actions::destroy_channel_for_testing(sage_channel);
-            actions::destroy_channel_membership_for_testing(sage_channel_membership);
-            actions::destroy_channel_posts_for_testing(sage_channel_posts);
-            actions::destroy_notification_for_testing(sage_notification);
-            actions::destroy_post_for_testing(sage_post);
-            actions::destroy_post_comments_for_testing(sage_post_comments);
-            actions::destroy_post_likes_for_testing(sage_post_likes);
-            actions::destroy_user_membership_for_testing(sage_user_membership);
-            actions::destroy_user_post_likes_for_testing(sage_user_post_likes);
-            actions::destroy_user_posts_for_testing(sage_user_posts);
-            actions::destroy_users_for_testing(sage_users);
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
 
             ts::return_shared(clock);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_set_invite_config() {
+        let (
+            mut scenario_val,
+            sage_channel,
+            sage_channel_membership,
+            sage_channel_posts,
+            mut sage_invite_config,
+            sage_notification,
+            sage_post,
+            sage_post_comments,
+            sage_post_likes,
+            sage_user_invite,
+            sage_user_membership,
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
+        ) = test_common::setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            actions::set_invite_config(
+                &invite_cap,
+                &mut sage_invite_config,
+                false
+            );
+
+            let invite_config = actions::borrow_invite_config_for_testing(
+                &mut sage_invite_config
+            );
+
+            let is_invite_required = user_invite::is_invite_required(
+                invite_config
+            );
+
+            assert!(!is_invite_required, EInviteNotSet);
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
         };
 
         ts::end(scenario_val);
