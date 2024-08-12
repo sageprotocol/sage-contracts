@@ -9,6 +9,10 @@ module sage_admin::admin {
         id: UID
     }
 
+    public struct InviteCap has key {
+        id: UID
+    }
+
     public struct NotificationCap has key {
         id: UID
     }
@@ -23,11 +27,13 @@ module sage_admin::admin {
 
     fun init(ctx: &mut TxContext) {
         let admin_cap = AdminCap { id: object::new(ctx) };
+        let invite_cap = InviteCap { id: object::new(ctx) };
         let notification_cap = NotificationCap { id: object::new(ctx) };
         let treasury_cap = TreasuryCap { id: object::new(ctx) };
 
         transfer::transfer(admin_cap, @admin);
-        transfer::transfer(notification_cap, @notification);
+        transfer::transfer(invite_cap, @server);
+        transfer::transfer(notification_cap, @server);
         transfer::transfer(treasury_cap, @treasury);
     }
 
