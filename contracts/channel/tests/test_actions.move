@@ -5,13 +5,14 @@ module sage_channel::test_channel_actions {
     use std::string::{utf8};
 
     use sui::test_scenario::{Self as ts, Scenario};
+    use sui::test_utils::{destroy};
 
     use sui::{
         table::{ETableNotEmpty}
     };
 
     use sage_admin::{
-        admin::{Self, AdminCap}
+       admin::{Self, AdminCap, InviteCap}
     };
 
     use sage_channel::{
@@ -23,6 +24,7 @@ module sage_channel::test_channel_actions {
 
     use sage_user::{
         user_actions::{Self},
+        user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
@@ -30,6 +32,7 @@ module sage_channel::test_channel_actions {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const SERVER: address = @server;
 
     // --------------- Errors ---------------
 
@@ -42,12 +45,32 @@ module sage_channel::test_channel_actions {
     // --------------- Test Functions ---------------
 
     #[test_only]
+    fun destroy_for_testing(
+        channel_registry: ChannelRegistry,
+        channel_membership_registry: ChannelMembershipRegistry,
+        user_registry: UserRegistry,
+        user_invite_registry: UserInviteRegistry,
+        user_membership_registry: UserMembershipRegistry,
+        invite_config: InviteConfig
+    ) {
+        channel_membership::destroy_for_testing(channel_membership_registry);
+        channel_registry::destroy_for_testing(channel_registry);
+        user_registry::destroy_for_testing(user_registry);
+        user_invite::destroy_for_testing(user_invite_registry);
+        user_membership::destroy_for_testing(user_membership_registry);
+
+        destroy(invite_config);
+    }
+
+    #[test_only]
     fun setup_for_testing(): (
         Scenario,
         ChannelRegistry,
         ChannelMembershipRegistry,
         UserRegistry,
-        UserMembershipRegistry
+        UserInviteRegistry,
+        UserMembershipRegistry,
+        InviteConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -60,9 +83,13 @@ module sage_channel::test_channel_actions {
             channel_registry,
             channel_membership_registry,
             user_registry,
-            user_membership_registry
+            user_invite_registry,
+            user_membership_registry,
+            invite_config
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let invite_config = user_invite::create_invite_config(&admin_cap);
 
             let channel_registry = channel_registry::create_channel_registry(
                 &admin_cap,
@@ -79,6 +106,11 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
+            let user_invite_registry = user_invite::create_invite_registry(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
             let user_membership_registry = user_membership::create_user_membership_registry(
                 &admin_cap,
                 ts::ctx(scenario)
@@ -86,10 +118,25 @@ module sage_channel::test_channel_actions {
 
             ts::return_to_sender(scenario, admin_cap);
 
-            (channel_registry, channel_membership_registry, user_registry, user_membership_registry)
+            (
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                invite_config
+            )
         };
 
-        (scenario_val, channel_registry, channel_membership_registry, user_registry, user_membership_registry)
+        (
+            scenario_val,
+            channel_registry,
+            channel_membership_registry,
+            user_registry,
+            user_invite_registry,
+            user_membership_registry,
+            invite_config
+        )
     }
 
     #[test]
@@ -99,17 +146,23 @@ module sage_channel::test_channel_actions {
             channel_registry_val,
             channel_membership_registry_val,
             user_registry_val,
-            user_membership_registry_val
+            user_invite_registry_val,
+            user_membership_registry_val,
+            invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-            user_registry::destroy_for_testing(user_registry_val);
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
         };
 
         ts::end(scenario_val);
@@ -123,10 +176,18 @@ module sage_channel::test_channel_actions {
             mut channel_registry_val,
             mut channel_membership_registry_val,
             mut user_registry_val,
-            mut user_membership_registry_val
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -136,19 +197,31 @@ module sage_channel::test_channel_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
 
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-            let user_registry = &mut user_registry_val;
-            let user_membership_registry = &mut user_membership_registry_val;
-
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_invite_registry,
                 user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -190,10 +263,14 @@ module sage_channel::test_channel_actions {
 
             ts::return_shared(clock);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-            user_registry::destroy_for_testing(user_registry_val);
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
         };
 
         ts::end(scenario_val);
@@ -207,10 +284,16 @@ module sage_channel::test_channel_actions {
             mut channel_registry_val,
             mut channel_membership_registry_val,
             mut user_registry_val,
-            user_membership_registry_val
+            user_invite_registry_val,
+            user_membership_registry_val,
+            invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -223,10 +306,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
-
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-            let user_registry = &mut user_registry_val;
 
             let channel_name = utf8(b"channel-name");
 
@@ -262,10 +341,14 @@ module sage_channel::test_channel_actions {
 
             ts::return_shared(clock);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-            user_registry::destroy_for_testing(user_registry_val);
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
         };
 
         ts::end(scenario_val);
@@ -279,10 +362,18 @@ module sage_channel::test_channel_actions {
             mut channel_registry_val,
             mut channel_membership_registry_val,
             mut user_registry_val,
-            mut user_membership_registry_val
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -292,20 +383,32 @@ module sage_channel::test_channel_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-            let user_registry = &mut user_registry_val;
-            let user_membership_registry = &mut user_membership_registry_val;
-
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_invite_registry,
                 user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -352,10 +455,14 @@ module sage_channel::test_channel_actions {
             ts::return_shared(clock);
             ts::return_to_sender(scenario, admin_cap);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-            user_registry::destroy_for_testing(user_registry_val);
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
         };
 
         ts::end(scenario_val);
@@ -369,10 +476,18 @@ module sage_channel::test_channel_actions {
             mut channel_registry_val,
             mut channel_membership_registry_val,
             mut user_registry_val,
-            mut user_membership_registry_val
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -382,20 +497,32 @@ module sage_channel::test_channel_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-            let user_registry = &mut user_registry_val;
-            let user_membership_registry = &mut user_membership_registry_val;
-
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_invite_registry,
                 user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -442,10 +569,14 @@ module sage_channel::test_channel_actions {
             ts::return_shared(clock);
             ts::return_to_sender(scenario, admin_cap);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-            user_registry::destroy_for_testing(user_registry_val);
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
         };
 
         ts::end(scenario_val);
@@ -459,10 +590,18 @@ module sage_channel::test_channel_actions {
             mut channel_registry_val,
             mut channel_membership_registry_val,
             mut user_registry_val,
-            mut user_membership_registry_val
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -472,20 +611,32 @@ module sage_channel::test_channel_actions {
             clock::share_for_testing(clock);
         };
 
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let channel_registry = &mut channel_registry_val;
-            let channel_membership_registry = &mut channel_membership_registry_val;
-            let user_registry = &mut user_registry_val;
-            let user_membership_registry = &mut user_membership_registry_val;
-
             let _user = user_actions::create(
                 &clock,
                 user_registry,
+                user_invite_registry,
                 user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -532,10 +683,14 @@ module sage_channel::test_channel_actions {
             ts::return_shared(clock);
             ts::return_to_sender(scenario, admin_cap);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
-            channel_registry::destroy_for_testing(channel_registry_val);
-            user_registry::destroy_for_testing(user_registry_val);
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
         };
 
         ts::end(scenario_val);

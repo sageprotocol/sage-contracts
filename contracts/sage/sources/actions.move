@@ -34,6 +34,7 @@ module sage::actions {
     use sage_user::{
         user::{User},
         user_actions::{Self},
+        user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
@@ -56,6 +57,10 @@ module sage::actions {
         id: UID
     }
 
+    public struct SageInviteConfig has key {
+        id: UID
+    }
+
     public struct SageNotification has key {
         id: UID
     }
@@ -69,6 +74,10 @@ module sage::actions {
     }
 
     public struct SagePostLikes has key {
+        id: UID
+    }
+
+    public struct SageUserInvite has key {
         id: UID
     }
 
@@ -111,6 +120,9 @@ module sage::actions {
         let sage_channel_posts = SageChannelPosts {
             id: object::new(ctx)
         };
+        let sage_invite_config = SageInviteConfig {
+            id: object::new(ctx)
+        };
         let sage_notification = SageNotification {
             id: object::new(ctx)
         };
@@ -121,6 +133,9 @@ module sage::actions {
             id: object::new(ctx)
         };
         let sage_post_likes = SagePostLikes {
+            id: object::new(ctx)
+        };
+        let sage_user_invite = SageUserInvite {
             id: object::new(ctx)
         };
         let sage_user_membership = SageUserMembership {
@@ -139,10 +154,12 @@ module sage::actions {
         transfer::share_object(sage_channel);
         transfer::share_object(sage_channel_membership);
         transfer::share_object(sage_channel_posts);
+        transfer::share_object(sage_invite_config);
         transfer::share_object(sage_notification);
         transfer::share_object(sage_post);
         transfer::share_object(sage_post_comments);
         transfer::share_object(sage_post_likes);
+        transfer::share_object(sage_user_invite);
         transfer::share_object(sage_user_membership);
         transfer::share_object(sage_user_post_likes);
         transfer::share_object(sage_user_posts);
@@ -156,10 +173,12 @@ module sage::actions {
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
         sage_channel_posts: &mut SageChannelPosts,
+        sage_invite_config: &mut SageInviteConfig,
         sage_notification: &mut SageNotification,
         sage_post: &mut SagePost,
         sage_post_comments: &mut SagePostComments,
         sage_post_likes: &mut SagePostLikes,
+        sage_user_invite: &mut SageUserInvite,
         sage_user_membership: &mut SageUserMembership,
         sage_user_post_likes: &mut SageUserPostLikes,
         sage_user_posts: &mut SageUserPosts,
@@ -181,6 +200,8 @@ module sage::actions {
             ctx
         );
 
+        let invite_config = user_invite::create_invite_config(admin_cap);
+
         let notification_registry = notification_registry::create_notification_registry(
             admin_cap,
             ctx
@@ -197,6 +218,11 @@ module sage::actions {
         );
 
         let post_likes_registry = post_likes::create_post_likes_registry(
+            admin_cap,
+            ctx
+        );
+
+        let user_invite_registry = user_invite::create_invite_registry(
             admin_cap,
             ctx
         );
@@ -224,10 +250,12 @@ module sage::actions {
         field::add(&mut sage_channel.id, RegistryKey<ChannelRegistry> {}, channel_registry);
         field::add(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {}, channel_membership_registry);
         field::add(&mut sage_channel_posts.id, RegistryKey<ChannelPostsRegistry> {}, channel_posts_registry);
+        field::add(&mut sage_invite_config.id, RegistryKey<InviteConfig> {}, invite_config);
         field::add(&mut sage_notification.id, RegistryKey<NotificationRegistry> {}, notification_registry);
         field::add(&mut sage_post.id, RegistryKey<PostRegistry> {}, post_registry);
         field::add(&mut sage_post_comments.id, RegistryKey<PostCommentsRegistry> {}, post_comments_registry);
         field::add(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {}, post_likes_registry);
+        field::add(&mut sage_user_invite.id, RegistryKey<UserInviteRegistry> {}, user_invite_registry);
         field::add(&mut sage_user_membership.id, RegistryKey<UserMembershipRegistry> {}, user_membership_registry);
         field::add(&mut sage_user_post_likes.id, RegistryKey<UserPostLikesRegistry> {}, user_post_likes_registry);
         field::add(&mut sage_user_posts.id, RegistryKey<UserPostsRegistry> {}, user_posts_registry);
@@ -238,6 +266,7 @@ module sage::actions {
         clock: &Clock,
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
+        sage_users: &mut SageUsers,
         channel_name: String,
         avatar_hash: String,
         banner_hash: String,
@@ -246,11 +275,13 @@ module sage::actions {
     ): Channel {
         let channel_registry = field::borrow_mut(&mut sage_channel.id, RegistryKey<ChannelRegistry> {});
         let channel_membership_registry = field::borrow_mut(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
 
         channel_actions::create(
             clock,
             channel_registry,
             channel_membership_registry,
+            user_registry,
             channel_name,
             avatar_hash,
             banner_hash,
@@ -282,20 +313,30 @@ module sage::actions {
     public fun create_user(
         clock: &Clock,
         sage_users: &mut SageUsers,
+        sage_user_invite: &mut SageUserInvite,
         sage_user_membership: &mut SageUserMembership,
+        sage_invite_config: &mut SageInviteConfig,
+        invite_code: String,
+        invite_key: String,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         name: String,
         ctx: &mut TxContext
     ): User {
+        let invite_config = field::borrow_mut(&mut sage_invite_config.id, RegistryKey<InviteConfig> {});
         let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
+        let user_invite_registry = field::borrow_mut(&mut sage_user_invite.id, RegistryKey<UserInviteRegistry> {});
         let user_membership_registry = field::borrow_mut(&mut sage_user_membership.id, RegistryKey<UserMembershipRegistry> {});
 
         user_actions::create(
             clock,
             user_registry,
+            user_invite_registry,
             user_membership_registry,
+            invite_config,
+            invite_code,
+            invite_key,
             avatar_hash,
             banner_hash,
             description,
@@ -307,17 +348,20 @@ module sage::actions {
     public fun like_post(
         sage_post: &mut SagePost,
         sage_post_likes: &mut SagePostLikes,
+        sage_users: &mut SageUsers,
         sage_user_post_likes: &mut SageUserPostLikes,
         post_key: String,
         ctx: &mut TxContext
     ) {
         let post_registry = field::borrow_mut(&mut sage_post.id, RegistryKey<PostRegistry> {});
         let post_likes_registry = field::borrow_mut(&mut sage_post_likes.id, RegistryKey<PostLikesRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
         let user_post_likes_registry = field::borrow_mut(&mut sage_user_post_likes.id, RegistryKey<UserPostLikesRegistry> {});
 
         post_actions::like(
             post_registry,
             post_likes_registry,
+            user_registry,
             user_post_likes_registry,
             post_key,
             ctx
@@ -327,15 +371,18 @@ module sage::actions {
     public fun join_channel(
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
+        sage_users: &mut SageUsers,
         channel_name: String,
         ctx: &mut TxContext
     ) {
         let channel_registry = field::borrow_mut(&mut sage_channel.id, RegistryKey<ChannelRegistry> {});
         let channel_membership_registry = field::borrow_mut(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
 
         channel_actions::join(
             channel_registry,
             channel_membership_registry,
+            user_registry,
             channel_name,
             ctx
         );
@@ -344,27 +391,30 @@ module sage::actions {
     public fun leave_channel(
         sage_channel: &mut SageChannel,
         sage_channel_membership: &mut SageChannelMembership,
+        sage_users: &mut SageUsers,
         channel_name: String,
         ctx: &mut TxContext
     ) {
         let channel_registry = field::borrow_mut(&mut sage_channel.id, RegistryKey<ChannelRegistry> {});
         let channel_membership_registry = field::borrow_mut(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
 
         channel_actions::leave(
             channel_registry,
             channel_membership_registry,
+            user_registry,
             channel_name,
             ctx
         );
     }
 
     public fun join_user(
-        sage_user: &mut SageUsers,
+        sage_users: &mut SageUsers,
         sage_user_membership: &mut SageUserMembership,
         username: String,
         ctx: &mut TxContext
     ) {
-        let user_registry = field::borrow_mut(&mut sage_user.id, RegistryKey<UserRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
         let user_membership_registry = field::borrow_mut(&mut sage_user_membership.id, RegistryKey<UserMembershipRegistry> {});
 
         user_actions::join(
@@ -376,12 +426,12 @@ module sage::actions {
     }
 
     public fun leave_user(
-        sage_user: &mut SageUsers,
+        sage_users: &mut SageUsers,
         sage_user_membership: &mut SageUserMembership,
         username: String,
         ctx: &mut TxContext
     ) {
-        let user_registry = field::borrow_mut(&mut sage_user.id, RegistryKey<UserRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
         let user_membership_registry = field::borrow_mut(&mut sage_user_membership.id, RegistryKey<UserMembershipRegistry> {});
 
         user_actions::leave(
@@ -398,6 +448,7 @@ module sage::actions {
         sage_channel_membership: &mut SageChannelMembership,
         sage_channel_posts: &mut SageChannelPosts,
         sage_post: &mut SagePost,
+        sage_users: &mut SageUsers,
         channel_name: String,
         data: String,
         description: String,
@@ -408,6 +459,7 @@ module sage::actions {
         let channel_membership_registry = field::borrow_mut(&mut sage_channel_membership.id, RegistryKey<ChannelMembershipRegistry> {});
         let channel_posts_registry = field::borrow_mut(&mut sage_channel_posts.id, RegistryKey<ChannelPostsRegistry> {});
         let post_registry = field::borrow_mut(&mut sage_post.id, RegistryKey<PostRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
 
         post_actions::post_from_channel(
             clock,
@@ -415,6 +467,7 @@ module sage::actions {
             channel_membership_registry,
             channel_posts_registry,
             post_registry,
+            user_registry,
             channel_name,
             data,
             description,
@@ -427,6 +480,7 @@ module sage::actions {
         clock: &Clock,
         sage_post: &mut SagePost,
         sage_post_comments: &mut SagePostComments,
+        sage_users: &mut SageUsers,
         parent_key: String,
         data: String,
         description: String,
@@ -435,11 +489,13 @@ module sage::actions {
     ): String {
         let post_registry = field::borrow_mut(&mut sage_post.id, RegistryKey<PostRegistry> {});
         let post_comments_registry = field::borrow_mut(&mut sage_post_comments.id, RegistryKey<PostCommentsRegistry> {});
+        let user_registry = field::borrow_mut(&mut sage_users.id, RegistryKey<UserRegistry> {});
 
         post_actions::post_from_post(
             clock,
             post_registry,
             post_comments_registry,
+            user_registry,
             parent_key,
             data,
             description,
@@ -456,6 +512,7 @@ module sage::actions {
         data: String,
         description: String,
         title: String,
+        user_address: address,
         ctx: &mut TxContext
     ): String {
         let post_registry = field::borrow_mut(&mut sage_post.id, RegistryKey<PostRegistry> {});
@@ -470,6 +527,7 @@ module sage::actions {
             data,
             description,
             title,
+            user_address,
             ctx
         )
     }
@@ -487,10 +545,12 @@ module sage::actions {
         SageChannel,
         SageChannelMembership,
         SageChannelPosts,
+        SageInviteConfig,
         SageNotification,
         SagePost,
         SagePostComments,
         SagePostLikes,
+        SageUserInvite,
         SageUserMembership,
         SageUserPostLikes,
         SageUserPosts,
@@ -500,10 +560,12 @@ module sage::actions {
             SageChannel { id: object::new(ctx) },
             SageChannelMembership { id: object::new(ctx) },
             SageChannelPosts { id: object::new(ctx) },
+            SageInviteConfig { id: object::new(ctx) },
             SageNotification { id: object::new(ctx) },
             SagePost { id: object::new(ctx) },
             SagePostComments { id: object::new(ctx) },
             SagePostLikes { id: object::new(ctx) },
+            SageUserInvite { id: object::new(ctx) },
             SageUserMembership { id: object::new(ctx) },
             SageUserPostLikes { id: object::new(ctx) },
             SageUserPosts { id: object::new(ctx) },
@@ -545,6 +607,18 @@ module sage::actions {
         );
 
         channel_posts_registry
+    }
+
+    #[test_only]
+    public fun borrow_invite_config_for_testing(
+        sage_invite_config: &mut SageInviteConfig
+    ): &mut InviteConfig {
+        let invite_config = field::borrow_mut<RegistryKey<InviteConfig>, InviteConfig>(
+            &mut sage_invite_config.id,
+            RegistryKey<InviteConfig> {}
+        );
+
+        invite_config
     }
 
     #[test_only]
@@ -593,6 +667,18 @@ module sage::actions {
         );
 
         post_likes_registry
+    }
+
+    #[test_only]
+    public fun borrow_user_invite_registry_for_testing(
+        sage_user_invite: &mut SageUserInvite
+    ): &mut UserInviteRegistry {
+        let notification_registry = field::borrow_mut<RegistryKey<UserInviteRegistry>, UserInviteRegistry>(
+            &mut sage_user_invite.id,
+            RegistryKey<UserInviteRegistry> {}
+        );
+
+        notification_registry
     }
 
     #[test_only]
@@ -688,6 +774,17 @@ module sage::actions {
     }
 
     #[test_only]
+    public fun destroy_invite_config_for_testing(
+        sage_invite_config: SageInviteConfig
+    ) {
+        let SageInviteConfig {
+            id
+        } = sage_invite_config;
+
+        object::delete(id);
+    }
+
+    #[test_only]
     public fun destroy_post_for_testing(
         sage_post: SagePost
     ) {
@@ -716,6 +813,17 @@ module sage::actions {
         let SagePostLikes {
             id
         } = sage_post_likes;
+
+        object::delete(id);
+    }
+
+    #[test_only]
+    public fun destroy_user_invite_for_testing(
+        sage_user_invite: SageUserInvite
+    ) {
+        let SageUserInvite {
+            id
+        } = sage_user_invite;
 
         object::delete(id);
     }
