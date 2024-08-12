@@ -2,11 +2,12 @@
 
 [move]
 version = 2
-manifest_digest = "045408A1FEE7461493466610146AF6248752379BB55B34F922888FBF250749C4"
-deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
+manifest_digest = "1D7DE2B8D771CEBBF2DA3953ED52A50A256E0E9FD9B592CAE096996672C8A848"
+deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { name = "SageAdmin" },
   { name = "SageImmutable" },
+  { name = "SageUser" },
   { name = "SageUtils" },
   { name = "Sui" },
 ]
@@ -32,6 +33,16 @@ dependencies = [
 ]
 
 [[move.package]]
+name = "SageUser"
+source = { local = "../user" }
+
+dependencies = [
+  { name = "SageAdmin" },
+  { name = "SageUtils" },
+  { name = "Sui" },
+]
+
+[[move.package]]
 name = "SageUtils"
 source = { local = "../utils" }
 
@@ -48,7 +59,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.27.2"
+compiler-version = "1.30.3"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -56,6 +67,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0xac936243d7e196f118dfa30c530654d8f049a34e3175bc449ed42ee20cf86a16"
-latest-published-id = "0xac936243d7e196f118dfa30c530654d8f049a34e3175bc449ed42ee20cf86a16"
+original-published-id = "0xd6c18e744d93987d271889ed2679045882f3351989dfe6860f46638c822298ac"
+latest-published-id = "0xd6c18e744d93987d271889ed2679045882f3351989dfe6860f46638c822298ac"
 published-version = "1"

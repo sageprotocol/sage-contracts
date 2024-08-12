@@ -2,7 +2,7 @@
 name = "SageUser"
 edition = "2024.beta"
 version = "0.0.1"
-# published-at = "0xbd6849ed68217bbdf04ecda8fefdb591db68ec8ee2701225efcbeb30e140675a"
+published-at = "0xbe02a9910081c7e808713dd0850c8c2e04cdfa4a7991f86a250561d4d79b7ad8"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
@@ -12,11 +12,12 @@ SageUtils = { local = "../utils" }
 
 [addresses]
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
+server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
-# sage_admin = "0x5d7043017e3f1febc85b42ff2f90b45da2be06f78887fae65740e48b406783b3"
-# sage_user = "0xbd6849ed68217bbdf04ecda8fefdb591db68ec8ee2701225efcbeb30e140675a"
-# sage_utils = "0x9b73e9902685d9d893a9cbef9852827090a0eb62fabaf10fa970c4669d868623"
+sage_admin = "0x756c7229c6dc1121998b551eb3737806a1ad37393fec8411e14ab17da1996755"
+sage_user = "0xbe02a9910081c7e808713dd0850c8c2e04cdfa4a7991f86a250561d4d79b7ad8"
+sage_utils = "0x9b73e9902685d9d893a9cbef9852827090a0eb62fabaf10fa970c4669d868623"
 
-sage_admin = "0x0"
-sage_user = "0x0"
-sage_utils  = "0x0"
+# sage_admin = "0x0"
+# sage_user = "0x0"
+# sage_utils  = "0x0"

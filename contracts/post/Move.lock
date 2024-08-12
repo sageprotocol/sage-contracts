@@ -2,7 +2,7 @@
 
 [move]
 version = 2
-manifest_digest = "E2A33D26F21600DB0253097BCCC26B17F2D628C28B4C515C1E5752B2BF611F58"
+manifest_digest = "8EDD8B4D76043B56BA50A42CF50ED70B6B84786ADBF082A7C35A4734C11320A2"
 deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { name = "SageAdmin" },
@@ -31,6 +31,7 @@ source = { local = "../channel" }
 dependencies = [
   { name = "SageAdmin" },
   { name = "SageImmutable" },
+  { name = "SageUser" },
   { name = "SageUtils" },
   { name = "Sui" },
 ]
@@ -70,7 +71,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.27.2"
+compiler-version = "1.30.3"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -78,6 +79,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0xd4f78cfc30c05eb48f89632bf331d0823e7c46d00c53b9ff7fc0c4bc1505d647"
-latest-published-id = "0xd4f78cfc30c05eb48f89632bf331d0823e7c46d00c53b9ff7fc0c4bc1505d647"
+original-published-id = "0xa01b4fa7506cac4c43cf2b3953c729c007dd40f3c9ca64773c1fc40fcbb105cb"
+latest-published-id = "0xa01b4fa7506cac4c43cf2b3953c729c007dd40f3c9ca64773c1fc40fcbb105cb"
 published-version = "1"
