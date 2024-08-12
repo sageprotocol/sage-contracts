@@ -4,9 +4,9 @@
 
 The order which the contracts are published is important, and errors will be encountered if the proper order is not taken.
 
-1. Admin
-2. Immutable
-3. Utils
+1. Immutable
+2. Utils
+3. Admin
 4. User
 5. Channel
 6. Post
@@ -33,5 +33,5 @@ For local development and testing it may be easier to change all addresses in al
 Publishing the packages is not sufficient to initialize the entire project. Once the contracts are deployed the registries must be created for the contracts to function.
 
 ```sh
-$ sui client call --package <SAGE_PKG_ID> --module actions --function create_registries --args <ADMIN_CAP_ID> <SAGE_CHANNEL_ID> <SAGE_CHANNEL_MEMBERSHIP_ID> <SAGE_CHANNEL_POSTS_ID> <SAGE_NOTIFICATION_ID> <SAGE_POST_COMMENTS_ID> <SAGE_POST_LIKES_ID> <SAGE_USER_MEMBERSHIP_ID> <SAGE_USER_POST_LIKES_ID> <SAGE_USER_POSTS_ID> <SAGE_USERS_ID>
+$ sui client call --package <SAGE_PKG_ID> --module actions --function create_registries --args <ADMIN_CAP_ID> <SAGE_CHANNEL_ID> <SAGE_CHANNEL_MEMBERSHIP_ID> <SAGE_CHANNEL_POSTS_ID> <SAGE_INVITE_CONFIG_ID> <SAGE_NOTIFICATION_ID> <SAGE_POST_ID> <SAGE_POST_COMMENTS_ID> <SAGE_POST_LIKES_ID> <SAGE_USER_INVITE_ID> <SAGE_USER_MEMBERSHIP_ID> <SAGE_USER_POST_LIKES_ID> <SAGE_USER_POSTS_ID> <SAGE_USERS_ID>
 ```
