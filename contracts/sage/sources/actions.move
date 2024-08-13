@@ -290,6 +290,45 @@ module sage::actions {
         )
     }
 
+    public fun create_invite(
+        sage_user_invite: &mut SageUserInvite,
+        sage_invite_config: &mut SageInviteConfig,
+        invite_code: String,
+        invite_hash: vector<u8>,
+        invite_key: String,
+        ctx: &mut TxContext
+    ) {
+        let invite_config = field::borrow_mut(&mut sage_invite_config.id, RegistryKey<InviteConfig> {});
+        let user_invite_registry = field::borrow_mut(&mut sage_user_invite.id, RegistryKey<UserInviteRegistry> {});
+
+        user_actions::create_invite(
+            user_invite_registry,
+            invite_config,
+            invite_code,
+            invite_hash,
+            invite_key,
+            ctx
+        );
+    }
+
+    public fun create_invite_admin(
+        invite_cap: &InviteCap,
+        sage_user_invite: &mut SageUserInvite,
+        invite_hash: vector<u8>,
+        invite_key: String,
+        user: address
+    ) {
+        let user_invite_registry = field::borrow_mut(&mut sage_user_invite.id, RegistryKey<UserInviteRegistry> {});
+
+        user_actions::create_invite_admin(
+            invite_cap,
+            user_invite_registry,
+            invite_hash,
+            invite_key,
+            user
+        );
+    }
+
     public fun create_notification(
         notification_cap: &NotificationCap,
         clock: &Clock,

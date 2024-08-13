@@ -7,10 +7,10 @@ The order which the contracts are published is important, and errors will be enc
 1. Immutable
 2. Utils
 3. Admin
-4. User
-5. Channel
-6. Post
-7. Notification
+4. Notification
+5. User
+6. Channel
+7. Post
 8. Sage
 
 This is due to dependencies between the packages:
@@ -36,8 +36,8 @@ Publishing the packages is not sufficient to initialize the entire project. Once
 $ sui client call --package <SAGE_PKG_ID> --module actions --function create_registries --args <ADMIN_CAP_ID> <SAGE_CHANNEL_ID> <SAGE_CHANNEL_MEMBERSHIP_ID> <SAGE_CHANNEL_POSTS_ID> <SAGE_INVITE_CONFIG_ID> <SAGE_NOTIFICATION_ID> <SAGE_POST_ID> <SAGE_POST_COMMENTS_ID> <SAGE_POST_LIKES_ID> <SAGE_USER_INVITE_ID> <SAGE_USER_MEMBERSHIP_ID> <SAGE_USER_POST_LIKES_ID> <SAGE_USER_POSTS_ID> <SAGE_USERS_ID>
 ```
 
-The very first user needs to be created without an invitation. This requires setting the invite configuration to allow for this, then resetting to the default initial growth behavior.
+The very first user needs to be created without an invitation. Afterwards set to the default initial growth behavior.
 
 ```sh
-$ sui client call --package <SAGE_PKG_ID> --module actions --function set_invite_config --args <INVITE_CAP_ID> <SAGE_INVITE_CONFIG_ID> <BOOLEAN>
+$ sui client call --package <SAGE_PKG_ID> --module actions --function set_invite_config --args <INVITE_CAP_ID> <SAGE_INVITE_CONFIG_ID> true
 ```

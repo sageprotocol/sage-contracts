@@ -4,6 +4,10 @@ module sage_user::user_actions {
     use sui::clock::Clock;
     use sui::event;
 
+    use sage_admin::{
+        admin::{InviteCap}
+    };
+
     use sage_user::{
         user::{Self, User},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
@@ -15,11 +19,12 @@ module sage_user::user_actions {
 
     // --------------- Errors ---------------
 
-    const EInviteNotFound: u64 = 370;
-    const ENoInvite: u64 = 371;
-    const ENotInvited: u64 = 372;
-    const ENoSelfJoin: u64 = 373;
-    const EUserDoesNotExist: u64 = 374;
+    const EInviteNotAllowed: u64 = 370;
+    const EInviteNotFound: u64 = 371;
+    const ENoInvite: u64 = 372;
+    const ENotInvited: u64 = 373;
+    const ENoSelfJoin: u64 = 374;
+    const EUserDoesNotExist: u64 = 375;
 
     // --------------- Name Tag ---------------
 
@@ -33,6 +38,12 @@ module sage_user::user_actions {
         description: String,
         invited_by: Option<address>,
         name: String
+    }
+
+    public struct InviteCreated has copy, drop {
+        invite_code: String,
+        invite_key: String,
+        user: address
     }
 
     // --------------- Constructor ---------------
@@ -135,6 +146,51 @@ module sage_user::user_actions {
         });
 
         user
+    }
+
+    public fun create_invite(
+        user_invite_registry: &mut UserInviteRegistry,
+        invite_config: &InviteConfig,
+        invite_code: String,
+        invite_hash: vector<u8>,
+        invite_key: String,
+        ctx: &mut TxContext
+    ) {
+        let is_invite_required = user_invite::is_invite_required(
+            invite_config
+        );
+
+        assert!(!is_invite_required, EInviteNotAllowed);
+
+        let self = tx_context::sender(ctx);
+
+        user_invite::create_invite(
+            user_invite_registry,
+            invite_hash,
+            invite_key,
+            self
+        );
+
+        event::emit(InviteCreated {
+            invite_code,
+            invite_key,
+            user: self
+        });
+    }
+
+    public fun create_invite_admin(
+        _: &InviteCap,
+        user_invite_registry: &mut UserInviteRegistry,
+        invite_hash: vector<u8>,
+        invite_key: String,
+        user: address
+    ) {
+        user_invite::create_invite(
+            user_invite_registry,
+            invite_hash,
+            invite_key,
+            user
+        );
     }
 
     public fun join(
