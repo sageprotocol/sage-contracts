@@ -12,7 +12,7 @@ module sage_user::test_user_actions {
     };
 
     use sage_user::{
-        user_actions::{Self},
+        user_actions::{Self, EInviteNotAllowed},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry},
@@ -26,9 +26,12 @@ module sage_user::test_user_actions {
 
     // --------------- Errors ---------------
 
-    const EHasMember: u64 = 0;
-    const EUserMembershipCountMismatch: u64 = 1;
-    const EUserNotMember: u64 = 2;
+    const EHasMember: u64 = 370;
+    const EHashMismatch: u64 = 371;
+    const ENoInviteRecord: u64 = 372;
+    const EUserInviteMismatch: u64 = 373;
+    const EUserMembershipCountMismatch: u64 = 374;
+    const EUserNotMember: u64 = 375;
 
     // --------------- Test Functions ---------------
 
@@ -125,7 +128,7 @@ module sage_user::test_user_actions {
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
-            mut invite_config
+            invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -143,19 +146,6 @@ module sage_user::test_user_actions {
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                &mut invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -214,7 +204,7 @@ module sage_user::test_user_actions {
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
-            mut invite_config
+            invite_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -227,19 +217,6 @@ module sage_user::test_user_actions {
         let invite_key = utf8(b"");
 
         let other_name = utf8(b"other-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                &mut invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
-        };
 
         ts::next_tx(scenario, OTHER);
         let (other_user, user_registry, user_membership_registry) = {
@@ -314,6 +291,181 @@ module sage_user::test_user_actions {
 
             ts::return_shared(clock);
 
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_create() {
+        let (
+            mut scenario_val,
+            user_registry_val,
+            mut user_invite_registry_val,
+            user_membership_registry_val,
+            invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_invite_registry = &mut user_invite_registry_val;
+
+        let invite_code = utf8(b"code");
+        let invite_key = utf8(b"key");
+        let invite_hash = b"hash";
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_actions::create_invite(
+                user_invite_registry,
+                &invite_config,
+                invite_code,
+                invite_hash,
+                invite_key,
+                ts::ctx(scenario)
+            );
+
+            let has_record = user_invite::has_record(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(has_record, ENoInviteRecord);
+
+            let (hash, user) = user_invite::get_destructured_invite(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(hash == invite_hash, EHashMismatch);
+            assert!(user == ADMIN, EUserInviteMismatch);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteNotAllowed)]
+    fun test_user_invite_create_fail() {
+        let (
+            mut scenario_val,
+            user_registry_val,
+            mut user_invite_registry_val,
+            user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_invite_registry = &mut user_invite_registry_val;
+
+        let invite_code = utf8(b"code");
+        let invite_key = utf8(b"key");
+        let invite_hash = b"hash";
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                true
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_actions::create_invite(
+                user_invite_registry,
+                &invite_config,
+                invite_code,
+                invite_hash,
+                invite_key,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+     #[test]
+    fun test_user_invite_create_admin() {
+        let (
+            mut scenario_val,
+            user_registry_val,
+            mut user_invite_registry_val,
+            user_membership_registry_val,
+            invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_invite_registry = &mut user_invite_registry_val;
+
+        let invite_key = utf8(b"key");
+        let invite_hash = b"hash";
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_actions::create_invite_admin(
+                &invite_cap,
+                user_invite_registry,
+                invite_hash,
+                invite_key,
+                OTHER
+            );
+
+            let has_record = user_invite::has_record(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(has_record, ENoInviteRecord);
+
+            let (hash, user) = user_invite::get_destructured_invite(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(hash == invite_hash, EHashMismatch);
+            assert!(user == OTHER, EUserInviteMismatch);
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
             destroy_for_testing(
                 user_registry_val,
                 user_invite_registry_val,

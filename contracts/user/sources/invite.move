@@ -14,7 +14,6 @@ module sage_user::user_invite {
     // --------------- Errors ---------------
 
     const EInviteCodeExists: u64 = 370;
-    const EInviteNotAllowed: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -33,11 +32,6 @@ module sage_user::user_invite {
 
     // --------------- Events ---------------
 
-    public struct InviteCreated has copy, drop {
-        invite_code: String,
-        invite_key: String
-    }
-
     public struct InviteDeleted has copy, drop {
         invite_key: String
     }
@@ -46,55 +40,11 @@ module sage_user::user_invite {
 
     // --------------- Public Functions ---------------
 
-    public fun create_invite(
-        user_invite_registry: &mut UserInviteRegistry,
-        invite_config: &InviteConfig,
-        invite_code: String,
-        invite_hash: vector<u8>,
-        invite_key: String,
-        ctx: &mut TxContext
-    ) {
-        let is_invite_required = is_invite_required(
-            invite_config
-        );
-
-        assert!(!is_invite_required, EInviteNotAllowed);
-
-        let self = tx_context::sender(ctx);
-
-        create_invite_internal(
-            user_invite_registry,
-            invite_hash,
-            invite_key,
-            self
-        );
-
-        event::emit(InviteCreated {
-            invite_code,
-            invite_key
-        });
-    }
-
-    public fun create_invite_admin(
-        _: &InviteCap,
-        user_invite_registry: &mut UserInviteRegistry,
-        invite_hash: vector<u8>,
-        invite_key: String,
-        user: address
-    ) {
-        create_invite_internal(
-            user_invite_registry,
-            invite_hash,
-            invite_key,
-            user
-        );
-    }
-
     public fun create_invite_config(
         _: &AdminCap
     ): InviteConfig {
         InviteConfig {
-            required: true
+            required: false
         }
     }
 
@@ -178,20 +128,7 @@ module sage_user::user_invite {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun delete_invite(
-        user_invite_registry: &mut UserInviteRegistry,
-        invite_key: String
-    ) {
-        user_invite_registry.registry.remove<String, Invite>(invite_key);
-
-        event::emit(InviteDeleted {
-            invite_key
-        });
-    }
-
-    // --------------- Internal Functions ---------------
-
-    fun create_invite_internal(
+    public(package) fun create_invite(
         user_invite_registry: &mut UserInviteRegistry,
         invite_hash: vector<u8>,
         invite_key: String,
@@ -211,6 +148,19 @@ module sage_user::user_invite {
 
         user_invite_registry.registry.add(invite_key, invite);
     }
+
+    public(package) fun delete_invite(
+        user_invite_registry: &mut UserInviteRegistry,
+        invite_key: String
+    ) {
+        user_invite_registry.registry.remove<String, Invite>(invite_key);
+
+        event::emit(InviteDeleted {
+            invite_key
+        });
+    }
+
+    // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
 

@@ -7,7 +7,7 @@ module sage_user::test_user_invite {
 
     use sage_admin::{admin::{Self, AdminCap, InviteCap}};
 
-    use sage_user::{user_invite::{Self, InviteConfig, UserInviteRegistry, EInviteNotAllowed}};
+    use sage_user::{user_invite::{Self, InviteConfig, UserInviteRegistry}};
 
     // --------------- Constants ---------------
 
@@ -18,11 +18,9 @@ module sage_user::test_user_invite {
     // --------------- Errors ---------------
 
     const EConfigMismatch: u64 = 370;
-    const EHashMismatch: u64 = 371;
-    // const EInvalidHashLength: u64 = 372;
-    const EInviteInvalid: u64 = 373;
-    const ENoInviteRecord: u64 = 374;
-    const EUserInviteMismatch: u64 = 375;
+    // const EInvalidHashLength: u64 = 371;
+    const EInviteInvalid: u64 = 372;
+    const EInviteRecord: u64 = 373;
 
     // --------------- Test Functions ---------------
 
@@ -128,19 +126,19 @@ module sage_user::test_user_invite {
                 invite_config
             );
 
-            assert!(is_invite_required, EConfigMismatch);
+            assert!(!is_invite_required, EConfigMismatch);
 
             user_invite::set_invite_config(
                 &invite_cap,
                 invite_config,
-                false
+                true
             );
 
             let is_invite_required = user_invite::is_invite_required(
                 invite_config
             );
 
-            assert!(!is_invite_required, EConfigMismatch);
+            assert!(is_invite_required, EConfigMismatch);
 
             ts::return_to_sender(scenario, invite_cap);
         };
@@ -157,121 +155,7 @@ module sage_user::test_user_invite {
     }
 
     #[test]
-    fun test_user_invite_create() {
-        let (
-            mut scenario_val,
-            mut user_invite_registry_val,
-            mut invite_config_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let user_invite_registry = &mut user_invite_registry_val;
-
-        let invite_code = utf8(b"code");
-        let invite_key = utf8(b"key");
-        let invite_hash = b"hash";
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                &mut invite_config_val,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            user_invite::create_invite(
-                user_invite_registry,
-                &invite_config_val,
-                invite_code,
-                invite_hash,
-                invite_key,
-                ts::ctx(scenario)
-            );
-
-            let has_record = user_invite::has_record(
-                user_invite_registry,
-                invite_key
-            );
-
-            assert!(has_record, ENoInviteRecord);
-
-            let (hash, user) = user_invite::get_destructured_invite(
-                user_invite_registry,
-                invite_key
-            );
-
-            assert!(hash == invite_hash, EHashMismatch);
-            assert!(user == ADMIN, EUserInviteMismatch);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            destroy_for_testing(
-                user_invite_registry_val,
-                invite_config_val
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EInviteNotAllowed)]
-    fun test_user_invite_create_fail() {
-        let (
-            mut scenario_val,
-            mut user_invite_registry_val,
-            invite_config_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let user_invite_registry = &mut user_invite_registry_val;
-
-        let invite_code = utf8(b"code");
-        let invite_key = utf8(b"key");
-        let invite_hash = b"hash";
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            user_invite::create_invite(
-                user_invite_registry,
-                &invite_config_val,
-                invite_code,
-                invite_hash,
-                invite_key,
-                ts::ctx(scenario)
-            );
-
-            let has_record = user_invite::has_record(
-                user_invite_registry,
-                invite_key
-            );
-
-            assert!(!has_record, ENoInviteRecord);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            destroy_for_testing(
-                user_invite_registry_val,
-                invite_config_val
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-     #[test]
-    fun test_user_invite_create_admin() {
+    fun test_user_invite() {
         let (
             mut scenario_val,
             mut user_invite_registry_val,
@@ -285,12 +169,9 @@ module sage_user::test_user_invite {
         let invite_key = utf8(b"key");
         let invite_hash = b"hash";
 
-        ts::next_tx(scenario, SERVER);
+        ts::next_tx(scenario, ADMIN);
         {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            user_invite::create_invite_admin(
-                &invite_cap,
+            user_invite::create_invite(
                 user_invite_registry,
                 invite_hash,
                 invite_key,
@@ -302,69 +183,7 @@ module sage_user::test_user_invite {
                 invite_key
             );
 
-            assert!(has_record, ENoInviteRecord);
-
-            let (hash, user) = user_invite::get_destructured_invite(
-                user_invite_registry,
-                invite_key
-            );
-
-            assert!(hash == invite_hash, EHashMismatch);
-            assert!(user == OTHER, EUserInviteMismatch);
-
-            ts::return_to_sender(scenario, invite_cap);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            destroy_for_testing(
-                user_invite_registry_val,
-                invite_config_val
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_user_invite_delete() {
-        let (
-            mut scenario_val,
-            mut user_invite_registry_val,
-            mut invite_config_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let user_invite_registry = &mut user_invite_registry_val;
-
-        let invite_code = utf8(b"code");
-        let invite_key = utf8(b"key");
-        let invite_hash = b"hash";
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                &mut invite_config_val,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            user_invite::create_invite(
-                user_invite_registry,
-                &invite_config_val,
-                invite_code,
-                invite_hash,
-                invite_key,
-                ts::ctx(scenario)
-            );
+            assert!(has_record, EInviteRecord);
 
             user_invite::delete_invite(
                 user_invite_registry,
@@ -376,7 +195,7 @@ module sage_user::test_user_invite {
                 invite_key
             );
 
-            assert!(!has_record, ENoInviteRecord);
+            assert!(!has_record, EInviteRecord);
         };
 
         ts::next_tx(scenario, ADMIN);

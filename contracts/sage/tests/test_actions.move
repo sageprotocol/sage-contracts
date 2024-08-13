@@ -39,19 +39,21 @@ module sage::test_sage_actions {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const OTHER: address = @0xbabe;
     const SERVER: address = @server;
 
     // --------------- Errors ---------------
 
     const EChannelNotCreated: u64 = 370;
     const EChannelPostNotCreated: u64 = 371;
-    const EInviteNotSet: u64 = 372;
-    const EPostNotCreated: u64 = 373;
-    const EPostCommentNotCreated: u64 = 374;
-    const EPostLikeNotCreated: u64 = 375;
-    const EUserNotificationsMismatch: u64 = 376;
-    const EUserNotCreated: u64 = 377;
-    const EUserPostNotCreated: u64 = 378;
+    const EInviteNotCreated: u64 = 372;
+    const EInviteNotSet: u64 = 373;
+    const EPostNotCreated: u64 = 374;
+    const EPostCommentNotCreated: u64 = 375;
+    const EPostLikeNotCreated: u64 = 376;
+    const EUserNotificationsMismatch: u64 = 377;
+    const EUserNotCreated: u64 = 378;
+    const EUserPostNotCreated: u64 = 379;
 
     // --------------- Test Functions ---------------
 
@@ -84,23 +86,6 @@ module sage::test_sage_actions {
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            let invite_config = actions::borrow_invite_config_for_testing(
-                &mut sage_invite_config
-            );
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -184,23 +169,6 @@ module sage::test_sage_actions {
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            let invite_config = actions::borrow_invite_config_for_testing(
-                &mut sage_invite_config
-            );
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -366,6 +334,142 @@ module sage::test_sage_actions {
         ts::end(scenario_val);
     }
 
+    #[test]
+    fun test_create_invite() {
+        let (
+            mut scenario_val,
+            sage_channel,
+            sage_channel_membership,
+            sage_channel_posts,
+            mut sage_invite_config,
+            sage_notification,
+            sage_post,
+            sage_post_comments,
+            sage_post_likes,
+            mut sage_user_invite,
+            sage_user_membership,
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
+        ) = test_common::setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let invite_key = utf8(b"key");
+
+            actions::create_invite(
+                &mut sage_user_invite,
+                &mut sage_invite_config,
+                utf8(b""),
+                vector::empty<u8>(),
+                invite_key,
+                ts::ctx(scenario)
+            );
+
+            let user_invite_registry = actions::borrow_user_invite_registry_for_testing(
+                &mut sage_user_invite
+            );
+
+            let has_record = user_invite::has_record(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(has_record, EInviteNotCreated);
+
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_create_invite_admin() {
+        let (
+            mut scenario_val,
+            sage_channel,
+            sage_channel_membership,
+            sage_channel_posts,
+            sage_invite_config,
+            sage_notification,
+            sage_post,
+            sage_post_comments,
+            sage_post_likes,
+            mut sage_user_invite,
+            sage_user_membership,
+            sage_user_post_likes,
+            sage_user_posts,
+            sage_users
+        ) = test_common::setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            let invite_key = utf8(b"key");
+
+            actions::create_invite_admin(
+                &invite_cap,
+                &mut sage_user_invite,
+                vector::empty<u8>(),
+                invite_key,
+                OTHER
+            );
+
+            let user_invite_registry = actions::borrow_user_invite_registry_for_testing(
+                &mut sage_user_invite
+            );
+
+            let has_record = user_invite::has_record(
+                user_invite_registry,
+                invite_key
+            );
+
+            assert!(has_record, EInviteNotCreated);
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            test_common::destroy_for_testing(
+                sage_channel,
+                sage_channel_membership,
+                sage_channel_posts,
+                sage_invite_config,
+                sage_notification,
+                sage_post,
+                sage_post_comments,
+                sage_post_likes,
+                sage_user_invite,
+                sage_user_membership,
+                sage_user_post_likes,
+                sage_user_posts,
+                sage_users
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
     // Untestable?
     //
     // #[test]
@@ -409,23 +513,6 @@ module sage::test_sage_actions {
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            let invite_config = actions::borrow_invite_config_for_testing(
-                &mut sage_invite_config
-            );
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -547,23 +634,6 @@ module sage::test_sage_actions {
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            let invite_config = actions::borrow_invite_config_for_testing(
-                &mut sage_invite_config
-            );
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -699,23 +769,6 @@ module sage::test_sage_actions {
             clock::share_for_testing(clock);
         };
 
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            let invite_config = actions::borrow_invite_config_for_testing(
-                &mut sage_invite_config
-            );
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
-        };
-
         ts::next_tx(scenario, ADMIN);
         {
             let clock: Clock = ts::take_shared(scenario);
@@ -821,23 +874,6 @@ module sage::test_sage_actions {
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
-
-            let invite_config = actions::borrow_invite_config_for_testing(
-                &mut sage_invite_config
-            );
-
-            user_invite::set_invite_config(
-                &invite_cap,
-                invite_config,
-                false
-            );
-
-            ts::return_to_sender(scenario, invite_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -972,7 +1008,7 @@ module sage::test_sage_actions {
             actions::set_invite_config(
                 &invite_cap,
                 &mut sage_invite_config,
-                false
+                true
             );
 
             let invite_config = actions::borrow_invite_config_for_testing(
@@ -983,7 +1019,7 @@ module sage::test_sage_actions {
                 invite_config
             );
 
-            assert!(!is_invite_required, EInviteNotSet);
+            assert!(is_invite_required, EInviteNotSet);
 
             ts::return_to_sender(scenario, invite_cap);
         };
