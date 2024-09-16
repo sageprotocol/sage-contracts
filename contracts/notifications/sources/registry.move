@@ -1,5 +1,5 @@
 module sage_notification::notification_registry {
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
     use sage_notification::{notification::{Notification}};
 
@@ -16,7 +16,8 @@ module sage_notification::notification_registry {
 
     // --------------- Name Tag ---------------
 
-    public struct NotificationRegistry has store {
+    public struct NotificationRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<address, UserNotifications>
     }
 
@@ -24,9 +25,25 @@ module sage_notification::notification_registry {
         notifications: ImmutableVector<Notification>
     }
 
+    public struct NOTIFICATION_REGISTRY has drop {}
+
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: NOTIFICATION_REGISTRY,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let notification_registry = NotificationRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(notification_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -35,15 +52,6 @@ module sage_notification::notification_registry {
         user: address
     ): &mut UserNotifications {
         notification_registry.registry.borrow_mut(user)
-    }
-
-    public fun create_notification_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): NotificationRegistry {
-        NotificationRegistry {
-            registry: immutable_table::new(ctx)
-        }
     }
 
     public fun get_user_notifications_count(
@@ -91,13 +99,7 @@ module sage_notification::notification_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        notification_registry: NotificationRegistry
-    ) {
-        let NotificationRegistry {
-            registry
-        } = notification_registry;
-
-        registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(NOTIFICATION_REGISTRY {}, ctx);
     }
 }

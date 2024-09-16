@@ -2,9 +2,10 @@ module sage_channel::channel_membership {
     use std::string::{String};
 
     use sui::event;
-    use sui::{table::{Self, Table}};
-
-    use sage_admin::{admin::{AdminCap}};
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
     
     use sage_channel::{channel::{Channel}};
 
@@ -31,10 +32,12 @@ module sage_channel::channel_membership {
         membership: Table<address, ChannelMember>
     }
 
-    public struct ChannelMembershipRegistry has store {
+    public struct ChannelMembershipRegistry has key, store {
+        id: UID,
         registry: Table<Channel, ChannelMembership>
     }
     
+    public struct CHANNEL_MEMBERSHIP has drop {}
 
     // --------------- Events ---------------
 
@@ -46,16 +49,21 @@ module sage_channel::channel_membership {
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun create_channel_membership_registry(
-        _: &AdminCap,
+    fun init(
+        otw: CHANNEL_MEMBERSHIP,
         ctx: &mut TxContext
-    ): ChannelMembershipRegistry {
-        ChannelMembershipRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let channel_membership_registry = ChannelMembershipRegistry {
+            id: object::new(ctx),
             registry: table::new(ctx)
-        }
+        };
+
+        transfer::share_object(channel_membership_registry);
     }
+
+    // --------------- Public Functions ---------------
 
     public fun borrow_membership_mut(
         channel_membership_registry: &mut ChannelMembershipRegistry,
@@ -164,14 +172,8 @@ module sage_channel::channel_membership {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        channel_membership_registry: ChannelMembershipRegistry
-    ) {
-        let ChannelMembershipRegistry {
-            registry
-        } = channel_membership_registry;
-
-        registry.destroy_empty();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(CHANNEL_MEMBERSHIP {}, ctx);
     }
 
 }

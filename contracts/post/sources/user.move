@@ -1,6 +1,8 @@
 module sage_post::user_posts {
     use std::string::{String};
 
+    use sui::package::{claim_and_keep};
+
     use sage_admin::{admin::{AdminCap}};
 
     use sage_immutable::{
@@ -18,13 +20,30 @@ module sage_post::user_posts {
 
     // --------------- Name Tag ---------------
 
-    public struct UserPostsRegistry has store {
+    public struct UserPostsRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<User, ImmutableVector<String>>
     }
+
+    public struct USER_POSTS has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: USER_POSTS,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let user_post_registry = UserPostsRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(user_post_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -33,15 +52,6 @@ module sage_post::user_posts {
         user: User
     ): &mut ImmutableVector<String> {
         user_posts_registry.registry.borrow_mut(user)
-    }
-
-    public fun create_user_posts_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): UserPostsRegistry {
-        UserPostsRegistry {
-            registry: immutable_table::new(ctx)
-        }
     }
 
     public fun has_post(
@@ -122,13 +132,7 @@ module sage_post::user_posts {
     }
 
     #[test_only]
-    public fun destroy_for_testing(
-        user_posts_registry: UserPostsRegistry
-    ) {
-        let UserPostsRegistry {
-            registry
-        } = user_posts_registry;
-
-        registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(USER_POSTS {}, ctx);
     }
 }

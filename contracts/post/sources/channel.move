@@ -1,7 +1,7 @@
 module sage_post::channel_posts {
     use std::string::{String};
 
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
     use sage_channel::{channel::{Channel}};
 
@@ -18,13 +18,30 @@ module sage_post::channel_posts {
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelPostsRegistry has store {
+    public struct ChannelPostsRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<Channel, ImmutableVector<String>>
     }
+
+    public struct CHANNEL_POSTS has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: CHANNEL_POSTS,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let post_registry = ChannelPostsRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(post_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -33,15 +50,6 @@ module sage_post::channel_posts {
         channel: Channel
     ): &mut ImmutableVector<String> {
         channel_posts_registry.registry.borrow_mut(channel)
-    }
-
-    public fun create_channel_posts_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): ChannelPostsRegistry {
-        ChannelPostsRegistry {
-            registry: immutable_table::new(ctx)
-        }
     }
 
     public fun has_post(
@@ -108,14 +116,7 @@ module sage_post::channel_posts {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        channel_posts_registry: ChannelPostsRegistry
-    ) {
-        let ChannelPostsRegistry {
-            registry
-        } = channel_posts_registry;
-
-        registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(CHANNEL_POSTS {}, ctx);
     }
-
 }

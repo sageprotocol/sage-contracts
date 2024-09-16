@@ -1,8 +1,9 @@
 module sage_user::user_membership {
-    use sui::event;
-    use sui::{table::{Self, Table}};
-
-    use sage_admin::{admin::{AdminCap}};
+    use sui::{
+        event,
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
     
     use sage_user::{user::{User}};
 
@@ -29,10 +30,12 @@ module sage_user::user_membership {
         membership: Table<address, UserMember>
     }
 
-    public struct UserMembershipRegistry has store {
+    public struct UserMembershipRegistry has key, store {
+        id: UID,
         registry: Table<User, UserMembership>
     }
     
+    public struct USER_MEMBERSHIP has drop {}
 
     // --------------- Events ---------------
 
@@ -44,16 +47,21 @@ module sage_user::user_membership {
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun create_user_membership_registry(
-        _: &AdminCap,
+    fun init(
+        otw: USER_MEMBERSHIP,
         ctx: &mut TxContext
-    ): UserMembershipRegistry {
-        UserMembershipRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let user_membership_registry = UserMembershipRegistry {
+            id: object::new(ctx),
             registry: table::new(ctx)
-        }
+        };
+
+        transfer::share_object(user_membership_registry);
     }
+
+    // --------------- Public Functions ---------------
 
     public fun borrow_membership_mut(
         user_membership_registry: &mut UserMembershipRegistry,
@@ -154,14 +162,7 @@ module sage_user::user_membership {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        user_membership_registry: UserMembershipRegistry
-    ) {
-        let UserMembershipRegistry {
-            registry
-        } = user_membership_registry;
-
-        registry.destroy_empty();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(USER_MEMBERSHIP {}, ctx);
     }
-
 }

@@ -2,10 +2,12 @@
 module sage_user::test_user_invite {
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::test_utils::{destroy};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap, InviteCap}};
+    use sage_admin::{admin::{Self, InviteCap}};
 
     use sage_user::{user_invite::{Self, InviteConfig, UserInviteRegistry}};
 
@@ -54,7 +56,7 @@ module sage_user::test_user_invite {
         user_invite_registry: UserInviteRegistry,
         invite_config: InviteConfig
     ) {
-        user_invite::destroy_for_testing(user_invite_registry);
+        destroy(user_invite_registry);
         destroy(invite_config);
     }
 
@@ -64,20 +66,13 @@ module sage_user::test_user_invite {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            user_invite::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let (user_invite_registry, invite_config) = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let invite_config = user_invite::create_invite_config(&admin_cap);
-
-            let user_invite_registry = user_invite::create_invite_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let invite_config = scenario.take_shared<InviteConfig>();
+            let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
 
             (user_invite_registry, invite_config)
         };

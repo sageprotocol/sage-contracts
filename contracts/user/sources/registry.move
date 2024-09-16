@@ -1,10 +1,9 @@
 module sage_user::user_registry {
     use std::string::{String};
 
-    use sui::table::{Self, Table};
-
-    use sage_admin::{
-        admin::{AdminCap}
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
     };
 
     use sage_user::{
@@ -24,14 +23,32 @@ module sage_user::user_registry {
 
     // --------------- Name Tag ---------------
 
-    public struct UserRegistry has store {
+    public struct UserRegistry has key, store {
+        id: UID,
         address_registry: Table<address, String>,
         user_registry: Table<String, User>
     }
 
+    public struct USER_REGISTRY has drop {}
+
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: USER_REGISTRY,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let user_registry = UserRegistry {
+            id: object::new(ctx),
+            address_registry: table::new(ctx),
+            user_registry: table::new(ctx)
+        };
+
+        transfer::share_object(user_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -47,16 +64,6 @@ module sage_user::user_registry {
         address: address
     ): String {
         *user_registry.address_registry.borrow(address)
-    }
-
-    public fun create_user_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): UserRegistry {
-        UserRegistry {
-            address_registry: table::new(ctx),
-            user_registry: table::new(ctx)
-        }
     }
 
     public fun has_address_record(
@@ -102,15 +109,7 @@ module sage_user::user_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        user_registry: UserRegistry
-    ) {
-        let UserRegistry {
-            address_registry,
-            user_registry
-        } = user_registry;
-
-        address_registry.drop();
-        user_registry.drop();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(USER_REGISTRY {}, ctx);
     }
 }

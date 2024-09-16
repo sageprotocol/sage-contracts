@@ -2,11 +2,12 @@
 module sage_channel::test_channel_membership {
     use std::string::{utf8};
 
-    use sui::{table::{ETableNotEmpty}};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sui::test_scenario::{Self as ts, Scenario};
-
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_channel::{
         channel::{Self},
@@ -30,18 +31,12 @@ module sage_channel::test_channel_membership {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            channel_membership::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let channel_membership_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let channel_membership_registry = channel_membership::create_channel_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let channel_membership_registry = scenario.take_shared<ChannelMembershipRegistry>();
 
             channel_membership_registry
         };
@@ -60,14 +55,13 @@ module sage_channel::test_channel_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            destroy(channel_membership_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_channel_membership_create() {
         let (
             mut scenario_val,
@@ -115,7 +109,7 @@ module sage_channel::test_channel_membership {
 
             assert!(is_member, EChannelNotMember);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            destroy(channel_membership_registry_val);
         };
 
         ts::end(scenario_val);
@@ -177,14 +171,13 @@ module sage_channel::test_channel_membership {
 
             assert!(member_length == 1, EChannelMembershipCountMismatch);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            destroy(channel_membership_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_channel_leave() {
         let (
             mut scenario_val,
@@ -244,7 +237,7 @@ module sage_channel::test_channel_membership {
 
             assert!(channel_member_count_join == 1, EChannelMembershipCountMismatch);
 
-            channel_membership::destroy_for_testing(channel_membership_registry_val);
+            destroy(channel_membership_registry_val);
         };
 
         ts::end(scenario_val);

@@ -1,7 +1,7 @@
 module sage_channel::channel_registry {
     use std::string::{String};
 
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
     use sage_channel::{channel::{Channel}};
 
@@ -19,14 +19,32 @@ module sage_channel::channel_registry {
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelRegistry has store {
+    public struct ChannelRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<String, Channel>,
         reverse_registry: ImmutableTable<Channel, String>
     }
 
+    public struct CHANNEL_REGISTRY has drop {}
+
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: CHANNEL_REGISTRY,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let channel_registry = ChannelRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx),
+            reverse_registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(channel_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -42,16 +60,6 @@ module sage_channel::channel_registry {
         channel: Channel
     ): String {
         *channel_registry.reverse_registry.borrow(channel)
-    }
-
-    public fun create_channel_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): ChannelRegistry {
-        ChannelRegistry {
-            registry: immutable_table::new(ctx),
-            reverse_registry: immutable_table::new(ctx)
-        }
     }
 
     public fun has_record(
@@ -85,15 +93,7 @@ module sage_channel::channel_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        channel_registry: ChannelRegistry
-    ) {
-        let ChannelRegistry {
-            registry,
-            reverse_registry
-        } = channel_registry;
-
-        registry.destroy_for_testing();
-        reverse_registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(CHANNEL_REGISTRY {}, ctx);
     }
 }

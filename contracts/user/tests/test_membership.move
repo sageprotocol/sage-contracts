@@ -2,10 +2,12 @@
 module sage_user::test_user_membership {
     use std::string::{utf8};
 
-    use sui::{table::{ETableNotEmpty}};
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_user::{
         user::{Self},
@@ -30,18 +32,12 @@ module sage_user::test_user_membership {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            user_membership::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let user_membership_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let user_membership_registry = user_membership::create_user_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
 
             user_membership_registry
         };
@@ -60,14 +56,13 @@ module sage_user::test_user_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_membership_create() {
         let (
             mut scenario_val,
@@ -115,14 +110,13 @@ module sage_user::test_user_membership {
 
             assert!(!is_member, EUserNotMember);
 
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_join() {
         let (
             mut scenario_val,
@@ -200,7 +194,7 @@ module sage_user::test_user_membership {
 
             assert!(member_length == 1, EUserMembershipCountMismatch);
 
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
@@ -267,7 +261,7 @@ module sage_user::test_user_membership {
 
             assert!(user_member_count_join == 1, EUserMembershipCountMismatch);
 
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);

@@ -2,10 +2,11 @@
 module sage_user::test_user_actions {
     use std::string::{utf8};
 
-    use sui::clock::{Self, Clock};
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::test_utils::{destroy};
-    use sui::{table::{ETableNotEmpty}};
+    use sui::{
+        clock::{Self, Clock},
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
     use sage_admin::{
         admin::{Self, AdminCap, InviteCap}
@@ -42,11 +43,10 @@ module sage_user::test_user_actions {
         user_membership_registry: UserMembershipRegistry,
         invite_config: InviteConfig
     ) {
-        user_registry::destroy_for_testing(user_registry);
-        user_invite::destroy_for_testing(user_invite_registry);
-        user_membership::destroy_for_testing(user_membership_registry);
-
         destroy(invite_config);
+        destroy(user_registry);
+        destroy(user_invite_registry);
+        destroy(user_membership_registry);
     }
 
     #[test_only]
@@ -61,6 +61,9 @@ module sage_user::test_user_actions {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            user_invite::init_for_testing(ts::ctx(scenario));
+            user_membership::init_for_testing(ts::ctx(scenario));
+            user_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -72,21 +75,10 @@ module sage_user::test_user_actions {
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let invite_config = user_invite::create_invite_config(&admin_cap);
-
-            let user_registry = user_registry::create_user_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_invite_registry = user_invite::create_invite_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_membership_registry = user_membership::create_user_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
+            let invite_config = scenario.take_shared<InviteConfig>();
+            let user_registry = scenario.take_shared<UserRegistry>();
+            let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
+            let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
             ts::return_to_sender(scenario, admin_cap);
 
             (user_registry, user_invite_registry, user_membership_registry, invite_config)
@@ -121,7 +113,6 @@ module sage_user::test_user_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_actions_create() {
         let (
             mut scenario_val,
@@ -197,7 +188,6 @@ module sage_user::test_user_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_actions_join() {
         let (
             mut scenario_val,

@@ -1,7 +1,7 @@
 module sage_post::post_comments {
     use std::string::{String};
 
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
     use sage_immutable::{
         immutable_table::{Self, ImmutableTable},
@@ -16,13 +16,30 @@ module sage_post::post_comments {
 
     // --------------- Name Tag ---------------
 
-    public struct PostCommentsRegistry has store {
+    public struct PostCommentsRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<String, ImmutableVector<String>>
     }
+
+    public struct POST_COMMENTS has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: POST_COMMENTS,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let post_comments_registry = PostCommentsRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(post_comments_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -31,15 +48,6 @@ module sage_post::post_comments {
         post_key: String
     ): &mut ImmutableVector<String> {
         post_comments_registry.registry.borrow_mut(post_key)
-    }
-
-    public fun create_post_comments_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): PostCommentsRegistry {
-        PostCommentsRegistry {
-            registry: immutable_table::new(ctx)
-        }
     }
 
     public fun has_post(
@@ -109,13 +117,7 @@ module sage_post::post_comments {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        post_comments_registry: PostCommentsRegistry
-    ) {
-        let PostCommentsRegistry {
-            registry
-        } = post_comments_registry;
-
-        registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(POST_COMMENTS {}, ctx);
     }
 }

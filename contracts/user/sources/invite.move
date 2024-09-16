@@ -1,12 +1,17 @@
 module sage_user::user_invite {
-    use std::hash::{sha3_256};
-    use std::string::{String, into_bytes, utf8};
+    use std::{
+        hash::{sha3_256},
+        string::{String, into_bytes, utf8}
+    };
 
-    use sui::event;
-    use sui::table::{Self, Table};
+    use sui::{
+        event,
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
     use sage_admin::{
-        admin::{AdminCap, InviteCap}
+        admin::{InviteCap}
     };
 
     // --------------- Constants ---------------
@@ -22,13 +27,17 @@ module sage_user::user_invite {
         user: address
     }
 
-    public struct InviteConfig has store {
+    public struct InviteConfig has key, store {
+        id: UID,
         required: bool
     }
 
-    public struct UserInviteRegistry has store {
+    public struct UserInviteRegistry has key, store {
+        id: UID,
         registry: Table<String, Invite>
     }
+
+    public struct USER_INVITE has drop {}
 
     // --------------- Events ---------------
 
@@ -38,24 +47,27 @@ module sage_user::user_invite {
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun create_invite_config(
-        _: &AdminCap
-    ): InviteConfig {
-        InviteConfig {
-            required: false
-        }
-    }
-
-    public fun create_invite_registry(
-        _: &AdminCap,
+    fun init(
+        otw: USER_INVITE,
         ctx: &mut TxContext
-    ): UserInviteRegistry {
-        UserInviteRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let invite_config = InviteConfig {
+            id: object::new(ctx),
+            required: false
+        };
+
+        let user_invite_registry = UserInviteRegistry {
+            id: object::new(ctx),
             registry: table::new(ctx)
-        }
+        };
+
+        transfer::share_object(invite_config);
+        transfer::share_object(user_invite_registry);
     }
+
+    // --------------- Public Functions ---------------
 
     public fun get_destructured_invite(
         user_invite_registry: &mut UserInviteRegistry,
@@ -165,13 +177,7 @@ module sage_user::user_invite {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        user_invite_registry: UserInviteRegistry
-    ) {
-        let UserInviteRegistry {
-            registry,
-        } = user_invite_registry;
-
-        registry.drop();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(USER_INVITE {}, ctx);
     }
 }

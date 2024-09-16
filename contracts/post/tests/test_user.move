@@ -2,9 +2,12 @@
 module sage_post::test_user_posts {
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_post::{
         post::{Self},
@@ -35,14 +38,7 @@ module sage_post::test_user_posts {
 
         ts::next_tx(scenario, ADMIN);
         let user_posts_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let user_posts_registry = user_posts::create_user_posts_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let user_posts_registry = scenario.take_shared<UserPostsRegistry>();
 
             user_posts_registry
         };
@@ -61,7 +57,7 @@ module sage_post::test_user_posts {
 
         ts::next_tx(scenario, ADMIN);
         {
-            user_posts::destroy_for_testing(user_posts_registry_val);
+            destroy(user_posts_registry_val);
         };
 
         ts::end(scenario_val);
@@ -110,7 +106,7 @@ module sage_post::test_user_posts {
 
             assert!(has_record, EUserPostsDoesNotExist);
 
-            user_posts::destroy_for_testing(user_posts_registry_val);
+            destroy(user_posts_registry_val);
         };
 
         ts::end(scenario_val);
@@ -171,7 +167,7 @@ module sage_post::test_user_posts {
 
             assert!(has_post, EUserPostMismatch);
 
-            user_posts::destroy_for_testing(user_posts_registry_val);
+            destroy(user_posts_registry_val);
         };
 
         ts::end(scenario_val);

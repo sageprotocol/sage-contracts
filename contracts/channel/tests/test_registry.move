@@ -2,9 +2,12 @@
 module sage_channel::test_channel_registry {
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_channel::{
         channel::{Self},
@@ -29,18 +32,12 @@ module sage_channel::test_channel_registry {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            channel_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let channel_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let channel_registry = channel_registry::create_channel_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let channel_registry = scenario.take_shared<ChannelRegistry>();
 
             channel_registry
         };
@@ -59,7 +56,7 @@ module sage_channel::test_channel_registry {
 
         ts::next_tx(scenario, ADMIN);
         {
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -103,7 +100,7 @@ module sage_channel::test_channel_registry {
 
             assert!(retrieved_channel == channel, EChannelMismatch);
 
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -149,7 +146,7 @@ module sage_channel::test_channel_registry {
 
             assert!(retrieved_channel == channel, EChannelMismatch);
 
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -193,7 +190,7 @@ module sage_channel::test_channel_registry {
 
             assert!(channel_key == channel_name, EChannelNameMismatch);
 
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -239,7 +236,7 @@ module sage_channel::test_channel_registry {
 
             assert!(retrieved_channel_key == channel_key, EChannelNameMismatch);
 
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -283,7 +280,7 @@ module sage_channel::test_channel_registry {
 
             assert!(has_record, EChannelExistsMismatch);
 
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);
@@ -329,7 +326,7 @@ module sage_channel::test_channel_registry {
 
             assert!(has_record, EChannelExistsMismatch);
 
-            channel_registry::destroy_for_testing(channel_registry_val);
+            destroy(channel_registry_val);
         };
 
         ts::end(scenario_val);

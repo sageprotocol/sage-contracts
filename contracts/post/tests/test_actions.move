@@ -2,16 +2,18 @@
 module sage_post::test_post_actions {
     use std::string::{utf8};
 
-    use sui::clock::{Self, Clock};
-    use sui::{table::{ETableNotEmpty}};
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::test_utils::{destroy};
+    use sui::{
+        clock::{Self, Clock},
+        table::{ETableNotEmpty},
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap, InviteCap}};
+    use sage_admin::{admin::{Self, InviteCap}};
 
     use sage_channel::{
         channel_actions::{Self},
-        channel_membership::{Self, ChannelMembershipRegistry},
+        channel_membership::{ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry}
     };
 
@@ -27,7 +29,7 @@ module sage_post::test_post_actions {
     use sage_user::{
         user_actions::{Self},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
-        user_membership::{Self, UserMembershipRegistry},
+        user_membership::{UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
 
@@ -62,18 +64,18 @@ module sage_post::test_post_actions {
         user_registry: UserRegistry,
         invite_config: InviteConfig
     ) {
-        channel_membership::destroy_for_testing(channel_membership_registry);
-        channel_posts::destroy_for_testing(channel_posts_registry);
-        channel_registry::destroy_for_testing(channel_registry);
-        post_comments::destroy_for_testing(post_comments_registry);
-        post_likes::destroy_for_testing(post_likes_registry, user_post_likes_registry);
-        post_registry::destroy_for_testing(post_registry);
-        user_invite::destroy_for_testing(user_invite_registry);
-        user_membership::destroy_for_testing(user_membership_registry);
-        user_posts::destroy_for_testing(user_posts_registry);
-        user_registry::destroy_for_testing(user_registry);
-
+        destroy(channel_membership_registry);
+        destroy(channel_posts_registry);
+        destroy(channel_registry);
         destroy(invite_config);
+        destroy(post_comments_registry);
+        destroy(post_likes_registry);
+        destroy(user_post_likes_registry);
+        destroy(post_registry);
+        destroy(user_invite_registry);
+        destroy(user_membership_registry);
+        destroy(user_posts_registry);
+        destroy(user_registry);
     }
 
     #[test_only]
@@ -113,56 +115,18 @@ module sage_post::test_post_actions {
             user_registry,
             invite_config
         ) = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let invite_config = user_invite::create_invite_config(&admin_cap);
-
-            let channel_membership_registry = channel_membership::create_channel_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let channel_posts_registry = channel_posts::create_channel_posts_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let channel_registry = channel_registry::create_channel_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let post_comments_registry = post_comments::create_post_comments_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let post_likes_registry = post_likes::create_post_likes_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let post_registry = post_registry::create_post_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_invite_registry = user_invite::create_invite_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_membership_registry = user_membership::create_user_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_post_likes_registry = post_likes::create_user_post_likes_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_posts_registry = user_posts::create_user_posts_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_registry = user_registry::create_user_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let channel_membership_registry = scenario.take_shared<ChannelMembershipRegistry>();
+            let channel_posts_registry = scenario.take_shared<ChannelPostsRegistry>();
+            let channel_registry = scenario.take_shared<ChannelRegistry>();
+            let invite_config = scenario.take_shared<InviteConfig>();
+            let post_comments_registry = scenario.take_shared<PostCommentsRegistry>();
+            let post_likes_registry = scenario.take_shared<PostLikesRegistry>();
+            let post_registry = scenario.take_shared<PostRegistry>();
+            let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
+            let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
+            let user_post_likes_registry = scenario.take_shared<UserPostLikesRegistry>();
+            let user_posts_registry = scenario.take_shared<UserPostsRegistry>();
+            let user_registry = scenario.take_shared<UserRegistry>();
 
             (
                 channel_membership_registry,

@@ -1,14 +1,11 @@
 #[test_only]
 module sage_channel::test_channel_actions {
-    use sui::clock::{Self, Clock};
-
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::test_utils::{destroy};
-
     use sui::{
-        table::{ETableNotEmpty}
+        clock::{Self, Clock},
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
     };
 
     use sage_admin::{
@@ -53,13 +50,12 @@ module sage_channel::test_channel_actions {
         user_membership_registry: UserMembershipRegistry,
         invite_config: InviteConfig
     ) {
-        channel_membership::destroy_for_testing(channel_membership_registry);
-        channel_registry::destroy_for_testing(channel_registry);
-        user_registry::destroy_for_testing(user_registry);
-        user_invite::destroy_for_testing(user_invite_registry);
-        user_membership::destroy_for_testing(user_membership_registry);
-
+        destroy(channel_registry);
+        destroy(channel_membership_registry);
         destroy(invite_config);
+        destroy(user_registry);
+        destroy(user_invite_registry);
+        destroy(user_membership_registry);
     }
 
     #[test_only]
@@ -76,6 +72,11 @@ module sage_channel::test_channel_actions {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            channel_membership::init_for_testing(ts::ctx(scenario));
+            channel_registry::init_for_testing(ts::ctx(scenario));
+            user_invite::init_for_testing(ts::ctx(scenario));
+            user_membership::init_for_testing(ts::ctx(scenario));
+            user_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -87,36 +88,12 @@ module sage_channel::test_channel_actions {
             user_membership_registry,
             invite_config
         ) = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let invite_config = user_invite::create_invite_config(&admin_cap);
-
-            let channel_registry = channel_registry::create_channel_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            let channel_membership_registry = channel_membership::create_channel_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            let user_registry = user_registry::create_user_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            let user_invite_registry = user_invite::create_invite_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            let user_membership_registry = user_membership::create_user_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let channel_registry = scenario.take_shared<ChannelRegistry>();
+            let channel_membership_registry = scenario.take_shared<ChannelMembershipRegistry>();
+            let invite_config = scenario.take_shared<InviteConfig>();
+            let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
+            let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
+            let user_registry = scenario.take_shared<UserRegistry>();
 
             (
                 channel_registry,
@@ -169,7 +146,6 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_channel_actions_create() {
         let (
             mut scenario_val,
@@ -355,7 +331,6 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_channel_actions_update_avatar() {
         let (
             mut scenario_val,
@@ -469,7 +444,6 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_channel_actions_update_banner() {
         let (
             mut scenario_val,
@@ -583,7 +557,6 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_channel_actions_update_description() {
         let (
             mut scenario_val,

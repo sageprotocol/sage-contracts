@@ -2,9 +2,12 @@
 module sage_user::test_user_registry {
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_user::{
         user::{Self},
@@ -30,18 +33,12 @@ module sage_user::test_user_registry {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            user_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let user_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let user_registry = user_registry::create_user_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let user_registry = scenario.take_shared<UserRegistry>();
 
             user_registry
         };
@@ -60,7 +57,7 @@ module sage_user::test_user_registry {
 
         ts::next_tx(scenario, ADMIN);
         {
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -105,7 +102,7 @@ module sage_user::test_user_registry {
 
             assert!(retrieved_user == user, EUserMismatch);
 
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -152,7 +149,7 @@ module sage_user::test_user_registry {
 
             assert!(retrieved_user == user, EUserMismatch);
 
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -197,7 +194,7 @@ module sage_user::test_user_registry {
 
             assert!(retrieved_username == name, EUsernameMismatch);
 
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -242,7 +239,7 @@ module sage_user::test_user_registry {
 
             assert!(has_address_record, EAddressExistsMismatch);
 
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -287,7 +284,7 @@ module sage_user::test_user_registry {
 
             assert!(has_username_record, EUsernameExistsMismatch);
 
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);
@@ -334,7 +331,7 @@ module sage_user::test_user_registry {
 
             assert!(has_username_record, EUsernameExistsMismatch);
 
-            user_registry::destroy_for_testing(user_registry_val);
+            destroy(user_registry_val);
         };
 
         ts::end(scenario_val);

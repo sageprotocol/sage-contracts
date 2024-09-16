@@ -1,9 +1,10 @@
 module sage_post::post_likes {
     use std::string::{String};
 
-    use sui::event;
-
-    use sage_admin::{admin::{AdminCap}};
+    use sui::{
+        event,
+        package::{claim_and_keep}
+    };
 
     use sage_immutable::{
         immutable_table::{Self, ImmutableTable},
@@ -18,7 +19,8 @@ module sage_post::post_likes {
 
     // --------------- Name Tag ---------------
 
-    public struct PostLikesRegistry has store {
+    public struct PostLikesRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<String, PostLikes>
     }
 
@@ -26,13 +28,16 @@ module sage_post::post_likes {
         likes: ImmutableVector<address>
     }
 
-    public struct UserPostLikesRegistry has store {
+    public struct UserPostLikesRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<address, UserPostLikes>
     }
 
     public struct UserPostLikes has store {
         likes: ImmutableVector<String>
     }
+
+    public struct POST_LIKES has drop {}
 
     // --------------- Events ---------------
 
@@ -42,6 +47,25 @@ module sage_post::post_likes {
     }
 
     // --------------- Constructor ---------------
+
+    fun init(
+        otw: POST_LIKES,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let post_likes_registry = PostLikesRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+        let user_post_likes_registry = UserPostLikesRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(post_likes_registry);
+        transfer::share_object(user_post_likes_registry);
+    }
 
     // --------------- Public Functions ---------------
 
@@ -57,24 +81,6 @@ module sage_post::post_likes {
         user: address
     ): &mut UserPostLikes {
         user_post_likes_registry.registry.borrow_mut(user)
-    }
-
-    public fun create_post_likes_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): PostLikesRegistry {
-        PostLikesRegistry {
-            registry: immutable_table::new(ctx)
-        }
-    }
-
-    public fun create_user_post_likes_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): UserPostLikesRegistry {
-        UserPostLikesRegistry {
-            registry: immutable_table::new(ctx)
-        }
     }
 
     public fun get_post_likes_count(
@@ -206,21 +212,8 @@ module sage_post::post_likes {
 
     // --------------- Test Functions ---------------
 
-    #[test_only]
-    public fun destroy_for_testing(
-        post_likes_registry: PostLikesRegistry,
-        user_post_likes_registry: UserPostLikesRegistry
-    ) {
-        let PostLikesRegistry {
-            registry: post_likes_reg
-        } = post_likes_registry;
-
-        let UserPostLikesRegistry {
-            registry: user_post_likes_reg
-        } = user_post_likes_registry;
-
-        post_likes_reg.destroy_for_testing();
-        user_post_likes_reg.destroy_for_testing();
+   #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(POST_LIKES {}, ctx);
     }
-
 }
