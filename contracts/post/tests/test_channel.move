@@ -73,10 +73,12 @@ module sage_post::test_channel_posts {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let channel = channel::create_for_testing(
-                utf8(b"channel-name"),
+                channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
