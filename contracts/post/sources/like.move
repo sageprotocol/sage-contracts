@@ -141,12 +141,12 @@ module sage_post::post_likes {
             );
         };
 
-        let post_likes = borrow_post_likes(
+        let post_likes = borrow_post_likes_mut(
             post_likes_registry,
             post_key
         );
 
-        let user_post_likes = borrow_user_post_likes(
+        let user_post_likes = borrow_user_post_likes_mut(
             user_post_likes_registry,
             user
         );
@@ -172,14 +172,14 @@ module sage_post::post_likes {
         });
     }
 
-    public(package) fun borrow_post_likes(
+    public(package) fun borrow_post_likes_mut(
         post_likes_registry: &mut PostLikesRegistry,
         post_key: String
     ): &mut PostLikes {
         post_likes_registry.registry.borrow_mut(post_key)
     }
 
-    public(package) fun borrow_user_post_likes(
+    public(package) fun borrow_user_post_likes_mut(
         user_post_likes_registry: &mut UserPostLikesRegistry,
         user: address
     ): &mut UserPostLikes {

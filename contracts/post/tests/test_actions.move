@@ -1025,7 +1025,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let post_likes = post_likes::borrow_post_likes(
+            let post_likes = post_likes::borrow_post_likes_mut(
                 post_likes_registry,
                 post_key
             );
@@ -1037,7 +1037,7 @@ module sage_post::test_post_actions {
 
             assert!(post_liked, EPostNotLiked);
 
-            let user_post_likes = post_likes::borrow_user_post_likes(
+            let user_post_likes = post_likes::borrow_user_post_likes_mut(
                 user_post_likes_registry,
                 ADMIN
             );

@@ -114,7 +114,7 @@ module sage_notification::test_notification_actions {
                 reward_amount
             );
 
-            let user_notifications = notification_registry::borrow_user_notifications(
+            let user_notifications = notification_registry::borrow_user_notifications_mut(
                 notification_registry,
                 user
             );

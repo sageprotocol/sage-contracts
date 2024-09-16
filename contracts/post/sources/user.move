@@ -45,7 +45,7 @@ module sage_post::user_posts {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_user_post_keys(
+    public fun borrow_user_post_keys_mut(
         user_posts_registry: &mut UserPostsRegistry,
         user: User
     ): &mut ImmutableVector<String> {
@@ -90,7 +90,7 @@ module sage_post::user_posts {
             );
         };
 
-        let user_post_keys = borrow_user_post_keys(
+        let user_post_keys = borrow_user_post_keys_mut(
             user_posts_registry,
             user
         );

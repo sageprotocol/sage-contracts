@@ -97,12 +97,12 @@ module sage_post::test_like {
                 user
             );
 
-            let post_likes = post_likes::borrow_post_likes(
+            let post_likes = post_likes::borrow_post_likes_mut(
                 post_likes_registry,
                 post_key
             );
 
-            let user_post_likes = post_likes::borrow_user_post_likes(
+            let user_post_likes = post_likes::borrow_user_post_likes_mut(
                 user_post_likes_registry,
                 user
             );

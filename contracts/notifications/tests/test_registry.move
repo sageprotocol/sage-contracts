@@ -96,7 +96,7 @@ module sage_notification::test_registry {
 
             assert!(has_user_notifications, EUserNotificationsDoesNotExist);
 
-            let user_notifications = notification_registry::borrow_user_notifications(
+            let user_notifications = notification_registry::borrow_user_notifications_mut(
                 notification_registry,
                 user
             );

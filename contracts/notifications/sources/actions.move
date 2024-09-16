@@ -60,7 +60,7 @@ module sage_notification::notification_actions {
             );
         };
 
-        let user_notifications = notification_registry::borrow_user_notifications(
+        let user_notifications = notification_registry::borrow_user_notifications_mut(
             notification_registry,
             user
         );

@@ -42,6 +42,13 @@ module sage_post::post_registry {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_post(
+        post_registry: &PostRegistry,
+        post_key: String
+    ): Post {
+        *post_registry.registry.borrow(post_key)
+    }
+
     public fun has_record(
         post_registry: &PostRegistry,
         post_key: String
@@ -61,13 +68,6 @@ module sage_post::post_registry {
         assert!(!record_exists, EPostRecordExists);
 
         post_registry.registry.add(post_key, post);
-    }
-
-    public(package) fun borrow_post(
-        post_registry: &PostRegistry,
-        post_key: String
-    ): Post {
-        *post_registry.registry.borrow(post_key)
     }
 
     // --------------- Internal Functions ---------------

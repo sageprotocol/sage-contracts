@@ -69,7 +69,7 @@ module sage_notification::notification_registry {
         user_notifications.notifications.push_back(notification);
     }
 
-    public(package) fun borrow_user_notifications(
+    public(package) fun borrow_user_notifications_mut(
         notification_registry: &mut NotificationRegistry,
         user: address
     ): &mut UserNotifications {

@@ -81,7 +81,7 @@ module sage_post::post_comments {
             );
         };
 
-        let parent_post_comment_keys = borrow_post_comment_keys(
+        let parent_post_comment_keys = borrow_post_comment_keys_mut(
             post_comments_registry,
             parent_post_key
         );
@@ -89,7 +89,7 @@ module sage_post::post_comments {
         parent_post_comment_keys.push_back(post_key);
     }
 
-    public(package) fun borrow_post_comment_keys(
+    public(package) fun borrow_post_comment_keys_mut(
         post_comments_registry: &mut PostCommentsRegistry,
         post_key: String
     ): &mut ImmutableVector<String> {
