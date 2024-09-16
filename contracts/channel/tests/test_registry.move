@@ -80,6 +80,7 @@ module sage_channel::test_channel_registry {
 
             let channel = channel::create(
                 channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -119,13 +120,14 @@ module sage_channel::test_channel_registry {
         {
             let channel_registry = &mut channel_registry_val;
 
-            let lower_name = utf8(b"channel-name");
-            let upper_name = utf8(b"CHANNEL-NAME");
+            let channel_key = utf8(b"channel-name");
+            let channel_name = utf8(b"CHANNEL-NAME");
 
             let created_at: u64 = 999;
 
             let channel = channel::create(
-                upper_name,
+                channel_key,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -135,13 +137,13 @@ module sage_channel::test_channel_registry {
 
             channel_registry::add(
                 channel_registry,
-                upper_name,
+                channel_key,
                 channel
             );
 
             let retrieved_channel = channel_registry::borrow_channel(
                 channel_registry,
-                lower_name
+                channel_key
             );
 
             assert!(retrieved_channel == channel, EChannelMismatch);
@@ -169,6 +171,7 @@ module sage_channel::test_channel_registry {
             let created_at: u64 = 999;
 
             let channel = channel::create(
+                channel_name,
                 channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
@@ -215,6 +218,7 @@ module sage_channel::test_channel_registry {
             let created_at: u64 = 999;
 
             let channel = channel::create(
+                channel_key,
                 channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
@@ -225,7 +229,7 @@ module sage_channel::test_channel_registry {
 
             channel_registry::add(
                 channel_registry,
-                channel_name,
+                channel_key,
                 channel
             );
 
@@ -259,6 +263,7 @@ module sage_channel::test_channel_registry {
             let created_at: u64 = 999;
 
             let channel = channel::create(
+                channel_name,
                 channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
@@ -299,13 +304,14 @@ module sage_channel::test_channel_registry {
         {
             let channel_registry = &mut channel_registry_val;
 
-            let lower_name = utf8(b"channel-name");
-            let upper_name = utf8(b"CHANNEL-NAME");
+            let channel_key = utf8(b"channel-name");
+            let channel_name = utf8(b"CHANNEL-NAME");
 
             let created_at: u64 = 999;
 
             let channel = channel::create(
-                upper_name,
+                channel_key,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -315,13 +321,13 @@ module sage_channel::test_channel_registry {
 
             channel_registry::add(
                 channel_registry,
-                upper_name,
+                channel_key,
                 channel
             );
 
             let has_record = channel_registry::has_record(
                 channel_registry,
-                lower_name
+                channel_key
             );
 
             assert!(has_record, EChannelExistsMismatch);

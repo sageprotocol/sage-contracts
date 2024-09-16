@@ -25,10 +25,12 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let _channel = channel::create(
-                utf8(b"channel-name"),
+                channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -54,6 +56,7 @@ module sage_channel::test_channel {
 
             let mut channel = channel::create(
                 channel_name,
+                channel_name,
                 avatar_hash,
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -66,11 +69,13 @@ module sage_channel::test_channel {
             assert!(channel_avatar == avatar_hash, EChannelAvatarMismatch);
 
             let new_channel_avatar = utf8(b"new_avatar_hash");
+            let updated_at: u64 = 9999;
 
             channel::update_avatar(
                 channel_name,
                 &mut channel,
-                new_channel_avatar
+                new_channel_avatar,
+                updated_at
             );
 
             let channel_avatar = channel::get_avatar(channel);
@@ -95,6 +100,7 @@ module sage_channel::test_channel {
 
             let mut channel = channel::create(
                 channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 banner_hash,
                 utf8(b"description"),
@@ -107,11 +113,13 @@ module sage_channel::test_channel {
             assert!(channel_banner == banner_hash, EChannelBannerMismatch);
 
             let new_channel_banner = utf8(b"new_banner_hash");
+            let updated_at: u64 = 9999;
 
             channel::update_banner(
                 channel_name,
                 &mut channel,
-                new_channel_banner
+                new_channel_banner,
+                updated_at
             );
 
             let channel_banner = channel::get_banner(channel);
@@ -136,6 +144,7 @@ module sage_channel::test_channel {
 
             let mut channel = channel::create(
                 channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 description,
@@ -148,11 +157,13 @@ module sage_channel::test_channel {
             assert!(channel_description == description, EChannelDescriptionMismatch);
 
             let new_channel_description = utf8(b"new_description");
+            let updated_at: u64 = 9999;
 
             channel::update_description(
                 channel_name,
                 &mut channel,
-                new_channel_description
+                new_channel_description,
+                updated_at
             );
 
             let channel_description = channel::get_description(channel);

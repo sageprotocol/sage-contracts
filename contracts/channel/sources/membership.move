@@ -44,7 +44,7 @@ module sage_channel::channel_membership {
     // --------------- Events ---------------
 
     public struct ChannelMembershipUpdate has copy, drop {
-        channel_name: String,
+        channel_key: String,
         message: u8,
         user: address
     }
@@ -127,7 +127,7 @@ module sage_channel::channel_membership {
 
     public(package) fun join(
         channel_membership: &mut ChannelMembership,
-        channel_name: String,
+        channel_key: String,
         ctx: &TxContext
     ) {
         let user = tx_context::sender(ctx);
@@ -138,7 +138,7 @@ module sage_channel::channel_membership {
         );
 
         event::emit(ChannelMembershipUpdate {
-            channel_name,
+            channel_key,
             message: CHANNEL_JOIN,
             user
         });
@@ -146,7 +146,7 @@ module sage_channel::channel_membership {
 
     public(package) fun leave(
         channel_membership: &mut ChannelMembership,
-        channel_name: String,
+        channel_key: String,
         ctx: &TxContext
     ) {
         let user = tx_context::sender(ctx);
@@ -161,7 +161,7 @@ module sage_channel::channel_membership {
         channel_membership.membership.remove(user);
 
         event::emit(ChannelMembershipUpdate {
-            channel_name,
+            channel_key,
             message: CHANNEL_LEAVE,
             user
         });

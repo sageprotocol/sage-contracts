@@ -74,10 +74,12 @@ module sage_channel::test_channel_membership {
         {
             let channel_membership_registry = &mut channel_membership_registry_val;
 
+            let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let channel = channel::create(
-                utf8(b"channel-name"),
+                channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -133,6 +135,7 @@ module sage_channel::test_channel_membership {
             let created_at: u64 = 999;
 
             let channel = channel::create(
+                channel_name,
                 channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
@@ -194,6 +197,7 @@ module sage_channel::test_channel_membership {
             let created_at: u64 = 999;
 
             let channel = channel::create(
+                channel_name,
                 channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),

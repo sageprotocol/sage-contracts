@@ -14,7 +14,7 @@ module sage_channel::test_channel_actions {
 
     use sage_channel::{
         channel::{Self},
-        channel_actions::{Self, EUserDoesNotExist},
+        channel_actions::{Self, EChannelNameMismatch, ENotChannelOwner, EUserDoesNotExist},
         channel_membership::{Self, ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry},
     };
@@ -38,6 +38,7 @@ module sage_channel::test_channel_actions {
     const EChannelAvatarMismatch: u64 = 2;
     const EChannelBannerMismatch: u64 = 3;
     const EChannelDescriptionMismatch: u64 = 4;
+    const ETestChannelNameMismatch: u64 = 5;
 
     // --------------- Test Functions ---------------
 
@@ -331,7 +332,7 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_avatar() {
+    fun test_channel_actions_update_avatar_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
@@ -416,7 +417,8 @@ module sage_channel::test_channel_actions {
 
             channel_actions::update_avatar_admin(
                 &admin_cap,
-                channel_name,
+                &clock,
+                channel_registry,
                 &mut channel,
                 new_avatar_hash
             );
@@ -444,7 +446,7 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_banner() {
+    fun test_channel_actions_update_banner_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
@@ -529,7 +531,8 @@ module sage_channel::test_channel_actions {
 
             channel_actions::update_banner_admin(
                 &admin_cap,
-                channel_name,
+                &clock,
+                channel_registry,
                 &mut channel,
                 new_banner_hash
             );
@@ -557,7 +560,7 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_description() {
+    fun test_channel_actions_update_description_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
@@ -642,7 +645,8 @@ module sage_channel::test_channel_actions {
 
             channel_actions::update_description_admin(
                 &admin_cap,
-                channel_name,
+                &clock,
+                channel_registry,
                 &mut channel,
                 new_description
             );
@@ -652,6 +656,1266 @@ module sage_channel::test_channel_actions {
             );
 
             assert!(channel_description == new_description, EChannelDescriptionMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_update_name_admin() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == channel_name, ETestChannelNameMismatch);
+
+            let new_name = utf8(b"CHANNEL-NAME");
+
+            channel_actions::update_name_admin(
+                &admin_cap,
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_name
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == new_name, ETestChannelNameMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelNameMismatch)]
+    fun test_channel_actions_update_name_admin_mismatch() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == channel_name, ETestChannelNameMismatch);
+
+            let new_name = utf8(b"new_name");
+
+            channel_actions::update_name_admin(
+                &admin_cap,
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_name
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == new_name, ETestChannelNameMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_update_avatar_owner_owned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let avatar_hash = utf8(b"avatar_hash");
+            let channel_name = utf8(b"channel-name");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                avatar_hash,
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_avatar_hash = channel::get_avatar(
+                channel
+            );
+
+            assert!(channel_avatar_hash == avatar_hash, EChannelAvatarMismatch);
+
+            let new_avatar_hash = utf8(b"new_avatar_hash");
+
+            channel_actions::update_avatar_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_avatar_hash,
+                ts::ctx(scenario)
+            );
+
+            let channel_avatar_hash = channel::get_avatar(
+                channel
+            );
+
+            assert!(channel_avatar_hash == new_avatar_hash, EChannelAvatarMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelOwner)]
+    fun test_channel_actions_update_avatar_owner_unowned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (clock, mut channel) = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let avatar_hash = utf8(b"avatar_hash");
+            let channel_name = utf8(b"channel-name");
+
+            let channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                avatar_hash,
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_avatar_hash = channel::get_avatar(
+                channel
+            );
+
+            assert!(channel_avatar_hash == avatar_hash, EChannelAvatarMismatch);
+
+            (clock, channel)
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+
+            let new_avatar_hash = utf8(b"new_avatar_hash");
+
+            channel_actions::update_avatar_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_avatar_hash,
+                ts::ctx(scenario)
+            );
+
+            let channel_avatar_hash = channel::get_avatar(
+                channel
+            );
+
+            assert!(channel_avatar_hash == new_avatar_hash, EChannelAvatarMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_update_banner_owner_owned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let banner_hash = utf8(b"banner_hash");
+            let channel_name = utf8(b"channel-name");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                banner_hash,
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_banner_hash = channel::get_banner(
+                channel
+            );
+
+            assert!(channel_banner_hash == banner_hash, EChannelBannerMismatch);
+
+            let new_banner_hash = utf8(b"new_banner_hash");
+
+            channel_actions::update_banner_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_banner_hash,
+                ts::ctx(scenario)
+            );
+
+            let channel_banner_hash = channel::get_banner(
+                channel
+            );
+
+            assert!(channel_banner_hash == new_banner_hash, EChannelBannerMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelOwner)]
+    fun test_channel_actions_update_banner_owner_unowned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (clock, mut channel) = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let banner_hash = utf8(b"banner_hash");
+            let channel_name = utf8(b"channel-name");
+
+            let channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                banner_hash,
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_banner_hash = channel::get_banner(
+                channel
+            );
+
+            assert!(channel_banner_hash == banner_hash, EChannelBannerMismatch);
+
+            (clock, channel)
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let new_banner_hash = utf8(b"new_banner_hash");
+
+            channel_actions::update_banner_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_banner_hash,
+                ts::ctx(scenario)
+            );
+
+            let channel_banner_hash = channel::get_banner(
+                channel
+            );
+
+            assert!(channel_banner_hash == new_banner_hash, EChannelBannerMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_update_description_owner_owned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+            let description = utf8(b"description");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                description,
+                ts::ctx(scenario)
+            );
+
+            let channel_description = channel::get_description(
+                channel
+            );
+
+            assert!(channel_description == description, EChannelDescriptionMismatch);
+
+            let new_description = utf8(b"new_description");
+
+            channel_actions::update_description_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_description,
+                ts::ctx(scenario)
+            );
+
+            let channel_description = channel::get_description(
+                channel
+            );
+
+            assert!(channel_description == new_description, EChannelDescriptionMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelOwner)]
+    fun test_channel_actions_update_description_owner_unowned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (clock, mut channel) = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+            let description = utf8(b"description");
+
+            let channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                description,
+                ts::ctx(scenario)
+            );
+
+            let channel_description = channel::get_description(
+                channel
+            );
+
+            assert!(channel_description == description, EChannelDescriptionMismatch);
+
+            (clock, channel)
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let new_description = utf8(b"new_description");
+
+            channel_actions::update_description_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_description,
+                ts::ctx(scenario)
+            );
+
+            let channel_description = channel::get_description(
+                channel
+            );
+
+            assert!(channel_description == new_description, EChannelDescriptionMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_update_name_owner_owned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == channel_name, ETestChannelNameMismatch);
+
+            let new_name = utf8(b"CHANNEL-NAME");
+
+            channel_actions::update_name_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == new_name, ETestChannelNameMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelOwner)]
+    fun test_channel_actions_update_name_owner_unowned() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (clock, mut channel) = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == channel_name, ETestChannelNameMismatch);
+
+            (clock, channel)
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let new_name = utf8(b"CHANNEL-NAME");
+
+            channel_actions::update_name_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == new_name, ETestChannelNameMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelNameMismatch)]
+    fun test_channel_actions_update_name_owner_owned_mismatch() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let mut channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == channel_name, ETestChannelNameMismatch);
+
+            let new_name = utf8(b"new_name");
+
+            channel_actions::update_name_owner(
+                &clock,
+                channel_registry,
+                &mut channel,
+                new_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = channel::get_name(
+                channel
+            );
+
+            assert!(channel_name == new_name, ETestChannelNameMismatch);
 
             ts::return_shared(clock);
             ts::return_to_sender(scenario, admin_cap);

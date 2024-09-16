@@ -7,10 +7,6 @@ module sage_channel::channel_registry {
 
     use sage_immutable::{immutable_table::{Self, ImmutableTable}};
 
-    use sage_utils::{
-        string_helpers::{Self}
-    };
-
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
@@ -73,19 +69,15 @@ module sage_channel::channel_registry {
 
     public(package) fun add(
         channel_registry: &mut ChannelRegistry,
-        name: String,
+        channel_key: String,
         channel: Channel
     ) {
-        let record_exists = channel_registry.has_record(name);
+        let record_exists = channel_registry.has_record(channel_key);
 
         assert!(!record_exists, EChannelRecordExists);
 
-        let lowercase_name = string_helpers::to_lowercase(
-            &name
-        );
-
-        channel_registry.registry.add(lowercase_name, channel);
-        channel_registry.reverse_registry.add(channel, lowercase_name);
+        channel_registry.registry.add(channel_key, channel);
+        channel_registry.reverse_registry.add(channel, channel_key);
     }
 
     // --------------- Internal Functions ---------------
