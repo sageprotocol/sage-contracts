@@ -136,20 +136,16 @@ module sage_post::post_actions {
 
         assert!(has_record, EChannelDoesNotExist);
 
+        let user = tx_context::sender(ctx);
+
         let channel = channel_registry::borrow_channel(
             channel_registry,
             channel_key
         );
 
-        let channel_membership = channel_membership::borrow_membership_mut(
+        let is_member = channel_membership::is_channel_member(
             channel_membership_registry,
-            channel
-        );
-
-        let user = tx_context::sender(ctx);
-
-        let is_member = channel_membership::is_member(
-            channel_membership,
+            channel,
             user
         );
 

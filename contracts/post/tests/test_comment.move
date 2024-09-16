@@ -7,7 +7,7 @@ module sage_post::test_comments {
         test_utils::{destroy}
     };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_post::{
         post::{Self},

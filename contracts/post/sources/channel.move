@@ -45,13 +45,6 @@ module sage_post::channel_posts {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_channel_post_keys(
-        channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel
-    ): &mut ImmutableVector<String> {
-        channel_posts_registry.registry.borrow_mut(channel)
-    }
-
     public fun has_post(
         channel_posts_registry: &mut ChannelPostsRegistry,
         channel: Channel,
@@ -96,6 +89,13 @@ module sage_post::channel_posts {
         );
 
         channel_post_keys.push_back(post_key);
+    }
+
+    public(package) fun borrow_channel_post_keys(
+        channel_posts_registry: &mut ChannelPostsRegistry,
+        channel: Channel
+    ): &mut ImmutableVector<String> {
+        channel_posts_registry.registry.borrow_mut(channel)
     }
 
     // --------------- Internal Functions ---------------

@@ -43,13 +43,6 @@ module sage_post::post_comments {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_post_comment_keys(
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_key: String
-    ): &mut ImmutableVector<String> {
-        post_comments_registry.registry.borrow_mut(post_key)
-    }
-
     public fun has_post(
         post_comments_registry: &mut PostCommentsRegistry,
         parent_post_key: String,
@@ -94,6 +87,13 @@ module sage_post::post_comments {
         );
 
         parent_post_comment_keys.push_back(post_key);
+    }
+
+    public(package) fun borrow_post_comment_keys(
+        post_comments_registry: &mut PostCommentsRegistry,
+        post_key: String
+    ): &mut ImmutableVector<String> {
+        post_comments_registry.registry.borrow_mut(post_key)
     }
 
     // --------------- Internal Functions ---------------

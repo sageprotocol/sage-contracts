@@ -49,5 +49,4 @@ module sage_admin::admin {
     public fun init_for_testing(ctx: &mut TxContext) {
         init(ctx);
     }
-
 }

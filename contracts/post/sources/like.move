@@ -69,20 +69,6 @@ module sage_post::post_likes {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_post_likes(
-        post_likes_registry: &mut PostLikesRegistry,
-        post_key: String
-    ): &mut PostLikes {
-        post_likes_registry.registry.borrow_mut(post_key)
-    }
-
-    public fun borrow_user_post_likes(
-        user_post_likes_registry: &mut UserPostLikesRegistry,
-        user: address
-    ): &mut UserPostLikes {
-        user_post_likes_registry.registry.borrow_mut(user)
-    }
-
     public fun get_post_likes_count(
         post_likes: &PostLikes
     ): u64 {
@@ -184,6 +170,20 @@ module sage_post::post_likes {
             post_key,
             user
         });
+    }
+
+    public(package) fun borrow_post_likes(
+        post_likes_registry: &mut PostLikesRegistry,
+        post_key: String
+    ): &mut PostLikes {
+        post_likes_registry.registry.borrow_mut(post_key)
+    }
+
+    public(package) fun borrow_user_post_likes(
+        user_post_likes_registry: &mut UserPostLikesRegistry,
+        user: address
+    ): &mut UserPostLikes {
+        user_post_likes_registry.registry.borrow_mut(user)
     }
 
     // --------------- Internal Functions ---------------

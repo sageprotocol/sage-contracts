@@ -53,7 +53,7 @@ module sage_user::user_registry {
     // --------------- Public Functions ---------------
 
     public fun borrow_user(
-        user_registry: &mut UserRegistry,
+        user_registry: &UserRegistry,
         name: String
     ): User {
         *user_registry.user_registry.borrow(name)

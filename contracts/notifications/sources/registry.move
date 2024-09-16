@@ -47,13 +47,6 @@ module sage_notification::notification_registry {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_user_notifications(
-        notification_registry: &mut NotificationRegistry,
-        user: address
-    ): &mut UserNotifications {
-        notification_registry.registry.borrow_mut(user)
-    }
-
     public fun get_user_notifications_count(
         user_notifications: &UserNotifications
     ): u64 {
@@ -74,6 +67,13 @@ module sage_notification::notification_registry {
         notification: Notification
     ) {
         user_notifications.notifications.push_back(notification);
+    }
+
+    public(package) fun borrow_user_notifications(
+        notification_registry: &mut NotificationRegistry,
+        user: address
+    ): &mut UserNotifications {
+        notification_registry.registry.borrow_mut(user)
     }
 
     public(package) fun create_user_notifications(

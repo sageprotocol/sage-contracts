@@ -3,8 +3,6 @@ module sage_post::user_posts {
 
     use sui::package::{claim_and_keep};
 
-    use sage_admin::{admin::{AdminCap}};
-
     use sage_immutable::{
         immutable_table::{Self, ImmutableTable},
         immutable_vector::{Self, ImmutableVector}

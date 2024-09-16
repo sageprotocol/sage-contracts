@@ -49,7 +49,7 @@ module sage_channel::channel_registry {
     // --------------- Public Functions ---------------
 
     public fun borrow_channel(
-        channel_registry: &mut ChannelRegistry,
+        channel_registry: &ChannelRegistry,
         channel_key: String
     ): Channel {
         *channel_registry.registry.borrow(channel_key)

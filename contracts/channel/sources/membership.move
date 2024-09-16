@@ -7,7 +7,9 @@ module sage_channel::channel_membership {
         table::{Self, Table}
     };
     
-    use sage_channel::{channel::{Channel}};
+    use sage_channel::{
+        channel::{Channel}
+    };
 
     // --------------- Constants ---------------
 
@@ -65,17 +67,26 @@ module sage_channel::channel_membership {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_membership_mut(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel
-    ): &mut ChannelMembership {
-        &mut channel_membership_registry.registry[channel]
-    }
-
     public fun get_member_length(
         channel_membership: &ChannelMembership
     ): u64 {
         channel_membership.membership.length()
+    }
+
+    public fun is_channel_member(
+        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel: Channel,
+        user: address
+    ): bool {
+        let channel_membership = borrow_membership_mut(
+            channel_membership_registry,
+            channel
+        );
+
+        is_member(
+            channel_membership,
+            user
+        )
     }
 
     public fun is_member(
@@ -86,6 +97,13 @@ module sage_channel::channel_membership {
     }
 
     // --------------- Friend Functions ---------------
+
+    public(package) fun borrow_membership_mut(
+        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel: Channel
+    ): &mut ChannelMembership {
+        &mut channel_membership_registry.registry[channel]
+    }
 
     public(package) fun create(
         channel_membership_registry: &mut ChannelMembershipRegistry,

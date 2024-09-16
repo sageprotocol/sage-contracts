@@ -63,13 +63,6 @@ module sage_user::user_membership {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_membership_mut(
-        user_membership_registry: &mut UserMembershipRegistry,
-        user: User
-    ): &mut UserMembership {
-        &mut user_membership_registry.registry[user]
-    }
-
     public fun get_member_length(
         user_membership: &UserMembership
     ): u64 {
@@ -84,6 +77,13 @@ module sage_user::user_membership {
     }
 
     // --------------- Friend Functions ---------------
+
+    public(package) fun borrow_membership_mut(
+        user_membership_registry: &mut UserMembershipRegistry,
+        user: User
+    ): &mut UserMembership {
+        &mut user_membership_registry.registry[user]
+    }
 
     public(package) fun create(
         user_membership_registry: &mut UserMembershipRegistry,
