@@ -4,7 +4,6 @@ module sage_post::test_post_actions {
 
     use sui::{
         clock::{Self, Clock},
-        table::{ETableNotEmpty},
         test_scenario::{Self as ts, Scenario},
         test_utils::{destroy}
     };
@@ -13,7 +12,7 @@ module sage_post::test_post_actions {
 
     use sage_channel::{
         channel_actions::{Self},
-        channel_membership::{ChannelMembershipRegistry},
+        channel_membership::{Self, ChannelMembershipRegistry},
         channel_registry::{Self, ChannelRegistry}
     };
 
@@ -29,7 +28,7 @@ module sage_post::test_post_actions {
     use sage_user::{
         user_actions::{Self},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
-        user_membership::{UserMembershipRegistry},
+        user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
     };
 
@@ -98,6 +97,16 @@ module sage_post::test_post_actions {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            channel_membership::init_for_testing(ts::ctx(scenario));
+            channel_posts::init_for_testing(ts::ctx(scenario));
+            channel_registry::init_for_testing(ts::ctx(scenario));
+            post_comments::init_for_testing(ts::ctx(scenario));
+            post_likes::init_for_testing(ts::ctx(scenario));
+            post_registry::init_for_testing(ts::ctx(scenario));
+            user_invite::init_for_testing(ts::ctx(scenario));
+            user_membership::init_for_testing(ts::ctx(scenario));
+            user_posts::init_for_testing(ts::ctx(scenario));
+            user_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -203,7 +212,6 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_from_channel() {
         let (
             mut scenario_val,
@@ -483,7 +491,6 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_from_post() {
         let (
             mut scenario_val,
@@ -637,7 +644,6 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_from_user_self() {
         let (
             mut scenario_val,
@@ -772,7 +778,6 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_from_user_other() {
         let (
             mut scenario_val,
@@ -925,7 +930,6 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_post_like() {
         let (
             mut scenario_val,
