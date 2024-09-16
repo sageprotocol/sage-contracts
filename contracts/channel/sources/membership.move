@@ -193,5 +193,4 @@ module sage_channel::channel_membership {
     public fun init_for_testing(ctx: &mut TxContext) {
         init(CHANNEL_MEMBERSHIP {}, ctx);
     }
-
 }
