@@ -258,4 +258,24 @@ module sage_channel::channel {
 
     // --------------- Test Functions ---------------
 
+    #[test_only]
+    public fun create_for_testing(
+        channel_key: String,
+        channel_name: String,
+        avatar_hash: String,
+        banner_hash: String,
+        description: String,
+        created_at: u64,
+        created_by: address
+    ): Channel {
+        create(
+            channel_key,
+            channel_name,
+            avatar_hash,
+            banner_hash,
+            description,
+            created_at,
+            created_by
+        )
+    }
 }
