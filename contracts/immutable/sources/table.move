@@ -7,7 +7,7 @@ module sage_immutable::immutable_table {
 
     // --------------- Name Tag ---------------
 
-    public struct ImmutableTable<phantom K: copy + drop + store, phantom V: store> has key, store {
+    public struct ImmutableTable<phantom Key: copy + drop + store, phantom Value: store> has key, store {
         id: UID,
         size: u64,
     }
@@ -18,53 +18,58 @@ module sage_immutable::immutable_table {
 
     // --------------- Public Functions ---------------
 
-    public fun new<K: copy + drop + store, V: store>(
+    public fun new<Key: copy + drop + store, Value: store>(
         ctx: &mut TxContext
-    ): ImmutableTable<K, V> {
+    ): ImmutableTable<Key, Value> {
         ImmutableTable {
             id: object::new(ctx),
             size: 0
         }
     }
 
-    public fun add<K: copy + drop + store, V: store>(
-        table: &mut ImmutableTable<K, V>,
-        k: K,
-        v: V
+    public fun add<Key: copy + drop + store, Value: store>(
+        table: &mut ImmutableTable<Key, Value>,
+        key: Key,
+        value: Value
     ) {
-        field::add(&mut table.id, k, v);
+        field::add(&mut table.id, key, value);
 
         table.size = table.size + 1;
     }
 
-    public fun borrow<K: copy + drop + store, V: store>(
-        table: &ImmutableTable<K, V>, k: K
-    ): &V {
+    public fun borrow<Key: copy + drop + store, Value: store>(
+        table: &ImmutableTable<Key, Value>, k: Key
+    ): &Value {
         field::borrow(&table.id, k)
     }
 
-    public fun borrow_mut<K: copy + drop + store, V: store>(
-        table: &mut ImmutableTable<K, V>, k: K
-    ): &mut V {
+    public fun borrow_mut<Key: copy + drop + store, Value: store>(
+        table: &mut ImmutableTable<Key, Value>, k: Key
+    ): &mut Value {
         field::borrow_mut(&mut table.id, k)
     }
 
-    public fun contains<K: copy + drop + store, V: store>(
-        table: &ImmutableTable<K, V>, k: K
+    public fun contains<Key: copy + drop + store, Value: store>(
+        table: &ImmutableTable<Key, Value>, k: Key
     ): bool {
-        field::exists_with_type<K, V>(&table.id, k)
+        field::exists_with_type<Key, Value>(&table.id, k)
     }
 
-    public fun length<K: copy + drop + store, V: store>(
-        table: &ImmutableTable<K, V>
+    public fun length<Key: copy + drop + store, Value: store>(
+        table: &ImmutableTable<Key, Value>
     ): u64 {
         table.size
     }
 
-    public fun is_empty<K: copy + drop + store, V: store>(
-        table: &ImmutableTable<K, V>
+    public fun is_empty<Key: copy + drop + store, Value: store>(
+        table: &ImmutableTable<Key, Value>
     ): bool {
         table.size == 0
+    }
+
+    public fun replace<Key: copy + drop + store, Value: drop + store>(table: &mut ImmutableTable<Key, Value>, key: Key, value: Value) {
+        field::remove<Key, Value>(&mut table.id, key);
+        field::add(&mut table.id, key, value);
     }
 
     // --------------- Friend Functions ---------------
@@ -74,8 +79,8 @@ module sage_immutable::immutable_table {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing<K: copy + drop + store, V: store>(
-        table: ImmutableTable<K, V>
+    public fun destroy_for_testing<Key: copy + drop + store, Value: store>(
+        table: ImmutableTable<Key, Value>
     ) {
         let ImmutableTable { id, size: _ } = table;
 
