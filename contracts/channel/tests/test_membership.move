@@ -10,7 +10,6 @@ module sage_channel::test_channel_membership {
     use sage_admin::{admin::{Self}};
 
     use sage_channel::{
-        channel::{Self},
         channel_membership::{Self, ChannelMembershipRegistry, EChannelMemberExists}
     };
 
@@ -74,28 +73,17 @@ module sage_channel::test_channel_membership {
         {
             let channel_membership_registry = &mut channel_membership_registry_val;
 
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
+            let channel_key = utf8(b"channel-name");
 
             channel_membership::create(
                 channel_membership_registry,
-                channel,
+                channel_key,
                 ts::ctx(scenario)
             );
 
             let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
-                channel
+                channel_key
             );
 
             let channel_member_count = channel_membership::get_member_length(
@@ -131,33 +119,22 @@ module sage_channel::test_channel_membership {
         {
             let channel_membership_registry = &mut channel_membership_registry_val;
 
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
+            let channel_key = utf8(b"channel-name");
 
             channel_membership::create(
                 channel_membership_registry,
-                channel,
+                channel_key,
                 ts::ctx(scenario)
             );
 
             let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
-                channel
+                channel_key
             );
 
             channel_membership::join(
                 channel_membership,
-                channel_name,
+                channel_key,
                 ts::ctx(scenario)
             );
 
@@ -193,33 +170,22 @@ module sage_channel::test_channel_membership {
         {
             let channel_membership_registry = &mut channel_membership_registry_val;
 
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
+            let channel_key = utf8(b"channel-name");
 
             channel_membership::create(
                 channel_membership_registry,
-                channel,
+                channel_key,
                 ts::ctx(scenario)
             );
 
             let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
-                channel
+                channel_key
             );
 
             channel_membership::leave(
                 channel_membership,
-                channel_name,
+                channel_key,
                 ts::ctx(scenario)
             );
 
@@ -231,7 +197,7 @@ module sage_channel::test_channel_membership {
 
             channel_membership::join(
                 channel_membership,
-                channel_name,
+                channel_key,
                 ts::ctx(scenario)
             );
 

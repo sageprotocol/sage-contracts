@@ -6,10 +6,6 @@ module sage_channel::channel_membership {
         package::{claim_and_keep},
         table::{Self, Table}
     };
-    
-    use sage_channel::{
-        channel::{Channel}
-    };
 
     // --------------- Constants ---------------
 
@@ -36,7 +32,7 @@ module sage_channel::channel_membership {
 
     public struct ChannelMembershipRegistry has key, store {
         id: UID,
-        registry: Table<Channel, ChannelMembership>
+        registry: Table<String, ChannelMembership>
     }
     
     public struct CHANNEL_MEMBERSHIP has drop {}
@@ -75,12 +71,12 @@ module sage_channel::channel_membership {
 
     public fun is_channel_member(
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel,
+        channel_key: String,
         user: address
     ): bool {
         let channel_membership = borrow_membership_mut(
             channel_membership_registry,
-            channel
+            channel_key
         );
 
         is_member(
@@ -100,14 +96,14 @@ module sage_channel::channel_membership {
 
     public(package) fun borrow_membership_mut(
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel
+        channel_key: String
     ): &mut ChannelMembership {
-        &mut channel_membership_registry.registry[channel]
+        &mut channel_membership_registry.registry[channel_key]
     }
 
     public(package) fun create(
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel,
+        channel_key: String,
         ctx: &mut TxContext
     ) {
         let mut channel_membership = ChannelMembership {
@@ -122,7 +118,7 @@ module sage_channel::channel_membership {
             user
         );
 
-        channel_membership_registry.registry.add(channel, channel_membership);
+        channel_membership_registry.registry.add(channel_key, channel_membership);
     }
 
     public(package) fun join(
