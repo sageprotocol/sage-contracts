@@ -13,7 +13,8 @@ module sage_user::test_user_actions {
     };
 
     use sage_user::{
-        user_actions::{Self, EInviteNotAllowed},
+        user::{Self},
+        user_actions::{Self, EInviteNotAllowed, EUserNameMismatch},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry},
@@ -30,9 +31,13 @@ module sage_user::test_user_actions {
     const EHasMember: u64 = 370;
     const EHashMismatch: u64 = 371;
     const ENoInviteRecord: u64 = 372;
-    const EUserInviteMismatch: u64 = 373;
-    const EUserMembershipCountMismatch: u64 = 374;
-    const EUserNotMember: u64 = 375;
+    const EUserAvatarMismatch: u64 = 373;
+    const EUserBannerMismatch: u64 = 374;
+    const EUserDescriptionMismatch: u64 = 375;
+    const EUserInviteMismatch: u64 = 376;
+    const EUserMembershipCountMismatch: u64 = 377;
+    const ETestUserNameMismatch: u64 = 378;
+    const EUserNotMember: u64 = 379;
 
     // --------------- Test Functions ---------------
 
@@ -452,6 +457,941 @@ module sage_user::test_user_actions {
             assert!(user == OTHER, EUserInviteMismatch);
 
             ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_avatar_admin() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_avatar_hash = utf8(b"new_avatar_hash");
+
+            user_actions::update_avatar_admin(
+                &admin_cap,
+                &clock,
+                user_registry,
+                name,
+                new_avatar_hash
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_avatar_hash = user::get_avatar(
+                user
+            );
+
+            assert!(user_avatar_hash == new_avatar_hash, EUserAvatarMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_banner_admin() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_banner_hash = utf8(b"new_banner_hash");
+
+            user_actions::update_banner_admin(
+                &admin_cap,
+                &clock,
+                user_registry,
+                name,
+                new_banner_hash
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_banner_hash = user::get_banner(
+                user
+            );
+
+            assert!(user_banner_hash == new_banner_hash, EUserBannerMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_description_admin() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_description = utf8(b"new_description");
+
+            user_actions::update_description_admin(
+                &admin_cap,
+                &clock,
+                user_registry,
+                name,
+                new_description
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_description = user::get_description(
+                user
+            );
+
+            assert!(user_description == new_description, EUserDescriptionMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_name_admin() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_name = utf8(b"USER-name");
+
+            user_actions::update_name_admin(
+                &admin_cap,
+                &clock,
+                user_registry,
+                name,
+                new_name
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_name = user::get_name(
+                user
+            );
+
+            assert!(user_name == new_name, ETestUserNameMismatch);
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUserNameMismatch)]
+    fun test_user_actions_update_name_admin_mismatch() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_name = utf8(b"new-name");
+
+            user_actions::update_name_admin(
+                &admin_cap,
+                &clock,
+                user_registry,
+                name,
+                new_name
+            );
+
+            ts::return_shared(clock);
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_avatar_self() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_avatar_hash = utf8(b"new_avatar_hash");
+
+            user_actions::update_avatar_self(
+                &clock,
+                user_registry,
+                new_avatar_hash,
+                ts::ctx(scenario)
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_avatar_hash = user::get_avatar(
+                user
+            );
+
+            assert!(user_avatar_hash == new_avatar_hash, EUserAvatarMismatch);
+
+            ts::return_shared(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_banner_self() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_banner_hash = utf8(b"new_banner_hash");
+
+            user_actions::update_banner_self(
+                &clock,
+                user_registry,
+                new_banner_hash,
+                ts::ctx(scenario)
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_banner_hash = user::get_banner(
+                user
+            );
+
+            assert!(user_banner_hash == new_banner_hash, EUserBannerMismatch);
+
+            ts::return_shared(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_description_self() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_description = utf8(b"new_description");
+
+            user_actions::update_description_self(
+                &clock,
+                user_registry,
+                new_description,
+                ts::ctx(scenario)
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_description = user::get_description(
+                user
+            );
+
+            assert!(user_description == new_description, EUserDescriptionMismatch);
+
+            ts::return_shared(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update_name_self() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_name = utf8(b"USER-name");
+
+            user_actions::update_name_self(
+                &clock,
+                user_registry,
+                new_name,
+                ts::ctx(scenario)
+            );
+
+            let user = user_registry::borrow_user(
+                user_registry,
+                name
+            );
+
+            let user_name = user::get_name(
+                user
+            );
+
+            assert!(user_name == new_name, ETestUserNameMismatch);
+
+            ts::return_shared(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUserNameMismatch)]
+    fun test_user_actions_update_name_self_mismatch() {
+        let (
+            mut scenario_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                name,
+                ts::ctx(scenario)
+            );
+
+            let new_name = utf8(b"new-name");
+
+            user_actions::update_name_self(
+                &clock,
+                user_registry,
+                new_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(clock);
         };
 
         ts::next_tx(scenario, ADMIN);

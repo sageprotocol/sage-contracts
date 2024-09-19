@@ -2,8 +2,11 @@ module sage_user::user_registry {
     use std::string::{String};
 
     use sui::{
-        package::{claim_and_keep},
-        table::{Self, Table}
+        package::{claim_and_keep}
+    };
+    
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable}
     };
 
     use sage_user::{
@@ -20,13 +23,14 @@ module sage_user::user_registry {
 
     const EAddressRecordExists: u64 = 370;
     const EUsernameRecordExists: u64 = 371;
+    const EUserRecordDoesNotExist: u64 = 372;
 
     // --------------- Name Tag ---------------
 
     public struct UserRegistry has key, store {
         id: UID,
-        address_registry: Table<address, String>,
-        user_registry: Table<String, User>
+        address_registry: ImmutableTable<address, String>,
+        user_registry: ImmutableTable<String, User>
     }
 
     public struct USER_REGISTRY has drop {}
@@ -43,8 +47,8 @@ module sage_user::user_registry {
 
         let user_registry = UserRegistry {
             id: object::new(ctx),
-            address_registry: table::new(ctx),
-            user_registry: table::new(ctx)
+            address_registry: immutable_table::new(ctx),
+            user_registry: immutable_table::new(ctx)
         };
 
         transfer::share_object(user_registry);
@@ -54,12 +58,16 @@ module sage_user::user_registry {
 
     public fun borrow_user(
         user_registry: &UserRegistry,
-        name: String
+        username: String
     ): User {
-        *user_registry.user_registry.borrow(name)
+        let user_key = string_helpers::to_lowercase(
+            &username
+        );
+
+        *user_registry.user_registry.borrow(user_key)
     }
 
-    public fun borrow_username(
+    public fun borrow_user_key(
         user_registry: &mut UserRegistry,
         address: address
     ): String {
@@ -77,14 +85,18 @@ module sage_user::user_registry {
         user_registry: &UserRegistry,
         username: String
     ): bool {
-        user_registry.user_registry.contains(username)
+        let user_key = string_helpers::to_lowercase(
+            &username
+        );
+
+        user_registry.user_registry.contains(user_key)
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
         user_registry: &mut UserRegistry,
-        username: String,
+        user_key: String,
         address: address,
         user: User
     ) {
@@ -92,16 +104,35 @@ module sage_user::user_registry {
 
         assert!(!address_record_exists, EAddressRecordExists);
 
-        let lowercase_username = string_helpers::to_lowercase(
-            &username
-        );
-
-        let username_record_exists = user_registry.has_username_record(lowercase_username);
+        let username_record_exists = user_registry.has_username_record(user_key);
 
         assert!(!username_record_exists, EUsernameRecordExists);
 
-        user_registry.address_registry.add(address, lowercase_username);
-        user_registry.user_registry.add(lowercase_username, user);
+        user_registry.address_registry.add(address, user_key);
+        user_registry.user_registry.add(user_key, user);
+    }
+
+    public(package) fun borrow_user_mut(
+        user_registry: &mut UserRegistry,
+        username: String
+    ): &mut User {
+        let user_key = string_helpers::to_lowercase(
+            &username
+        );
+
+        user_registry.user_registry.borrow_mut(user_key)
+    }
+
+    public(package) fun replace(
+        user_registry: &mut UserRegistry,
+        user_key: String,
+        user: User
+    ) {
+        let record_exists = user_registry.has_username_record(user_key);
+
+        assert!(record_exists, EUserRecordDoesNotExist);
+
+        user_registry.user_registry.replace(user_key, user);
     }
 
     // --------------- Internal Functions ---------------

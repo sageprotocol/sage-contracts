@@ -1,11 +1,13 @@
 module sage_user::user_actions {
     use std::string::{String};
 
-    use sui::clock::Clock;
-    use sui::event;
+    use sui::{
+        clock::Clock,
+        event
+    };
 
     use sage_admin::{
-        admin::{InviteCap}
+        admin::{AdminCap, InviteCap}
     };
 
     use sage_user::{
@@ -13,6 +15,10 @@ module sage_user::user_actions {
         user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry}
+    };
+
+    use sage_utils::{
+        string_helpers::{Self}
     };
 
     // --------------- Constants ---------------
@@ -25,20 +31,11 @@ module sage_user::user_actions {
     const ENotInvited: u64 = 373;
     const ENoSelfJoin: u64 = 374;
     const EUserDoesNotExist: u64 = 375;
+    const EUserNameMismatch: u64 = 376;
 
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
-
-    public struct UserCreated has copy, drop {
-        address: address,
-        avatar_hash: String,
-        banner_hash: String,
-        created_at: u64,
-        description: String,
-        invited_by: Option<address>,
-        name: String
-    }
 
     public struct InviteCreated has copy, drop {
         invite_code: String,
@@ -110,8 +107,11 @@ module sage_user::user_actions {
             option::none()
         };
 
-        let self = tx_context::sender(ctx);
         let created_at = clock.timestamp_ms();
+        let self = tx_context::sender(ctx);
+        let user_key = string_helpers::to_lowercase(
+            &name
+        );
 
         let user = user::create(
             self,
@@ -119,7 +119,9 @@ module sage_user::user_actions {
             banner_hash,
             created_at,
             description,
-            name
+            invited_by,
+            name,
+            user_key
         );
 
         user_membership::create(
@@ -130,20 +132,10 @@ module sage_user::user_actions {
 
         user_registry::add(
             user_registry,
-            name,
+            user_key,
             self,
             user
         );
-
-        event::emit(UserCreated {
-            address: self,
-            avatar_hash,
-            banner_hash,
-            created_at,
-            description,
-            invited_by,
-            name
-        });
 
         user
     }
@@ -260,6 +252,238 @@ module sage_user::user_actions {
             user_membership,
             user_address,
             ctx
+        );
+    }
+
+    public fun update_avatar_admin (
+        _: &AdminCap,
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        user_key: String,
+        avatar_hash: String
+    ) {
+        let mut user = user_registry::borrow_user(
+            user_registry,
+            user_key
+        );
+        
+        let updated_at = clock.timestamp_ms();
+
+        let user = user::update_avatar(
+            user_key,
+            &mut user,
+            avatar_hash,
+            updated_at
+        );
+
+        user_registry::replace(
+            user_registry,
+            user_key,
+            user
+        );
+    }
+
+    public fun update_banner_admin (
+        _: &AdminCap,
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        user_key: String,
+        banner_hash: String
+    ) {
+        let mut user = user_registry::borrow_user(
+            user_registry,
+            user_key
+        );
+        
+        let updated_at = clock.timestamp_ms();
+
+        let user = user::update_banner(
+            user_key,
+            &mut user,
+            banner_hash,
+            updated_at
+        );
+
+        user_registry::replace(
+            user_registry,
+            user_key,
+            user
+        );
+    }
+
+    public fun update_description_admin (
+        _: &AdminCap,
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        user_key: String,
+        description: String
+    ) {
+        let mut user = user_registry::borrow_user(
+            user_registry,
+            user_key
+        );
+        
+        let updated_at = clock.timestamp_ms();
+
+        let user = user::update_description(
+            user_key,
+            &mut user,
+            description,
+            updated_at
+        );
+
+        user_registry::replace(
+            user_registry,
+            user_key,
+            user
+        );
+    }
+
+    public fun update_name_admin (
+        _: &AdminCap,
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        user_key: String,
+        name: String
+    ) {
+        let mut user = user_registry::borrow_user(
+            user_registry,
+            user_key
+        );
+
+        let lowercase_user_name = string_helpers::to_lowercase(
+            &name
+        );
+
+        assert!(lowercase_user_name == user_key, EUserNameMismatch);
+        
+        let updated_at = clock.timestamp_ms();
+
+        let user = user::update_name(
+            user_key,
+            &mut user,
+            name,
+            updated_at
+        );
+
+        user_registry::replace(
+            user_registry,
+            user_key,
+            user
+        );
+    }
+
+    public fun update_avatar_self (
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        avatar_hash: String,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        let user_key = user_registry::borrow_user_key(
+            user_registry,
+            self
+        );
+
+        let updated_at = clock.timestamp_ms();
+        let user = user_registry::borrow_user_mut(
+            user_registry,
+            user_key
+        );
+
+        user::update_avatar(
+            user_key,
+            user,
+            avatar_hash,
+            updated_at
+        );
+    }
+
+    public fun update_banner_self (
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        banner_hash: String,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        let user_key = user_registry::borrow_user_key(
+            user_registry,
+            self
+        );
+
+        let updated_at = clock.timestamp_ms();
+        let user = user_registry::borrow_user_mut(
+            user_registry,
+            user_key
+        );
+
+        user::update_banner(
+            user_key,
+            user,
+            banner_hash,
+            updated_at
+        );
+    }
+
+    public fun update_description_self (
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        description: String,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        let user_key = user_registry::borrow_user_key(
+            user_registry,
+            self
+        );
+
+        let updated_at = clock.timestamp_ms();
+        let user = user_registry::borrow_user_mut(
+            user_registry,
+            user_key
+        );
+
+        user::update_description(
+            user_key,
+            user,
+            description,
+            updated_at
+        );
+    }
+
+    public fun update_name_self (
+        clock: &Clock,
+        user_registry: &mut UserRegistry,
+        name: String,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+
+        let user_key = user_registry::borrow_user_key(
+            user_registry,
+            self
+        );
+
+        let lowercase_user_name = string_helpers::to_lowercase(
+            &name
+        );
+
+        assert!(lowercase_user_name == user_key, EUserNameMismatch);
+
+        let updated_at = clock.timestamp_ms();
+        let user = user_registry::borrow_user_mut(
+            user_registry,
+            user_key
+        );
+
+        user::update_name(
+            user_key,
+            user,
+            name,
+            updated_at
         );
     }
 

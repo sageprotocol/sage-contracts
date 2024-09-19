@@ -8,6 +8,7 @@ version = "0.0.1"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 SageAdmin = { local = "../admin" }
+SageImmutable = { local = "../immutable" }
 SageUtils = { local = "../utils" }
 
 [addresses]
@@ -15,9 +16,11 @@ admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
 # sage_admin = "0x756c7229c6dc1121998b551eb3737806a1ad37393fec8411e14ab17da1996755"
+# sage_immutable = "0xcb1235a19cc5129e9f6e9a1dd1ec21d141ad6ca3c0b9a281dc76952cb654b221"
 # sage_user = "0x15c584fea306182d89de5e105732fc9c9db6c988ed9c1d8f3b9ce0a17ff72e3d"
 # sage_utils = "0x9b73e9902685d9d893a9cbef9852827090a0eb62fabaf10fa970c4669d868623"
 
 sage_admin = "0x0"
+sage_immutable = "0x0"
 sage_user = "0x0"
 sage_utils  = "0x0"

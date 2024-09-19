@@ -1,6 +1,8 @@
 module sage_user::user {
     use std::string::{String};
 
+    use sui::event;
+
     use sage_utils::{
         string_helpers::{Self}
     };
@@ -14,7 +16,7 @@ module sage_user::user {
 
     // --------------- Errors ---------------
 
-    const EInvalidDescription: u64 = 370;
+    const EInvalidUserDescription: u64 = 370;
     const EInvalidUsername: u64 = 371;
 
     // --------------- Name Tag ---------------
@@ -26,14 +28,79 @@ module sage_user::user {
         created_at: u64,
         description: String,
         name: String,
-        total_earnings: u64
+        total_earnings: u64,
+        updated_at: u64
     }
 
     // --------------- Events ---------------
 
+    public struct UserCreated has copy, drop {
+        address: address,
+        avatar_hash: String,
+        banner_hash: String,
+        created_at: u64,
+        description: String,
+        invited_by: Option<address>,
+        user_key: String,
+        user_name: String
+    }
+
+    public struct UserUpdated has copy, drop {
+        avatar_hash: String,
+        banner_hash: String,
+        description: String,
+        updated_at: u64,
+        user_key: String,
+        user_name: String
+    }
+
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun get_avatar(
+        user: User
+    ): String {
+        let User {
+            avatar_hash,
+            ..
+        } = user;
+
+        avatar_hash
+    }
+
+    public fun get_banner(
+        user: User
+    ): String {
+        let User {
+            banner_hash,
+            ..
+        } = user;
+
+        banner_hash
+    }
+
+    public fun get_description(
+        user: User
+    ): String {
+        let User {
+            description,
+            ..
+        } = user;
+
+        description
+    }
+
+    public fun get_name(
+        user: User
+    ): String {
+        let User {
+            name,
+            ..
+        } = user;
+
+        name
+    }
 
     // --------------- Friend Functions ---------------
 
@@ -43,7 +110,9 @@ module sage_user::user {
         banner_hash: String,
         created_at: u64,
         description: String,
-        name: String
+        invited_by: Option<address>,
+        name: String,
+        user_key: String
     ): User {
         let is_valid_name = string_helpers::is_valid_name(
             &name,
@@ -55,7 +124,18 @@ module sage_user::user {
 
         let is_valid_description = is_valid_description(&description);
 
-        assert!(is_valid_description, EInvalidDescription);
+        assert!(is_valid_description, EInvalidUserDescription);
+
+        event::emit(UserCreated {
+            address,
+            avatar_hash,
+            banner_hash,
+            created_at,
+            description,
+            invited_by,
+            user_key,
+            user_name: name
+        });
 
         User {
             address,
@@ -64,7 +144,8 @@ module sage_user::user {
             created_at,
             description,
             name,
-            total_earnings: 0
+            total_earnings: 0,
+            updated_at: created_at
         }
     }
 
@@ -77,6 +158,122 @@ module sage_user::user {
         } = user;
 
         address
+    }
+
+    public(package) fun update_avatar (
+        user_key: String,
+        user: &mut User,
+        avatar_hash: String,
+        updated_at: u64
+    ): User {
+        user.avatar_hash = avatar_hash;
+        user.updated_at = updated_at;
+
+        let User {
+            banner_hash,
+            description,
+            name,
+            ..
+        } = user;
+
+        event::emit(UserUpdated {
+            avatar_hash,
+            banner_hash: *banner_hash,
+            user_key,
+            user_name: *name,
+            description: *description,
+            updated_at
+        });
+
+        *user
+    }
+
+    public(package) fun update_banner (
+        user_key: String,
+        user: &mut User,
+        banner_hash: String,
+        updated_at: u64
+    ): User {
+        user.banner_hash = banner_hash;
+        user.updated_at = updated_at;
+
+        let User {
+            avatar_hash,
+            description,
+            name,
+            ..
+        } = user;
+
+        event::emit(UserUpdated {
+            avatar_hash: *avatar_hash,
+            banner_hash,
+            user_key,
+            user_name: *name,
+            description: *description,
+            updated_at
+        });
+
+        *user
+    }
+
+    public(package) fun update_description (
+        user_key: String,
+        user: &mut User,
+        description: String,
+        updated_at: u64
+    ): User {
+        let is_valid_description = is_valid_description(&description);
+
+        assert!(is_valid_description, EInvalidUserDescription);
+
+        user.description = description;
+        user.updated_at = updated_at;
+
+        let User {
+            avatar_hash,
+            banner_hash,
+            name,
+            ..
+        } = user;
+
+        event::emit(UserUpdated {
+            avatar_hash: *avatar_hash,
+            banner_hash: *banner_hash,
+            user_key,
+            user_name: *name,
+            description,
+            updated_at
+        });
+
+        *user
+    }
+
+    public(package) fun update_name (
+        user_key: String,
+        user: &mut User,
+        user_name: String,
+        updated_at: u64
+    ): User {
+        user.name = user_name;
+        user.updated_at = updated_at;
+
+        let User {
+            avatar_hash,
+            banner_hash,
+            description,
+            ..
+        } = user;
+
+        event::emit(UserUpdated {
+            avatar_hash: *avatar_hash,
+            banner_hash: *banner_hash,
+            user_key,
+            user_name,
+            description: *description,
+            updated_at
+        });
+
+        *user
     }
 
     // --------------- Internal Functions ---------------
@@ -102,7 +299,9 @@ module sage_user::user {
         banner_hash: String,
         created_at: u64,
         description: String,
-        name: String
+        invited_by: Option<address>,
+        name: String,
+        user_key: String
     ): User {
         create(
             address,
@@ -110,7 +309,9 @@ module sage_user::user {
             banner_hash,
             created_at,
             description,
-            name
+            invited_by,
+            name,
+            user_key
         )
     }
 

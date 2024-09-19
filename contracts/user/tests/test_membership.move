@@ -76,6 +76,8 @@ module sage_user::test_user_membership {
             let user_membership_registry = &mut user_membership_registry_val;
 
             let created_at: u64 = 999;
+            let invited_by = option::none();
+            let name = utf8(b"user-name");
 
             let user = user::create(
                 ADMIN,
@@ -83,7 +85,9 @@ module sage_user::test_user_membership {
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                utf8(b"user-name")
+                invited_by,
+                name,
+                name
             );
 
             user_membership::create(
@@ -131,6 +135,7 @@ module sage_user::test_user_membership {
         let other_user = {
             let other_username = utf8(b"other-name");
             let created_at: u64 = 999;
+            let invited_by = option::none();
 
             let other_user = user::create(
                 ADMIN,
@@ -138,6 +143,8 @@ module sage_user::test_user_membership {
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
+                invited_by,
+                other_username,
                 other_username
             );
 
@@ -154,6 +161,7 @@ module sage_user::test_user_membership {
         {
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
+            let invited_by = option::none();
 
             let user = user::create(
                 ADMIN,
@@ -161,6 +169,8 @@ module sage_user::test_user_membership {
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
+                invited_by,
+                username,
                 username
             );
 
@@ -216,6 +226,7 @@ module sage_user::test_user_membership {
 
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
+            let invited_by = option::none();
 
             let user = user::create(
                 ADMIN,
@@ -223,6 +234,8 @@ module sage_user::test_user_membership {
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
+                invited_by,
+                username,
                 username
             );
 
