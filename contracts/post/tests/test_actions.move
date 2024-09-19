@@ -735,14 +735,14 @@ module sage_post::test_post_actions {
 
             assert!(has_record, EPostNotCreated);
 
-            let username = user_registry::borrow_username(
+            let user_key = user_registry::borrow_user_key(
                 user_registry,
                 ADMIN
             );
 
             let user = user_registry::borrow_user(
                 user_registry,
-                username
+                user_key
             );
 
             let has_post = user_posts::has_post(
@@ -887,14 +887,14 @@ module sage_post::test_post_actions {
 
             assert!(has_record, EPostNotCreated);
 
-            let username = user_registry::borrow_username(
+            let user_key = user_registry::borrow_user_key(
                 user_registry,
                 OTHER
             );
 
             let user = user_registry::borrow_user(
                 user_registry,
-                username
+                user_key
             );
 
             let has_post = user_posts::has_post(
