@@ -45,13 +45,6 @@ module sage_post::user_posts {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_user_post_keys_mut(
-        user_posts_registry: &mut UserPostsRegistry,
-        user: User
-    ): &mut ImmutableVector<String> {
-        user_posts_registry.registry.borrow_mut(user)
-    }
-
     public fun has_post(
         user_posts_registry: &mut UserPostsRegistry,
         user: User,
@@ -96,6 +89,13 @@ module sage_post::user_posts {
         );
 
         user_post_keys.push_back(post_key);
+    }
+
+    public(package) fun borrow_user_post_keys_mut(
+        user_posts_registry: &mut UserPostsRegistry,
+        user: User
+    ): &mut ImmutableVector<String> {
+        user_posts_registry.registry.borrow_mut(user)
     }
 
     // --------------- Internal Functions ---------------

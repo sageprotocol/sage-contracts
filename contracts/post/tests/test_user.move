@@ -76,6 +76,8 @@ module sage_post::test_user_posts {
         ts::next_tx(scenario, ADMIN);
         {
             let created_at: u64 = 999;
+            let invited_by = option::none();
+            let name = utf8(b"user-name");
 
             let user = user::create_for_testing(
                 ADMIN,
@@ -83,7 +85,9 @@ module sage_post::test_user_posts {
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                utf8(b"user-name")
+                invited_by,
+                name,
+                name
             );
 
             let user_posts_registry = &mut user_posts_registry_val;
@@ -122,6 +126,9 @@ module sage_post::test_user_posts {
 
         let scenario = &mut scenario_val;
 
+        let invited_by = option::none();
+        let name = utf8(b"user-name");
+
         ts::next_tx(scenario, ADMIN);
         {
             let created_at: u64 = 999;
@@ -132,7 +139,9 @@ module sage_post::test_user_posts {
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                utf8(b"user-name")
+                invited_by,
+                name,
+                name
             );
 
             let user_posts_registry = &mut user_posts_registry_val;

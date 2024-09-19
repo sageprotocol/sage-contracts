@@ -278,14 +278,14 @@ module sage_post::post_actions {
 
         assert!(user_exists, EUserDoesNotExist);
 
-        let username = user_registry::borrow_username(
+        let user_key = user_registry::borrow_user_key(
             user_registry,
             user_address
         );
 
         let user = user_registry::borrow_user(
             user_registry,
-            username
+            user_key
         );
 
         let timestamp = clock.timestamp_ms();
