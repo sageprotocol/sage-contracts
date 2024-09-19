@@ -15,8 +15,36 @@ module sage_channel::test_channel {
     const EChannelAvatarMismatch: u64 = 0;
     const EChannelBannerMismatch: u64 = 1;
     const EChannelDescriptionMismatch: u64 = 2;
+    const EChannelNameMismatch: u64 = 3;
+    const EDescriptionInvalid: u64 = 4;
 
     // --------------- Test Functions ---------------
+
+    #[test]
+    fun test_description_validity() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let description = utf8(b"ab");
+
+            let is_valid = channel::is_valid_description_for_testing(&description);
+
+            assert!(is_valid == true, EDescriptionInvalid);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let description = utf8(b"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg");
+
+            let is_valid = channel::is_valid_description_for_testing(&description);
+
+            assert!(is_valid == false, EDescriptionInvalid);
+        };
+
+        ts::end(scenario_val);
+    }
 
     #[test]
     fun test_channel_create() {
@@ -169,6 +197,50 @@ module sage_channel::test_channel {
             let channel_description = channel::get_description(channel);
 
             assert!(channel_description == new_channel_description, EChannelDescriptionMismatch);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_update_name() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
+
+            let description = utf8(b"description");
+
+            let mut channel = channel::create(
+                channel_name,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                description,
+                created_at,
+                ADMIN
+            );
+
+            let retrieved_name = channel::get_name(channel);
+
+            assert!(channel_name == retrieved_name, EChannelNameMismatch);
+
+            let new_channel_name = utf8(b"new-name");
+            let updated_at: u64 = 9999;
+
+            channel::update_name(
+                channel_name,
+                &mut channel,
+                new_channel_name,
+                updated_at
+            );
+
+            let retrieved_name = channel::get_name(channel);
+
+            assert!(retrieved_name == new_channel_name, EChannelNameMismatch);
         };
 
         ts::end(scenario_val);

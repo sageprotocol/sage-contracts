@@ -395,7 +395,7 @@ module sage_channel::test_channel_actions {
             let avatar_hash = utf8(b"avatar_hash");
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -419,8 +419,13 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_avatar_hash
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_avatar_hash = channel::get_avatar(
@@ -509,7 +514,7 @@ module sage_channel::test_channel_actions {
             let banner_hash = utf8(b"banner_hash");
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -533,8 +538,13 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_banner_hash
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_banner_hash = channel::get_banner(
@@ -623,7 +633,7 @@ module sage_channel::test_channel_actions {
             let channel_name = utf8(b"channel-name");
             let description = utf8(b"description");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -647,8 +657,13 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_description
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_description = channel::get_description(
@@ -736,7 +751,7 @@ module sage_channel::test_channel_actions {
 
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -760,8 +775,13 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_name
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_name = channel::get_name(
@@ -850,7 +870,7 @@ module sage_channel::test_channel_actions {
 
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -874,8 +894,13 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_name
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_name = channel::get_name(
@@ -963,7 +988,7 @@ module sage_channel::test_channel_actions {
             let avatar_hash = utf8(b"avatar_hash");
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -986,9 +1011,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_avatar_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_avatar_hash,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_avatar_hash = channel::get_avatar(
@@ -1055,7 +1085,7 @@ module sage_channel::test_channel_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let (clock, mut channel) = {
+        let (clock, channel_name) = {
             let clock: Clock = ts::take_shared(scenario);
 
             let _user = user_actions::create(
@@ -1094,7 +1124,7 @@ module sage_channel::test_channel_actions {
 
             assert!(channel_avatar_hash == avatar_hash, EChannelAvatarMismatch);
 
-            (clock, channel)
+            (clock, channel_name)
         };
 
         ts::next_tx(scenario, SERVER);
@@ -1105,9 +1135,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_avatar_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_avatar_hash,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_avatar_hash = channel::get_avatar(
@@ -1194,7 +1229,7 @@ module sage_channel::test_channel_actions {
             let banner_hash = utf8(b"banner_hash");
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -1217,9 +1252,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_banner_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_banner_hash,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_banner_hash = channel::get_banner(
@@ -1286,7 +1326,7 @@ module sage_channel::test_channel_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let (clock, mut channel) = {
+        let (clock, channel_name) = {
             let clock: Clock = ts::take_shared(scenario);
 
             let _user = user_actions::create(
@@ -1325,7 +1365,7 @@ module sage_channel::test_channel_actions {
 
             assert!(channel_banner_hash == banner_hash, EChannelBannerMismatch);
 
-            (clock, channel)
+            (clock, channel_name)
         };
 
         ts::next_tx(scenario, SERVER);
@@ -1335,9 +1375,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_banner_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_banner_hash,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_banner_hash = channel::get_banner(
@@ -1424,7 +1469,7 @@ module sage_channel::test_channel_actions {
             let channel_name = utf8(b"channel-name");
             let description = utf8(b"description");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -1447,9 +1492,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_description_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_description,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_description = channel::get_description(
@@ -1516,7 +1566,7 @@ module sage_channel::test_channel_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let (clock, mut channel) = {
+        let (clock, channel_name) = {
             let clock: Clock = ts::take_shared(scenario);
 
             let _user = user_actions::create(
@@ -1555,7 +1605,7 @@ module sage_channel::test_channel_actions {
 
             assert!(channel_description == description, EChannelDescriptionMismatch);
 
-            (clock, channel)
+            (clock, channel_name)
         };
 
         ts::next_tx(scenario, SERVER);
@@ -1565,9 +1615,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_description_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_description,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_description = channel::get_description(
@@ -1653,7 +1708,7 @@ module sage_channel::test_channel_actions {
 
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -1676,9 +1731,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_name_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_name,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_name = channel::get_name(
@@ -1745,7 +1805,7 @@ module sage_channel::test_channel_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let (clock, mut channel) = {
+        let (clock, channel_name) = {
             let clock: Clock = ts::take_shared(scenario);
 
             let _user = user_actions::create(
@@ -1783,7 +1843,7 @@ module sage_channel::test_channel_actions {
 
             assert!(channel_name == channel_name, ETestChannelNameMismatch);
 
-            (clock, channel)
+            (clock, channel_name)
         };
 
         ts::next_tx(scenario, SERVER);
@@ -1793,9 +1853,14 @@ module sage_channel::test_channel_actions {
             channel_actions::update_name_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_name,
                 ts::ctx(scenario)
+            );
+
+            let channel = channel_registry::borrow_channel(
+                channel_registry,
+                channel_name
             );
 
             let channel_name = channel::get_name(
@@ -1883,7 +1948,7 @@ module sage_channel::test_channel_actions {
 
             let channel_name = utf8(b"channel-name");
 
-            let mut channel = channel_actions::create(
+            let channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
@@ -1906,7 +1971,7 @@ module sage_channel::test_channel_actions {
             channel_actions::update_name_owner(
                 &clock,
                 channel_registry,
-                &mut channel,
+                channel_name,
                 new_name,
                 ts::ctx(scenario)
             );

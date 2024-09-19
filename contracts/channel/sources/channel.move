@@ -12,9 +12,12 @@ module sage_channel::channel {
     const CHANNEL_NAME_MIN_LENGTH: u64 = 3;
     const CHANNEL_NAME_MAX_LENGTH: u64 = 20;
 
+    const DESCRIPTION_MAX_LENGTH: u64 = 370;
+
     // --------------- Errors ---------------
 
-    const EInvalidChannelName: u64 = 370;
+    const EInvalidChannelDescription: u64 = 370;
+    const EInvalidChannelName: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -127,6 +130,10 @@ module sage_channel::channel {
 
         assert!(is_valid_name, EInvalidChannelName);
 
+        let is_valid_description = is_valid_description(&description);
+
+        assert!(is_valid_description, EInvalidChannelDescription);
+
         let channel = Channel {
             avatar_hash,
             banner_hash,
@@ -155,7 +162,7 @@ module sage_channel::channel {
         channel: &mut Channel,
         avatar_hash: String,
         updated_at: u64
-    ) {
+    ): Channel {
         channel.avatar_hash = avatar_hash;
         channel.updated_at = updated_at;
 
@@ -174,6 +181,8 @@ module sage_channel::channel {
             description: *description,
             updated_at
         });
+
+        *channel
     }
 
     public(package) fun update_banner (
@@ -181,7 +190,7 @@ module sage_channel::channel {
         channel: &mut Channel,
         banner_hash: String,
         updated_at: u64
-    ) {
+    ): Channel {
         channel.banner_hash = banner_hash;
         channel.updated_at = updated_at;
 
@@ -200,6 +209,8 @@ module sage_channel::channel {
             description: *description,
             updated_at
         });
+
+        *channel
     }
 
     public(package) fun update_description (
@@ -207,7 +218,11 @@ module sage_channel::channel {
         channel: &mut Channel,
         description: String,
         updated_at: u64
-    ) {
+    ): Channel {
+        let is_valid_description = is_valid_description(&description);
+
+        assert!(is_valid_description, EInvalidChannelDescription);
+
         channel.description = description;
         channel.updated_at = updated_at;
 
@@ -226,6 +241,8 @@ module sage_channel::channel {
             description,
             updated_at
         });
+
+        *channel
     }
 
     public(package) fun update_name (
@@ -233,7 +250,7 @@ module sage_channel::channel {
         channel: &mut Channel,
         channel_name: String,
         updated_at: u64
-    ) {
+    ): Channel {
         channel.name = channel_name;
         channel.updated_at = updated_at;
 
@@ -252,9 +269,23 @@ module sage_channel::channel {
             description: *description,
             updated_at
         });
+
+        *channel
     }
 
     // --------------- Internal Functions ---------------
+
+    fun is_valid_description(
+        description: &String
+    ): bool {
+        let len = description.length();
+
+        if (len > DESCRIPTION_MAX_LENGTH) {
+            return false
+        };
+
+        true
+    }
 
     // --------------- Test Functions ---------------
 
@@ -277,5 +308,12 @@ module sage_channel::channel {
             created_at,
             created_by
         )
+    }
+
+    #[test_only]
+    public fun is_valid_description_for_testing(
+        name: &String
+    ): bool {
+        is_valid_description(name)
     }
 }
