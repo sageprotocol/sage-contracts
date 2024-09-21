@@ -44,7 +44,7 @@ module sage_channel::test_channel_membership {
     }
 
     #[test]
-    fun test_channel_membership_registry_init() {
+    fun registry_init() {
         let (
             mut scenario_val,
             channel_membership_registry_val
@@ -61,7 +61,7 @@ module sage_channel::test_channel_membership {
     }
 
     #[test]
-    fun test_channel_membership_create() {
+    fun create() {
         let (
             mut scenario_val,
             mut channel_membership_registry_val,
@@ -107,7 +107,7 @@ module sage_channel::test_channel_membership {
 
     #[test]
     #[expected_failure(abort_code = EChannelMemberExists)]
-    fun test_channel_join() {
+    fun join() {
         let (
             mut scenario_val,
             mut channel_membership_registry_val,
@@ -158,7 +158,7 @@ module sage_channel::test_channel_membership {
     }
 
     #[test]
-    fun test_channel_leave() {
+    fun leave() {
         let (
             mut scenario_val,
             mut channel_membership_registry_val,

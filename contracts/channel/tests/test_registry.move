@@ -46,7 +46,7 @@ module sage_channel::test_channel_registry {
     }
 
     #[test]
-    fun test_channel_registry_init() {
+    fun test_init() {
         let (
             mut scenario_val,
             channel_registry_val
@@ -63,7 +63,7 @@ module sage_channel::test_channel_registry {
     }
 
     #[test]
-    fun test_channel_registry_get_channel_lower() {
+    fun get_channel_lower() {
         let (
             mut scenario_val,
             mut channel_registry_val
@@ -108,7 +108,7 @@ module sage_channel::test_channel_registry {
     }
 
     #[test]
-    fun test_channel_registry_get_channel_upper() {
+    fun get_channel_upper() {
         let (
             mut scenario_val,
             mut channel_registry_val
@@ -155,7 +155,7 @@ module sage_channel::test_channel_registry {
     }
 
     #[test]
-    fun test_channel_has_record_lower() {
+    fun has_record_lower() {
         let (
             mut scenario_val,
             mut channel_registry_val
@@ -200,7 +200,7 @@ module sage_channel::test_channel_registry {
     }
 
     #[test]
-    fun test_channel_has_record_upper() {
+    fun has_record_upper() {
         let (
             mut scenario_val,
             mut channel_registry_val
@@ -247,7 +247,7 @@ module sage_channel::test_channel_registry {
     }
 
     #[test]
-    fun test_channel_replace() {
+    fun replace() {
         let (
             mut scenario_val,
             mut channel_registry_val
@@ -322,7 +322,7 @@ module sage_channel::test_channel_registry {
 
     #[test]
     #[expected_failure(abort_code = EChannelRecordDoesNotExist)]
-    fun test_channel_replace_fail() {
+    fun replace_fail() {
         let (
             mut scenario_val,
             mut channel_registry_val

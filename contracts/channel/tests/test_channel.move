@@ -21,7 +21,7 @@ module sage_channel::test_channel {
     // --------------- Test Functions ---------------
 
     #[test]
-    fun test_description_validity() {
+    fun description_validity() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -47,7 +47,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun test_channel_create() {
+    fun create() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -71,7 +71,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun test_channel_update_avatar() {
+    fun update_avatar() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -115,7 +115,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun test_channel_update_banner() {
+    fun update_banner() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -159,7 +159,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun test_channel_update_description() {
+    fun update_description() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -203,7 +203,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun test_channel_update_name() {
+    fun update_name() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
