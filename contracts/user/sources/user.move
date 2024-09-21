@@ -58,6 +58,17 @@ module sage_user::user {
 
     // --------------- Public Functions ---------------
 
+    public fun get_address(
+        user: User
+    ): address {
+        let User {
+            address,
+            ..
+        } = user;
+
+        address
+    }
+
     public fun get_avatar(
         user: User
     ): String {
@@ -147,17 +158,6 @@ module sage_user::user {
             total_earnings: 0,
             updated_at: created_at
         }
-    }
-
-    public(package) fun get_address(
-        user: User
-    ): address {
-        let User {
-            address,
-            ..
-        } = user;
-
-        address
     }
 
     public(package) fun update_avatar (
