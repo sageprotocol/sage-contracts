@@ -14,8 +14,17 @@ module sage_channel::test_channel_actions {
 
     use sage_channel::{
         channel::{Self},
-        channel_actions::{Self, EChannelNameMismatch, ENotChannelOwner, EUserDoesNotExist},
+        channel_actions::{
+            Self,
+            EAlreadyChannelModerator,
+            EChannelModeratorLength,
+            EChannelNameMismatch,
+            ENotChannelModerator,
+            ENotChannelOwner,
+            EUserDoesNotExist
+        },
         channel_membership::{Self, ChannelMembershipRegistry},
+        channel_moderation::{Self, ChannelModerationRegistry},
         channel_registry::{Self, ChannelRegistry},
     };
 
@@ -38,7 +47,10 @@ module sage_channel::test_channel_actions {
     const EChannelAvatarMismatch: u64 = 2;
     const EChannelBannerMismatch: u64 = 3;
     const EChannelDescriptionMismatch: u64 = 4;
-    const ETestChannelNameMismatch: u64 = 5;
+    const EIsModerator: u64 = 5;
+    const EIsNotModerator: u64 = 6;
+    const EModeratorLengthMismatch: u64 = 7;
+    const ETestChannelNameMismatch: u64 = 8;
 
     // --------------- Test Functions ---------------
 
@@ -46,6 +58,7 @@ module sage_channel::test_channel_actions {
     fun destroy_for_testing(
         channel_registry: ChannelRegistry,
         channel_membership_registry: ChannelMembershipRegistry,
+        channel_moderation_registry: ChannelModerationRegistry,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry,
         user_membership_registry: UserMembershipRegistry,
@@ -53,6 +66,7 @@ module sage_channel::test_channel_actions {
     ) {
         destroy(channel_registry);
         destroy(channel_membership_registry);
+        destroy(channel_moderation_registry);
         destroy(invite_config);
         destroy(user_registry);
         destroy(user_invite_registry);
@@ -64,6 +78,7 @@ module sage_channel::test_channel_actions {
         Scenario,
         ChannelRegistry,
         ChannelMembershipRegistry,
+        ChannelModerationRegistry,
         UserRegistry,
         UserInviteRegistry,
         UserMembershipRegistry,
@@ -74,6 +89,7 @@ module sage_channel::test_channel_actions {
         {
             admin::init_for_testing(ts::ctx(scenario));
             channel_membership::init_for_testing(ts::ctx(scenario));
+            channel_moderation::init_for_testing(ts::ctx(scenario));
             channel_registry::init_for_testing(ts::ctx(scenario));
             user_invite::init_for_testing(ts::ctx(scenario));
             user_membership::init_for_testing(ts::ctx(scenario));
@@ -84,6 +100,7 @@ module sage_channel::test_channel_actions {
         let (
             channel_registry,
             channel_membership_registry,
+            channel_moderation_registry,
             user_registry,
             user_invite_registry,
             user_membership_registry,
@@ -91,6 +108,7 @@ module sage_channel::test_channel_actions {
         ) = {
             let channel_registry = scenario.take_shared<ChannelRegistry>();
             let channel_membership_registry = scenario.take_shared<ChannelMembershipRegistry>();
+            let channel_moderation_registry = scenario.take_shared<ChannelModerationRegistry>();
             let invite_config = scenario.take_shared<InviteConfig>();
             let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
             let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
@@ -99,6 +117,7 @@ module sage_channel::test_channel_actions {
             (
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 user_invite_registry,
                 user_membership_registry,
@@ -110,6 +129,7 @@ module sage_channel::test_channel_actions {
             scenario_val,
             channel_registry,
             channel_membership_registry,
+            channel_moderation_registry,
             user_registry,
             user_invite_registry,
             user_membership_registry,
@@ -118,11 +138,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_init() {
+    fun test_init() {
         let (
             mut scenario_val,
             channel_registry_val,
             channel_membership_registry_val,
+            channel_moderation_registry_val,
             user_registry_val,
             user_invite_registry_val,
             user_membership_registry_val,
@@ -136,6 +157,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -147,11 +169,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_create() {
+    fun create() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -162,6 +185,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -208,10 +232,11 @@ module sage_channel::test_channel_actions {
 
             let channel_name = utf8(b"channel-name");
 
-            let channel = channel_actions::create(
+            let _channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -222,7 +247,7 @@ module sage_channel::test_channel_actions {
 
             let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
-                channel
+                channel_name
             );
 
             let member_length = channel_membership::get_member_length(
@@ -238,11 +263,27 @@ module sage_channel::test_channel_actions {
 
             assert!(has_member, EHasMember);
 
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                ADMIN
+            );
+
+            assert!(is_moderator, EIsNotModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 1, EModeratorLengthMismatch);
+
             ts::return_shared(clock);
 
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -255,11 +296,12 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EUserDoesNotExist)]
-    fun test_channel_actions_create_no_user() {
+    fun create_no_user() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             user_invite_registry_val,
             user_membership_registry_val,
@@ -270,6 +312,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
 
         ts::next_tx(scenario, ADMIN);
@@ -286,10 +329,11 @@ module sage_channel::test_channel_actions {
 
             let channel_name = utf8(b"channel-name");
 
-            let channel = channel_actions::create(
+            let _channel = channel_actions::create(
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -300,7 +344,7 @@ module sage_channel::test_channel_actions {
 
             let channel_membership = channel_membership::borrow_membership_mut(
                 channel_membership_registry,
-                channel
+                channel_name
             );
 
             let member_length = channel_membership::get_member_length(
@@ -321,6 +365,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -332,11 +377,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_avatar_admin() {
+    fun add_moderator_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -347,6 +393,1571 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_admin(
+                &admin_cap,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name
+            );
+
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                SERVER
+            );
+
+            assert!(is_moderator, EIsNotModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 2, EModeratorLengthMismatch);
+
+            ts::return_to_sender(scenario, admin_cap);
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EAlreadyChannelModerator)]
+    fun add_moderator_admin_fail() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+            let clock: Clock = ts::take_shared(scenario);
+
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_admin(
+                &admin_cap,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                user_name
+            );
+
+            ts::return_to_sender(scenario, admin_cap);
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun add_moderator_owner() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                SERVER
+            );
+
+            assert!(is_moderator, EIsNotModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 2, EModeratorLengthMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelOwner)]
+    fun add_moderator_owner_not_owner() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (channel_name, user_name) = {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            (channel_name, user_name)
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            channel_actions::add_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                SERVER
+            );
+
+            assert!(is_moderator, EIsNotModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 2, EModeratorLengthMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EAlreadyChannelModerator)]
+    fun add_moderator_owner_already_moderator() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                SERVER
+            );
+
+            assert!(is_moderator, EIsNotModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 2, EModeratorLengthMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun remove_moderator_admin() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_admin(
+                &admin_cap,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name
+            );
+
+            channel_actions::remove_moderator_admin(
+                &admin_cap,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name
+            );
+
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                SERVER
+            );
+
+            assert!(!is_moderator, EIsModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 1, EModeratorLengthMismatch);
+
+            ts::return_to_sender(scenario, admin_cap);
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelModerator)]
+    fun remove_moderator_admin_not_moderator() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::remove_moderator_admin(
+                &admin_cap,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name
+            );
+
+            ts::return_to_sender(scenario, admin_cap);
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelModeratorLength)]
+    fun remove_moderator_admin_min_length() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+            let clock: Clock = ts::take_shared(scenario);
+
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::remove_moderator_admin(
+                &admin_cap,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                user_name
+            );
+
+            ts::return_to_sender(scenario, admin_cap);
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun remove_moderator_owner() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            channel_actions::remove_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            let is_moderator = channel_moderation::is_moderator(
+                channel_moderation_registry,
+                channel_name,
+                SERVER
+            );
+
+            assert!(!is_moderator, EIsModerator);
+
+            let moderator_length = channel_moderation::get_moderator_length(
+                channel_moderation_registry,
+                channel_name
+            );
+
+            assert!(moderator_length == 1, EModeratorLengthMismatch);
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelOwner)]
+    fun remove_moderator_owner_not_owner() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (channel_name, user_name) = {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::add_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            (channel_name, user_name)
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            channel_actions::remove_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotChannelModerator)]
+    fun remove_moderator_owner_not_moderator() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock, server_user_name) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock, server_user_name)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::remove_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelModeratorLength)]
+    fun remove_moderator_owner_min_moderators() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (clock) = {
+            let clock: Clock = ts::take_shared(scenario);
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            let server_user_name = utf8(b"server-user");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                server_user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+
+            (clock)
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_name = utf8(b"user-name");
+
+            let _user = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            let channel_name = utf8(b"channel-name");
+
+            let _channel = channel_actions::create(
+                &clock,
+                channel_registry,
+                channel_membership_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                ts::ctx(scenario)
+            );
+
+            channel_actions::remove_moderator_owner(
+                channel_registry,
+                channel_moderation_registry,
+                user_registry,
+                channel_name,
+                user_name,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(clock);
+
+            destroy_for_testing(
+                channel_registry_val,
+                channel_membership_registry_val,
+                channel_moderation_registry_val,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun update_avatar_admin() {
+        let (
+            mut scenario_val,
+            mut channel_registry_val,
+            mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let channel_registry = &mut channel_registry_val;
+        let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -399,6 +2010,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 avatar_hash,
@@ -440,6 +2052,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -451,11 +2064,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_banner_admin() {
+    fun update_banner_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -466,6 +2080,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -518,6 +2133,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -559,6 +2175,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -570,11 +2187,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_description_admin() {
+    fun update_description_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -585,6 +2203,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -637,6 +2256,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -678,6 +2298,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -689,11 +2310,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_name_admin() {
+    fun update_name_admin() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -704,6 +2326,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -755,6 +2378,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -796,6 +2420,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -808,11 +2433,12 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EChannelNameMismatch)]
-    fun test_channel_actions_update_name_admin_mismatch() {
+    fun update_name_admin_mismatch() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -823,6 +2449,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -874,6 +2501,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -915,6 +2543,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -926,11 +2555,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_avatar_owner_owned() {
+    fun update_avatar_owner_owned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -941,6 +2571,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -992,6 +2623,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 avatar_hash,
@@ -1032,6 +2664,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1043,12 +2676,13 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotChannelOwner)]
-    fun test_channel_actions_update_avatar_owner_unowned() {
+    #[expected_failure(abort_code = ENotChannelModerator)]
+    fun update_avatar_owner_unowned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1059,6 +2693,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1110,6 +2745,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 avatar_hash,
@@ -1156,6 +2792,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1167,11 +2804,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_banner_owner_owned() {
+    fun update_banner_owner_owned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1182,6 +2820,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1233,6 +2872,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1273,6 +2913,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1284,12 +2925,13 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotChannelOwner)]
-    fun test_channel_actions_update_banner_owner_unowned() {
+    #[expected_failure(abort_code = ENotChannelModerator)]
+    fun update_banner_owner_unowned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1300,6 +2942,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1351,6 +2994,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1396,6 +3040,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1407,11 +3052,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_description_owner_owned() {
+    fun update_description_owner_owned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1422,6 +3068,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1473,6 +3120,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1513,6 +3161,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1524,12 +3173,13 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotChannelOwner)]
-    fun test_channel_actions_update_description_owner_unowned() {
+    #[expected_failure(abort_code = ENotChannelModerator)]
+    fun update_description_owner_unowned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1540,6 +3190,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1591,6 +3242,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1636,6 +3288,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1647,11 +3300,12 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_update_name_owner_owned() {
+    fun update_name_owner_owned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1662,6 +3316,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1712,6 +3367,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1752,6 +3408,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1763,12 +3420,13 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotChannelOwner)]
-    fun test_channel_actions_update_name_owner_unowned() {
+    #[expected_failure(abort_code = ENotChannelModerator)]
+    fun update_name_owner_unowned() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1779,6 +3437,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1829,6 +3488,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1874,6 +3534,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
@@ -1886,11 +3547,12 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EChannelNameMismatch)]
-    fun test_channel_actions_update_name_owner_owned_mismatch() {
+    fun update_name_owner_owned_mismatch() {
         let (
             mut scenario_val,
             mut channel_registry_val,
             mut channel_membership_registry_val,
+            mut channel_moderation_registry_val,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
@@ -1901,6 +3563,7 @@ module sage_channel::test_channel_actions {
 
         let channel_registry = &mut channel_registry_val;
         let channel_membership_registry = &mut channel_membership_registry_val;
+        let channel_moderation_registry = &mut channel_moderation_registry_val;
         let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
         let user_membership_registry = &mut user_membership_registry_val;
@@ -1952,6 +3615,7 @@ module sage_channel::test_channel_actions {
                 &clock,
                 channel_registry,
                 channel_membership_registry,
+                channel_moderation_registry,
                 user_registry,
                 channel_name,
                 utf8(b"avatar_hash"),
@@ -1988,6 +3652,7 @@ module sage_channel::test_channel_actions {
             destroy_for_testing(
                 channel_registry_val,
                 channel_membership_registry_val,
+                channel_moderation_registry_val,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
