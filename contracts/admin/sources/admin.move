@@ -21,10 +21,6 @@ module sage_admin::admin {
         id: UID
     }
 
-    public struct TreasuryCap has key {
-        id: UID
-    }
-
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
@@ -34,13 +30,11 @@ module sage_admin::admin {
         let fee_cap = FeeCap { id: object::new(ctx) };
         let invite_cap = InviteCap { id: object::new(ctx) };
         let notification_cap = NotificationCap { id: object::new(ctx) };
-        let treasury_cap = TreasuryCap { id: object::new(ctx) };
 
         transfer::transfer(admin_cap, @admin);
         transfer::transfer(fee_cap, @admin);
         transfer::transfer(invite_cap, @server);
         transfer::transfer(notification_cap, @server);
-        transfer::transfer(treasury_cap, @treasury);
     }
 
     // --------------- Public Functions ---------------
