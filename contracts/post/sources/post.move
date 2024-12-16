@@ -25,6 +25,17 @@ module sage_post::post {
 
     // --------------- Public Functions ---------------
 
+    public fun get_author(
+        post: Post
+    ): address {
+        let Post {
+            created_by,
+            ..
+        } = post;
+
+        created_by
+    }
+
     public fun get_key(
         post: Post
     ): String {

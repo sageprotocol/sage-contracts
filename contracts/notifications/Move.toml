@@ -2,7 +2,7 @@
 name = "SageNotification"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0x690ee942e102b0e330c8018b9aeefa9cd9de4c4e8a016e2cb743171928c521b1"
+# published-at = "0x690ee942e102b0e330c8018b9aeefa9cd9de4c4e8a016e2cb743171928c521b1"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
@@ -14,10 +14,10 @@ SageImmutable = { local = "../immutable" }
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 notification = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
-sage_admin = "0x756c7229c6dc1121998b551eb3737806a1ad37393fec8411e14ab17da1996755"
-sage_immutable = "0xcb1235a19cc5129e9f6e9a1dd1ec21d141ad6ca3c0b9a281dc76952cb654b221"
-sage_notification = "0x690ee942e102b0e330c8018b9aeefa9cd9de4c4e8a016e2cb743171928c521b1"
+# sage_admin = "0x756c7229c6dc1121998b551eb3737806a1ad37393fec8411e14ab17da1996755"
+# sage_immutable = "0xcb1235a19cc5129e9f6e9a1dd1ec21d141ad6ca3c0b9a281dc76952cb654b221"
+# sage_notification = "0x690ee942e102b0e330c8018b9aeefa9cd9de4c4e8a016e2cb743171928c521b1"
 
-# sage_admin = "0x0"
-# sage_immutable = "0x0"
-# sage_notification = "0x0"
+sage_admin = "0x0"
+sage_immutable = "0x0"
+sage_notification = "0x0"

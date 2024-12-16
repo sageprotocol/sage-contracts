@@ -2,12 +2,14 @@
 module sage_notification::test_notification_actions {
     use std::string::{utf8};
 
-    use sui::clock::{Self, Clock};
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        clock::{Self, Clock},
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
     use sage_admin::{admin::{
         Self,
-        AdminCap,
         NotificationCap
     }};
 
@@ -33,6 +35,7 @@ module sage_notification::test_notification_actions {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            notification_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, NOTIFICATION);
@@ -44,14 +47,7 @@ module sage_notification::test_notification_actions {
 
         ts::next_tx(scenario, ADMIN);
         let notification_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let notification_registry = notification_registry::create_notification_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let notification_registry = scenario.take_shared<NotificationRegistry>();
 
             notification_registry
         };
@@ -76,9 +72,7 @@ module sage_notification::test_notification_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            notification_registry::destroy_for_testing(
-                notification_registry_val
-            );
+            destroy(notification_registry_val);
         };
 
         ts::end(scenario_val);
@@ -120,7 +114,7 @@ module sage_notification::test_notification_actions {
                 reward_amount
             );
 
-            let user_notifications = notification_registry::borrow_user_notifications(
+            let user_notifications = notification_registry::borrow_user_notifications_mut(
                 notification_registry,
                 user
             );
@@ -141,9 +135,7 @@ module sage_notification::test_notification_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            notification_registry::destroy_for_testing(
-                notification_registry_val
-            );
+            destroy(notification_registry_val);
         };
 
         ts::end(scenario_val);

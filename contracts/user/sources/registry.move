@@ -1,14 +1,12 @@
 module sage_user::user_registry {
     use std::string::{String};
 
-    use sui::table::{Self, Table};
-
-    use sage_admin::{
-        admin::{AdminCap}
+    use sui::{
+        package::{claim_and_keep}
     };
-
-    use sage_user::{
-        user::{User}
+    
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable}
     };
 
     use sage_utils::{
@@ -24,77 +22,110 @@ module sage_user::user_registry {
 
     // --------------- Name Tag ---------------
 
-    public struct UserRegistry has store {
-        address_registry: Table<address, String>,
-        user_registry: Table<String, User>
+    // address: wallet/kiosk <-> user key
+    // user: user key <-> user object
+    public struct UserRegistry has key, store {
+        id: UID,
+        address_registry: ImmutableTable<address, String>,
+        address_reverse_registry: ImmutableTable<String, address>,
+        user_registry: ImmutableTable<String, address>,
+        user_reverse_registry: ImmutableTable<address, String>
     }
+
+    public struct USER_REGISTRY has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
+    fun init (
+        otw: USER_REGISTRY,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
 
-    public fun borrow_user(
-        user_registry: &mut UserRegistry,
-        name: String
-    ): User {
-        *user_registry.user_registry.borrow(name)
+        let user_registry = UserRegistry {
+            id: object::new(ctx),
+            address_registry: immutable_table::new(ctx),
+            address_reverse_registry: immutable_table::new(ctx),
+            user_registry: immutable_table::new(ctx),
+            user_reverse_registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(user_registry);
     }
 
-    public fun borrow_username(
-        user_registry: &mut UserRegistry,
+    // --------------- Public Functions ---------------
+
+    public fun get_owner_address_from_key (
+        user_registry: &UserRegistry,
+        user_key: String
+    ): address {
+        *user_registry.address_reverse_registry.borrow(user_key)
+    }
+
+    public fun get_user_address_from_key (
+        user_registry: &UserRegistry,
+        user_key: String
+    ): address {
+        *user_registry.user_registry.borrow(user_key)
+    }
+
+    // from wallet/kiosk
+    public fun get_user_key_from_owner (
+        user_registry: &UserRegistry,
         address: address
     ): String {
         *user_registry.address_registry.borrow(address)
     }
 
-    public fun create_user_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): UserRegistry {
-        UserRegistry {
-            address_registry: table::new(ctx),
-            user_registry: table::new(ctx)
-        }
+    // from user object
+    public fun get_user_key_from_user (
+        user_registry: &UserRegistry,
+        address: address
+    ): String {
+        *user_registry.user_reverse_registry.borrow(address)
     }
 
-    public fun has_address_record(
+    public fun has_address_record (
         user_registry: &UserRegistry,
         address: address
     ): bool {
         user_registry.address_registry.contains(address)
     }
 
-    public fun has_username_record(
+    public fun has_username_record (
         user_registry: &UserRegistry,
         username: String
     ): bool {
-        user_registry.user_registry.contains(username)
+        let user_key = string_helpers::to_lowercase(
+            &username
+        );
+
+        user_registry.user_registry.contains(user_key)
     }
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun add(
+    public(package) fun add (
         user_registry: &mut UserRegistry,
-        username: String,
-        address: address,
-        user: User
+        user_key: String,
+        self_address: address,
+        user_address: address
     ) {
-        let address_record_exists = user_registry.has_address_record(address);
+        let address_record_exists = user_registry.has_address_record(self_address);
 
         assert!(!address_record_exists, EAddressRecordExists);
 
-        let lowercase_username = string_helpers::to_lowercase(
-            &username
-        );
-
-        let username_record_exists = user_registry.has_username_record(lowercase_username);
+        let username_record_exists = user_registry.has_username_record(user_key);
 
         assert!(!username_record_exists, EUsernameRecordExists);
 
-        user_registry.address_registry.add(address, lowercase_username);
-        user_registry.user_registry.add(lowercase_username, user);
+        user_registry.address_registry.add(self_address, user_key);
+        user_registry.user_registry.add(user_key, user_address);
+
+        user_registry.address_reverse_registry.add(user_key, self_address);
+        user_registry.user_reverse_registry.add(user_address, user_key);
     }
 
     // --------------- Internal Functions ---------------
@@ -102,15 +133,7 @@ module sage_user::user_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        user_registry: UserRegistry
-    ) {
-        let UserRegistry {
-            address_registry,
-            user_registry
-        } = user_registry;
-
-        address_registry.drop();
-        user_registry.drop();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(USER_REGISTRY {}, ctx);
     }
 }

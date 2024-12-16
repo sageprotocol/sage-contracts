@@ -2,9 +2,12 @@
 module sage_post::test_channel_posts {
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_channel::{channel::{Self}};
 
@@ -29,18 +32,12 @@ module sage_post::test_channel_posts {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            channel_posts::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let channel_posts_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let channel_posts_registry = channel_posts::create_channel_posts_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let channel_posts_registry = scenario.take_shared<ChannelPostsRegistry>();
 
             channel_posts_registry
         };
@@ -59,7 +56,7 @@ module sage_post::test_channel_posts {
 
         ts::next_tx(scenario, ADMIN);
         {
-            channel_posts::destroy_for_testing(channel_posts_registry_val);
+            destroy(channel_posts_registry_val);
         };
 
         ts::end(scenario_val);
@@ -76,10 +73,12 @@ module sage_post::test_channel_posts {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let channel = channel::create_for_testing(
-                utf8(b"channel-name"),
+                channel_name,
+                channel_name,
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 utf8(b"description"),
@@ -115,7 +114,7 @@ module sage_post::test_channel_posts {
 
             assert!(has_post, EChannelPostMismatch);
 
-            channel_posts::destroy_for_testing(channel_posts_registry_val);
+            destroy(channel_posts_registry_val);
         };
 
         ts::end(scenario_val);

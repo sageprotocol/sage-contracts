@@ -1,7 +1,7 @@
 module sage_post::channel_posts {
     use std::string::{String};
 
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
     use sage_channel::{channel::{Channel}};
 
@@ -18,31 +18,32 @@ module sage_post::channel_posts {
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelPostsRegistry has store {
+    public struct ChannelPostsRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<Channel, ImmutableVector<String>>
     }
+
+    public struct CHANNEL_POSTS has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun borrow_channel_post_keys(
-        channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel
-    ): &mut ImmutableVector<String> {
-        channel_posts_registry.registry.borrow_mut(channel)
-    }
-
-    public fun create_channel_posts_registry(
-        _: &AdminCap,
+    fun init(
+        otw: CHANNEL_POSTS,
         ctx: &mut TxContext
-    ): ChannelPostsRegistry {
-        ChannelPostsRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let post_registry = ChannelPostsRegistry {
+            id: object::new(ctx),
             registry: immutable_table::new(ctx)
-        }
+        };
+
+        transfer::share_object(post_registry);
     }
+
+    // --------------- Public Functions ---------------
 
     public fun has_post(
         channel_posts_registry: &mut ChannelPostsRegistry,
@@ -82,12 +83,19 @@ module sage_post::channel_posts {
             );
         };
 
-        let channel_post_keys = borrow_channel_post_keys(
+        let channel_post_keys = borrow_channel_post_keys_mut(
             channel_posts_registry,
             channel
         );
 
         channel_post_keys.push_back(post_key);
+    }
+
+    public(package) fun borrow_channel_post_keys_mut(
+        channel_posts_registry: &mut ChannelPostsRegistry,
+        channel: Channel
+    ): &mut ImmutableVector<String> {
+        channel_posts_registry.registry.borrow_mut(channel)
     }
 
     // --------------- Internal Functions ---------------
@@ -108,14 +116,7 @@ module sage_post::channel_posts {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        channel_posts_registry: ChannelPostsRegistry
-    ) {
-        let ChannelPostsRegistry {
-            registry
-        } = channel_posts_registry;
-
-        registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(CHANNEL_POSTS {}, ctx);
     }
-
 }

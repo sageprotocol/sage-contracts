@@ -1,57 +1,57 @@
 module sage_channel::channel_registry {
     use std::string::{String};
 
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
-    use sage_channel::{channel::{Channel}};
+    use sage_channel::{
+        channel::{Channel}
+    };
 
-    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
-
-    use sage_utils::{
-        string_helpers::{Self}
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable}
     };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const EChannelRecordExists: u64 = 370;
+    const EChannelRecordDoesNotExist: u64 = 370;
+    const EChannelRecordExists: u64 = 371;
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelRegistry has store {
-        registry: ImmutableTable<String, Channel>,
-        reverse_registry: ImmutableTable<Channel, String>
+    public struct ChannelRegistry has key, store {
+        id: UID,
+        registry: ImmutableTable<String, Channel>
     }
+
+    public struct CHANNEL_REGISTRY has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
 
+    fun init(
+        otw: CHANNEL_REGISTRY,
+        ctx: &mut TxContext
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let channel_registry = ChannelRegistry {
+            id: object::new(ctx),
+            registry: immutable_table::new(ctx)
+        };
+
+        transfer::share_object(channel_registry);
+    }
+
     // --------------- Public Functions ---------------
 
     public fun borrow_channel(
-        channel_registry: &mut ChannelRegistry,
+        channel_registry: &ChannelRegistry,
         channel_key: String
     ): Channel {
         *channel_registry.registry.borrow(channel_key)
-    }
-
-    public fun borrow_channel_key(
-        channel_registry: &mut ChannelRegistry,
-        channel: Channel
-    ): String {
-        *channel_registry.reverse_registry.borrow(channel)
-    }
-
-    public fun create_channel_registry(
-        _: &AdminCap,
-        ctx: &mut TxContext
-    ): ChannelRegistry {
-        ChannelRegistry {
-            registry: immutable_table::new(ctx),
-            reverse_registry: immutable_table::new(ctx)
-        }
     }
 
     public fun has_record(
@@ -65,19 +65,26 @@ module sage_channel::channel_registry {
 
     public(package) fun add(
         channel_registry: &mut ChannelRegistry,
-        name: String,
+        channel_key: String,
         channel: Channel
     ) {
-        let record_exists = channel_registry.has_record(name);
+        let record_exists = channel_registry.has_record(channel_key);
 
         assert!(!record_exists, EChannelRecordExists);
 
-        let lowercase_name = string_helpers::to_lowercase(
-            &name
-        );
+        channel_registry.registry.add(channel_key, channel);
+    }
 
-        channel_registry.registry.add(lowercase_name, channel);
-        channel_registry.reverse_registry.add(channel, lowercase_name);
+    public(package) fun replace(
+        channel_registry: &mut ChannelRegistry,
+        channel_key: String,
+        channel: Channel
+    ) {
+        let record_exists = channel_registry.has_record(channel_key);
+
+        assert!(record_exists, EChannelRecordDoesNotExist);
+
+        channel_registry.registry.replace(channel_key, channel);
     }
 
     // --------------- Internal Functions ---------------
@@ -85,15 +92,7 @@ module sage_channel::channel_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        channel_registry: ChannelRegistry
-    ) {
-        let ChannelRegistry {
-            registry,
-            reverse_registry
-        } = channel_registry;
-
-        registry.destroy_for_testing();
-        reverse_registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(CHANNEL_REGISTRY {}, ctx);
     }
 }

@@ -2,11 +2,10 @@ module sage_channel::channel_membership {
     use std::string::{String};
 
     use sui::event;
-    use sui::{table::{Self, Table}};
-
-    use sage_admin::{admin::{AdminCap}};
-    
-    use sage_channel::{channel::{Channel}};
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
     // --------------- Constants ---------------
 
@@ -31,43 +30,59 @@ module sage_channel::channel_membership {
         membership: Table<address, ChannelMember>
     }
 
-    public struct ChannelMembershipRegistry has store {
-        registry: Table<Channel, ChannelMembership>
+    public struct ChannelMembershipRegistry has key, store {
+        id: UID,
+        registry: Table<String, ChannelMembership>
     }
     
+    public struct CHANNEL_MEMBERSHIP has drop {}
 
     // --------------- Events ---------------
 
     public struct ChannelMembershipUpdate has copy, drop {
-        channel_name: String,
+        channel_key: String,
         message: u8,
         user: address
     }
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun create_channel_membership_registry(
-        _: &AdminCap,
+    fun init(
+        otw: CHANNEL_MEMBERSHIP,
         ctx: &mut TxContext
-    ): ChannelMembershipRegistry {
-        ChannelMembershipRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let channel_membership_registry = ChannelMembershipRegistry {
+            id: object::new(ctx),
             registry: table::new(ctx)
-        }
+        };
+
+        transfer::share_object(channel_membership_registry);
     }
 
-    public fun borrow_membership_mut(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel
-    ): &mut ChannelMembership {
-        &mut channel_membership_registry.registry[channel]
-    }
+    // --------------- Public Functions ---------------
 
     public fun get_member_length(
         channel_membership: &ChannelMembership
     ): u64 {
         channel_membership.membership.length()
+    }
+
+    public fun is_channel_member(
+        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel_key: String,
+        user: address
+    ): bool {
+        let channel_membership = borrow_membership_mut(
+            channel_membership_registry,
+            channel_key
+        );
+
+        is_member(
+            channel_membership,
+            user
+        )
     }
 
     public fun is_member(
@@ -79,9 +94,16 @@ module sage_channel::channel_membership {
 
     // --------------- Friend Functions ---------------
 
+    public(package) fun borrow_membership_mut(
+        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel_key: String
+    ): &mut ChannelMembership {
+        &mut channel_membership_registry.registry[channel_key]
+    }
+
     public(package) fun create(
         channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel: Channel,
+        channel_key: String,
         ctx: &mut TxContext
     ) {
         let mut channel_membership = ChannelMembership {
@@ -96,12 +118,12 @@ module sage_channel::channel_membership {
             user
         );
 
-        channel_membership_registry.registry.add(channel, channel_membership);
+        channel_membership_registry.registry.add(channel_key, channel_membership);
     }
 
     public(package) fun join(
         channel_membership: &mut ChannelMembership,
-        channel_name: String,
+        channel_key: String,
         ctx: &TxContext
     ) {
         let user = tx_context::sender(ctx);
@@ -112,7 +134,7 @@ module sage_channel::channel_membership {
         );
 
         event::emit(ChannelMembershipUpdate {
-            channel_name,
+            channel_key,
             message: CHANNEL_JOIN,
             user
         });
@@ -120,7 +142,7 @@ module sage_channel::channel_membership {
 
     public(package) fun leave(
         channel_membership: &mut ChannelMembership,
-        channel_name: String,
+        channel_key: String,
         ctx: &TxContext
     ) {
         let user = tx_context::sender(ctx);
@@ -135,7 +157,7 @@ module sage_channel::channel_membership {
         channel_membership.membership.remove(user);
 
         event::emit(ChannelMembershipUpdate {
-            channel_name,
+            channel_key,
             message: CHANNEL_LEAVE,
             user
         });
@@ -164,14 +186,7 @@ module sage_channel::channel_membership {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        channel_membership_registry: ChannelMembershipRegistry
-    ) {
-        let ChannelMembershipRegistry {
-            registry
-        } = channel_membership_registry;
-
-        registry.destroy_empty();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(CHANNEL_MEMBERSHIP {}, ctx);
     }
-
 }

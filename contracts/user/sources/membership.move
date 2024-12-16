@@ -1,10 +1,9 @@
 module sage_user::user_membership {
-    use sui::event;
-    use sui::{table::{Self, Table}};
-
-    use sage_admin::{admin::{AdminCap}};
-    
-    use sage_user::{user::{User}};
+    use sui::{
+        event,
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
     // --------------- Constants ---------------
 
@@ -29,10 +28,12 @@ module sage_user::user_membership {
         membership: Table<address, UserMember>
     }
 
-    public struct UserMembershipRegistry has store {
-        registry: Table<User, UserMembership>
+    public struct UserMembershipRegistry has key, store {
+        id: UID,
+        registry: Table<address, UserMembership>
     }
     
+    public struct USER_MEMBERSHIP has drop {}
 
     // --------------- Events ---------------
 
@@ -44,23 +45,21 @@ module sage_user::user_membership {
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun create_user_membership_registry(
-        _: &AdminCap,
+    fun init(
+        otw: USER_MEMBERSHIP,
         ctx: &mut TxContext
-    ): UserMembershipRegistry {
-        UserMembershipRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let user_membership_registry = UserMembershipRegistry {
+            id: object::new(ctx),
             registry: table::new(ctx)
-        }
+        };
+
+        transfer::share_object(user_membership_registry);
     }
 
-    public fun borrow_membership_mut(
-        user_membership_registry: &mut UserMembershipRegistry,
-        user: User
-    ): &mut UserMembership {
-        &mut user_membership_registry.registry[user]
-    }
+    // --------------- Public Functions ---------------
 
     public fun get_member_length(
         user_membership: &UserMembership
@@ -77,25 +76,30 @@ module sage_user::user_membership {
 
     // --------------- Friend Functions ---------------
 
+    public(package) fun borrow_membership_mut(
+        user_membership_registry: &mut UserMembershipRegistry,
+        user_address: address
+    ): &mut UserMembership {
+        &mut user_membership_registry.registry[user_address]
+    }
+
     public(package) fun create(
         user_membership_registry: &mut UserMembershipRegistry,
-        user: User,
+        user_address: address,
         ctx: &mut TxContext
     ) {
         let user_membership = UserMembership {
             membership: table::new(ctx)
         };
 
-        user_membership_registry.registry.add(user, user_membership);
+        user_membership_registry.registry.add(user_address, user_membership);
     }
 
     public(package) fun join(
         user_membership: &mut UserMembership,
         followed_user: address,
-        ctx: &TxContext
+        self: address
     ) {
-        let self = tx_context::sender(ctx);
-
         join_user(
             user_membership,
             self
@@ -111,10 +115,8 @@ module sage_user::user_membership {
     public(package) fun leave(
         user_membership: &mut UserMembership,
         followed_user: address,
-        ctx: &TxContext
+        self: address
     ) {
-        let self = tx_context::sender(ctx);
-
         let is_member = is_member(
             user_membership,
             self
@@ -154,14 +156,7 @@ module sage_user::user_membership {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        user_membership_registry: UserMembershipRegistry
-    ) {
-        let UserMembershipRegistry {
-            registry
-        } = user_membership_registry;
-
-        registry.destroy_empty();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(USER_MEMBERSHIP {}, ctx);
     }
-
 }

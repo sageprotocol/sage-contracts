@@ -1,7 +1,7 @@
 module sage_post::post_comments {
     use std::string::{String};
 
-    use sage_admin::{admin::{AdminCap}};
+    use sui::package::{claim_and_keep};
 
     use sage_immutable::{
         immutable_table::{Self, ImmutableTable},
@@ -16,31 +16,32 @@ module sage_post::post_comments {
 
     // --------------- Name Tag ---------------
 
-    public struct PostCommentsRegistry has store {
+    public struct PostCommentsRegistry has key, store {
+        id: UID,
         registry: ImmutableTable<String, ImmutableVector<String>>
     }
+
+    public struct POST_COMMENTS has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
 
-    // --------------- Public Functions ---------------
-
-    public fun borrow_post_comment_keys(
-        post_comments_registry: &mut PostCommentsRegistry,
-        post_key: String
-    ): &mut ImmutableVector<String> {
-        post_comments_registry.registry.borrow_mut(post_key)
-    }
-
-    public fun create_post_comments_registry(
-        _: &AdminCap,
+    fun init(
+        otw: POST_COMMENTS,
         ctx: &mut TxContext
-    ): PostCommentsRegistry {
-        PostCommentsRegistry {
+    ) {
+        claim_and_keep(otw, ctx);
+
+        let post_comments_registry = PostCommentsRegistry {
+            id: object::new(ctx),
             registry: immutable_table::new(ctx)
-        }
+        };
+
+        transfer::share_object(post_comments_registry);
     }
+
+    // --------------- Public Functions ---------------
 
     public fun has_post(
         post_comments_registry: &mut PostCommentsRegistry,
@@ -80,12 +81,19 @@ module sage_post::post_comments {
             );
         };
 
-        let parent_post_comment_keys = borrow_post_comment_keys(
+        let parent_post_comment_keys = borrow_post_comment_keys_mut(
             post_comments_registry,
             parent_post_key
         );
 
         parent_post_comment_keys.push_back(post_key);
+    }
+
+    public(package) fun borrow_post_comment_keys_mut(
+        post_comments_registry: &mut PostCommentsRegistry,
+        post_key: String
+    ): &mut ImmutableVector<String> {
+        post_comments_registry.registry.borrow_mut(post_key)
     }
 
     // --------------- Internal Functions ---------------
@@ -109,13 +117,7 @@ module sage_post::post_comments {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    public fun destroy_for_testing(
-        post_comments_registry: PostCommentsRegistry
-    ) {
-        let PostCommentsRegistry {
-            registry
-        } = post_comments_registry;
-
-        registry.destroy_for_testing();
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(POST_COMMENTS {}, ctx);
     }
 }

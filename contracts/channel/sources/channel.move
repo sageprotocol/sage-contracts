@@ -12,9 +12,12 @@ module sage_channel::channel {
     const CHANNEL_NAME_MIN_LENGTH: u64 = 3;
     const CHANNEL_NAME_MAX_LENGTH: u64 = 20;
 
+    const DESCRIPTION_MAX_LENGTH: u64 = 370;
+
     // --------------- Errors ---------------
 
-    const EInvalidChannelName: u64 = 370;
+    const EInvalidChannelDescription: u64 = 370;
+    const EInvalidChannelName: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -24,7 +27,8 @@ module sage_channel::channel {
         created_at: u64,
         created_by: address,
         description: String,
-        name: String
+        name: String,
+        updated_at: u64
     }
 
     // --------------- Events ---------------
@@ -32,25 +36,20 @@ module sage_channel::channel {
     public struct ChannelCreated has copy, drop {
         avatar_hash: String,
         banner_hash: String,
+        channel_key: String,
         channel_name: String,
         created_at: u64,
         created_by: address,
-        description: String
+        description: String,
     }
 
-    public struct ChannelAvatarUpdated has copy, drop {
+    public struct ChannelUpdated has copy, drop {
+        avatar_hash: String,
+        banner_hash: String,
+        channel_key: String,
         channel_name: String,
-        hash: String
-    }
-
-    public struct ChannelBannerUpdated has copy, drop {
-        channel_name: String,
-        hash: String
-    }
-
-    public struct ChannelDescriptionUpdated has copy, drop {
-        channel_name: String,
-        description: String
+        description: String,
+        updated_at: u64
     }
 
     // --------------- Constructor ---------------
@@ -79,6 +78,17 @@ module sage_channel::channel {
         banner_hash
     }
 
+    public fun get_created_by(
+        channel: Channel
+    ): address {
+        let Channel {
+            created_by,
+            ..
+        } = channel;
+
+        created_by
+    }
+
     public fun get_description(
         channel: Channel
     ): String {
@@ -90,9 +100,21 @@ module sage_channel::channel {
         description
     }
 
+    public fun get_name(
+        channel: Channel
+    ): String {
+        let Channel {
+            name,
+            ..
+        } = channel;
+
+        name
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
+        channel_key: String,
         channel_name: String,
         avatar_hash: String,
         banner_hash: String,
@@ -108,18 +130,24 @@ module sage_channel::channel {
 
         assert!(is_valid_name, EInvalidChannelName);
 
+        let is_valid_description = is_valid_description(&description);
+
+        assert!(is_valid_description, EInvalidChannelDescription);
+
         let channel = Channel {
             avatar_hash,
             banner_hash,
             created_at,
             created_by,
             description,
-            name: channel_name
+            name: channel_name,
+            updated_at: created_at
         };
 
         event::emit(ChannelCreated {
             avatar_hash,
             banner_hash,
+            channel_key,
             channel_name,
             created_at,
             created_by,
@@ -129,51 +157,59 @@ module sage_channel::channel {
         channel
     }
 
-    public(package) fun update_avatar (
-        channel_name: String,
+    public(package) fun update (
         channel: &mut Channel,
-        hash: String
-    ) {
-        channel.avatar_hash = hash;
-
-        event::emit(ChannelAvatarUpdated {
-            channel_name,
-            hash
-        });
-    }
-
-    public(package) fun update_banner (
+        channel_key: String,
         channel_name: String,
-        channel: &mut Channel,
-        hash: String
-    ) {
-        channel.banner_hash = hash;
-
-        event::emit(ChannelBannerUpdated {
-            channel_name,
-            hash
-        });
-    }
-
-    public(package) fun update_description (
-        channel_name: String,
-        channel: &mut Channel,
-        description: String
-    ) {
+        avatar_hash: String,
+        banner_hash: String,
+        description: String,
+        updated_at: u64
+    ): Channel {
+        channel.avatar_hash = avatar_hash;
+        channel.banner_hash = banner_hash;
         channel.description = description;
+        channel.name = channel_name;
+        channel.updated_at = updated_at;
 
-        event::emit(ChannelDescriptionUpdated {
-            channel_name,
-            description
+        let Channel {
+            banner_hash,
+            description,
+            name,
+            ..
+        } = channel;
+
+        event::emit(ChannelUpdated {
+            avatar_hash,
+            banner_hash: *banner_hash,
+            channel_key,
+            channel_name: *name,
+            description: *description,
+            updated_at
         });
+
+        *channel
     }
 
     // --------------- Internal Functions ---------------
+
+    fun is_valid_description(
+        description: &String
+    ): bool {
+        let len = description.length();
+
+        if (len > DESCRIPTION_MAX_LENGTH) {
+            return false
+        };
+
+        true
+    }
 
     // --------------- Test Functions ---------------
 
     #[test_only]
     public fun create_for_testing(
+        channel_key: String,
         channel_name: String,
         avatar_hash: String,
         banner_hash: String,
@@ -182,6 +218,7 @@ module sage_channel::channel {
         created_by: address
     ): Channel {
         create(
+            channel_key,
             channel_name,
             avatar_hash,
             banner_hash,
@@ -189,5 +226,12 @@ module sage_channel::channel {
             created_at,
             created_by
         )
+    }
+
+    #[test_only]
+    public fun is_valid_description_for_testing(
+        name: &String
+    ): bool {
+        is_valid_description(name)
     }
 }

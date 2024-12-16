@@ -2,17 +2,23 @@
 module sage_user::test_user_actions {
     use std::string::{utf8};
 
-    use sui::clock::{Self, Clock};
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::test_utils::{destroy};
-    use sui::{table::{ETableNotEmpty}};
+    use sui::{
+        clock::{Self, Clock},
+        coin::{mint_for_testing},
+        sui::{SUI},
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
     use sage_admin::{
-        admin::{Self, AdminCap, InviteCap}
+        admin::{Self, AdminCap, InviteCap},
+        apps::{Self, App}
     };
 
     use sage_user::{
-        user_actions::{Self, EInviteNotAllowed},
+        user::{Self, User},
+        user_actions::{Self, EInviteNotAllowed, EUserNameMismatch},
+        user_fees::{Self, UserFees},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_membership::{Self, UserMembershipRegistry},
         user_registry::{Self, UserRegistry},
@@ -24,85 +30,138 @@ module sage_user::test_user_actions {
     const OTHER: address = @0xbabe;
     const SERVER: address = @server;
 
+    const CREATE_INVITE_CUSTOM_FEE: u64 = 1;
+    const CREATE_INVITE_SUI_FEE: u64 = 2;
+    const CREATE_USER_CUSTOM_FEE: u64 = 3;
+    const CREATE_USER_SUI_FEE: u64 = 4;
+    const JOIN_USER_CUSTOM_FEE: u64 = 5;
+    const JOIN_USER_SUI_FEE: u64 = 6;
+    const LEAVE_USER_CUSTOM_FEE: u64 = 7;
+    const LEAVE_USER_SUI_FEE: u64 = 8;
+    const UPDATE_USER_CUSTOM_FEE: u64 = 9;
+    const UPDATE_USER_SUI_FEE: u64 = 10;
+
     // --------------- Errors ---------------
 
     const EHasMember: u64 = 370;
     const EHashMismatch: u64 = 371;
     const ENoInviteRecord: u64 = 372;
-    const EUserInviteMismatch: u64 = 373;
-    const EUserMembershipCountMismatch: u64 = 374;
-    const EUserNotMember: u64 = 375;
+    const EUserAvatarMismatch: u64 = 373;
+    const EUserBannerMismatch: u64 = 374;
+    const EUserDescriptionMismatch: u64 = 375;
+    const EUserInviteMismatch: u64 = 376;
+    const EUserMembershipCountMismatch: u64 = 377;
+    const ETestUserNameMismatch: u64 = 378;
+    const EUserNotMember: u64 = 379;
 
     // --------------- Test Functions ---------------
 
     #[test_only]
     fun destroy_for_testing(
+        app: App,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry,
         user_membership_registry: UserMembershipRegistry,
-        invite_config: InviteConfig
+        invite_config: InviteConfig,
+        user_fees: UserFees
     ) {
-        user_registry::destroy_for_testing(user_registry);
-        user_invite::destroy_for_testing(user_invite_registry);
-        user_membership::destroy_for_testing(user_membership_registry);
-
+        destroy(app);
         destroy(invite_config);
+        destroy(user_registry);
+        destroy(user_invite_registry);
+        destroy(user_membership_registry);
+        destroy(user_fees);
     }
 
     #[test_only]
     fun setup_for_testing(): (
         Scenario,
+        App,
         UserRegistry,
         UserInviteRegistry,
         UserMembershipRegistry,
-        InviteConfig
+        InviteConfig,
+        UserFees
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            apps::init_for_testing(ts::ctx(scenario));
+            user_invite::init_for_testing(ts::ctx(scenario));
+            user_membership::init_for_testing(ts::ctx(scenario));
+            user_registry::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let (
+            app,
             user_registry,
             user_invite_registry,
             user_membership_registry,
-            invite_config
+            invite_config,
+            user_fees
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let invite_config = user_invite::create_invite_config(&admin_cap);
+            let invite_config = scenario.take_shared<InviteConfig>();
+            let user_registry = scenario.take_shared<UserRegistry>();
+            let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
+            let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
 
-            let user_registry = user_registry::create_user_registry(
-                &admin_cap,
+            let mut app = apps::create_for_testing(
+                utf8(b"sage"),
                 ts::ctx(scenario)
             );
-            let user_invite_registry = user_invite::create_invite_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-            let user_membership_registry = user_membership::create_user_membership_registry(
-                &admin_cap,
+
+            let user_fees = user_fees::create_for_testing<SUI>(
+                &mut app,
+                CREATE_INVITE_CUSTOM_FEE,
+                CREATE_INVITE_SUI_FEE,
+                CREATE_USER_CUSTOM_FEE,
+                CREATE_USER_SUI_FEE,
+                JOIN_USER_CUSTOM_FEE,
+                JOIN_USER_SUI_FEE,
+                LEAVE_USER_CUSTOM_FEE,
+                LEAVE_USER_SUI_FEE,
+                UPDATE_USER_CUSTOM_FEE,
+                UPDATE_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
             ts::return_to_sender(scenario, admin_cap);
 
-            (user_registry, user_invite_registry, user_membership_registry, invite_config)
+            (
+                app,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                invite_config,
+                user_fees
+            )
         };
 
-        (scenario_val, user_registry, user_invite_registry, user_membership_registry, invite_config)
+        (
+            scenario_val,
+            app,
+            user_registry,
+            user_invite_registry,
+            user_membership_registry,
+            invite_config,
+            user_fees
+        )
     }
 
     #[test]
     fun test_user_actions_init() {
         let (
             mut scenario_val,
+            app,
             user_registry_val,
             user_invite_registry_val,
             user_membership_registry_val,
-            invite_config
+            invite_config,
+            user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -110,10 +169,12 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             destroy_for_testing(
+                app,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
-                invite_config
+                invite_config,
+                user_fees
             );
         };
 
@@ -121,14 +182,15 @@ module sage_user::test_user_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_actions_create() {
         let (
             mut scenario_val,
+            app,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
-            invite_config
+            invite_config,
+            user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -152,13 +214,23 @@ module sage_user::test_user_actions {
         {
             let clock: Clock = ts::take_shared(scenario);
 
-            let name = utf8(b"user-name");    
+            let name = utf8(b"user-name");
 
-            let _user = user_actions::create(
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create(
                 &clock,
                 user_registry,
                 user_invite_registry,
                 user_membership_registry,
+                &user_fees,
                 &invite_config,
                 invite_code,
                 invite_key,
@@ -166,6 +238,8 @@ module sage_user::test_user_actions {
                 utf8(b"banner_hash"),
                 utf8(b"description"),
                 name,
+                custom_payment,
+                sui_payment,
                 ts::ctx(scenario)
             );
 
@@ -186,10 +260,12 @@ module sage_user::test_user_actions {
             ts::return_shared(clock);
 
             destroy_for_testing(
+                app,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
-                invite_config
+                invite_config,
+                user_fees
             );
         };
 
@@ -197,14 +273,15 @@ module sage_user::test_user_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_actions_join() {
         let (
             mut scenario_val,
+            app,
             mut user_registry_val,
             mut user_invite_registry_val,
             mut user_membership_registry_val,
-            invite_config
+            invite_config,
+            user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -222,11 +299,21 @@ module sage_user::test_user_actions {
         let (other_user, user_registry, user_membership_registry) = {
             let mut clock = clock::create_for_testing(ts::ctx(scenario));
 
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
             let other_user = user_actions::create(
                 &clock,
                 user_registry,
                 user_invite_registry,
                 user_membership_registry,
+                &user_fees,
                 &invite_config,
                 invite_code,
                 invite_key,
@@ -234,6 +321,8 @@ module sage_user::test_user_actions {
                 utf8(b"banner_hash"),
                 utf8(b"description"),
                 other_name,
+                custom_payment,
+                sui_payment,
                 ts::ctx(scenario)
             );
 
@@ -247,13 +336,23 @@ module sage_user::test_user_actions {
         {
             let clock: Clock = ts::take_shared(scenario);
 
-            let name = utf8(b"user-name");    
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            ); 
 
             let _user = user_actions::create(
                 &clock,
                 user_registry,
                 user_invite_registry,
                 user_membership_registry,
+                &user_fees,
                 &invite_config,
                 invite_code,
                 invite_key,
@@ -261,13 +360,27 @@ module sage_user::test_user_actions {
                 utf8(b"banner_hash"),
                 utf8(b"description"),
                 name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let custom_payment = mint_for_testing<SUI>(
+                JOIN_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                JOIN_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
             user_actions::join(
                 user_registry,
                 user_membership_registry,
+                &user_fees,
                 other_name,
+                custom_payment,
+                sui_payment,
                 ts::ctx(scenario)
             );
 
@@ -292,11 +405,13 @@ module sage_user::test_user_actions {
             ts::return_shared(clock);
 
             destroy_for_testing(
+                app,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
                 invite_config
-            );
+          ,
+          user_fees  );
         };
 
         ts::end(scenario_val);
@@ -306,10 +421,12 @@ module sage_user::test_user_actions {
     fun test_user_invite_create() {
         let (
             mut scenario_val,
+            app,
             user_registry_val,
             mut user_invite_registry_val,
             user_membership_registry_val,
-            invite_config
+            invite_config,
+            user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -322,12 +439,24 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_INVITE_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_INVITE_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
             user_actions::create_invite(
                 user_invite_registry,
                 &invite_config,
+                &user_fees,
                 invite_code,
                 invite_hash,
                 invite_key,
+                custom_payment,
+                sui_payment,
                 ts::ctx(scenario)
             );
 
@@ -350,11 +479,13 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             destroy_for_testing(
+                app,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
                 invite_config
-            );
+          ,
+          user_fees  );
         };
 
         ts::end(scenario_val);
@@ -365,10 +496,12 @@ module sage_user::test_user_actions {
     fun test_user_invite_create_fail() {
         let (
             mut scenario_val,
+            app,
             user_registry_val,
             mut user_invite_registry_val,
             user_membership_registry_val,
-            mut invite_config
+            mut invite_config,
+            user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -394,12 +527,24 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_INVITE_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_INVITE_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
             user_actions::create_invite(
                 user_invite_registry,
                 &invite_config,
+                &user_fees,
                 invite_code,
                 invite_hash,
                 invite_key,
+                custom_payment,
+                sui_payment,
                 ts::ctx(scenario)
             );
         };
@@ -407,11 +552,13 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             destroy_for_testing(
+                app,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
                 invite_config
-            );
+          ,
+          user_fees  );
         };
 
         ts::end(scenario_val);
@@ -421,10 +568,12 @@ module sage_user::test_user_actions {
     fun test_user_invite_create_admin() {
         let (
             mut scenario_val,
+            app,
             user_registry_val,
             mut user_invite_registry_val,
             user_membership_registry_val,
-            invite_config
+            invite_config,
+            user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -467,11 +616,341 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             destroy_for_testing(
+                app,
                 user_registry_val,
                 user_invite_registry_val,
                 user_membership_registry_val,
                 invite_config
+          ,
+          user_fees  );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_update() {
+        let (
+            mut scenario_val,
+            app,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
             );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let clock = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let avatar_hash = utf8(b"avatar_hash");
+            let banner_hash = utf8(b"banner_hash");
+            let description = utf8(b"description");
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &user_fees,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                avatar_hash,
+                banner_hash,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            clock
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            new_avatar_hash,
+            new_banner_hash,
+            new_description,
+            new_name
+        ) = {
+            let new_avatar_hash = utf8(b"avatar_hash");
+            let new_banner_hash = utf8(b"banner_hash");
+            let new_description = utf8(b"description");
+            let new_name = utf8(b"USER-name");
+
+            let user = ts::take_from_sender<User>(
+                scenario
+            );
+
+            let custom_payment = mint_for_testing<SUI>(
+                UPDATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UPDATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::update(
+                &clock,
+                user_registry,
+                &user_fees,
+                user,
+                new_avatar_hash,
+                new_banner_hash,
+                new_description,
+                new_name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            (
+                new_avatar_hash,
+                new_banner_hash,
+                new_description,
+                new_name
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user = ts::take_from_sender<User>(
+                scenario
+            );
+
+            let user_request = user::create_user_request(user);
+
+            let (retrieved_avatar, user_request) = user::get_avatar(
+                user_request
+            );
+            let (retrieved_banner, user_request) = user::get_banner(
+                user_request
+            );
+            let (retrieved_description, user_request) = user::get_description(
+                user_request
+            );
+            let (retrieved_name, user_request) = user::get_name(
+                user_request
+            );
+
+            assert!(retrieved_avatar == new_avatar_hash, EUserAvatarMismatch);
+            assert!(retrieved_banner == new_banner_hash, EUserBannerMismatch);
+            assert!(retrieved_description == new_description, EUserDescriptionMismatch);
+            assert!(retrieved_name == new_name, ETestUserNameMismatch);
+
+            user::destroy_user_request(user_request, ADMIN);
+
+            ts::return_shared(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                app,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+          ,
+          user_fees  );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUserNameMismatch)]
+    fun test_user_actions_update_name_self_mismatch() {
+        let (
+            mut scenario_val,
+            app,
+            mut user_registry_val,
+            mut user_invite_registry_val,
+            mut user_membership_registry_val,
+            mut invite_config,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &mut user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                false
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let clock = {
+            let clock: Clock = ts::take_shared(scenario);
+
+            let avatar_hash = utf8(b"avatar_hash");
+            let banner_hash = utf8(b"banner_hash");
+            let description = utf8(b"description");
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &user_fees,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                avatar_hash,
+                banner_hash,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            clock
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let new_avatar_hash = utf8(b"avatar_hash");
+            let new_banner_hash = utf8(b"banner_hash");
+            let new_description = utf8(b"description");
+            let new_name = utf8(b"new-name");
+
+            let user = ts::take_from_sender<User>(
+                scenario
+            );
+
+            let custom_payment = mint_for_testing<SUI>(
+                UPDATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UPDATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::update(
+                &clock,
+                user_registry,
+                &user_fees,
+                user,
+                new_avatar_hash,
+                new_banner_hash,
+                new_description,
+                new_name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let user = ts::take_from_sender<User>(
+                scenario
+            );
+
+            let user_request = user::create_user_request(user);
+
+            let (retrieved_avatar, user_request) = user::get_avatar(
+                user_request
+            );
+            let (retrieved_banner, user_request) = user::get_banner(
+                user_request
+            );
+            let (retrieved_description, user_request) = user::get_description(
+                user_request
+            );
+            let (retrieved_name, user_request) = user::get_name(
+                user_request
+            );
+
+            assert!(retrieved_avatar == new_avatar_hash, EUserAvatarMismatch);
+            assert!(retrieved_banner == new_banner_hash, EUserBannerMismatch);
+            assert!(retrieved_description == new_description, EUserDescriptionMismatch);
+            assert!(retrieved_name == new_name, ETestUserNameMismatch);
+
+            user::destroy_user_request(user_request, ADMIN);
+
+            ts::return_shared(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                app,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+          ,
+          user_fees  );
         };
 
         ts::end(scenario_val);

@@ -2,10 +2,12 @@
 module sage_user::test_user_membership {
     use std::string::{utf8};
 
-    use sui::{table::{ETableNotEmpty}};
-    use sui::test_scenario::{Self as ts, Scenario};
+    use sui::{
+        test_scenario::{Self as ts, Scenario},
+        test_utils::{destroy}
+    };
 
-    use sage_admin::{admin::{Self, AdminCap}};
+    use sage_admin::{admin::{Self}};
 
     use sage_user::{
         user::{Self},
@@ -30,18 +32,12 @@ module sage_user::test_user_membership {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            user_membership::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         let user_membership_registry = {
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-
-            let user_membership_registry = user_membership::create_user_membership_registry(
-                &admin_cap,
-                ts::ctx(scenario)
-            );
-
-            ts::return_to_sender(scenario, admin_cap);
+            let user_membership_registry = scenario.take_shared<UserMembershipRegistry>();
 
             user_membership_registry
         };
@@ -60,14 +56,13 @@ module sage_user::test_user_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_membership_create() {
         let (
             mut scenario_val,
@@ -81,25 +76,30 @@ module sage_user::test_user_membership {
             let user_membership_registry = &mut user_membership_registry_val;
 
             let created_at: u64 = 999;
+            let invited_by = option::none<address>();
+            let name = utf8(b"user-name");
 
-            let user = user::create(
-                ADMIN,
+            let user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                utf8(b"user-name")
+                invited_by,
+                ADMIN,
+                name,
+                name,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user,
+                user_address,
                 ts::ctx(scenario)
             );
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                user
+                user_address
             );
 
             let user_member_count = user_membership::get_member_length(
@@ -115,14 +115,13 @@ module sage_user::test_user_membership {
 
             assert!(!is_member, EUserNotMember);
 
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = ETableNotEmpty)]
     fun test_user_join() {
         let (
             mut scenario_val,
@@ -134,57 +133,65 @@ module sage_user::test_user_membership {
         let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, OTHER);
-        let other_user = {
+        let other_user_address = {
             let other_username = utf8(b"other-name");
             let created_at: u64 = 999;
+            let invited_by = option::none<address>();
 
-            let other_user = user::create(
-                ADMIN,
+            let other_user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                other_username
+                invited_by,
+                OTHER,
+                other_username,
+                other_username,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                other_user,
+                other_user_address,
                 ts::ctx(scenario)
             );
 
-            other_user
+            other_user_address
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
+            let invited_by = option::none<address>();
 
-            let user = user::create(
-                ADMIN,
+            let user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                username
+                invited_by,
+                ADMIN,
+                username,
+                username,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user,
+                user_address,
                 ts::ctx(scenario)
             );
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                other_user
+                other_user_address
             );
 
             user_membership::join(
                 user_membership,
-                ADMIN,
-                ts::ctx(scenario)
+                OTHER,
+                ADMIN
             );
 
             let is_member = user_membership::is_member(
@@ -200,7 +207,7 @@ module sage_user::test_user_membership {
 
             assert!(member_length == 1, EUserMembershipCountMismatch);
 
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
@@ -222,31 +229,35 @@ module sage_user::test_user_membership {
 
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
+            let invited_by = option::none<address>();
 
-            let user = user::create(
-                ADMIN,
+            let user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                username
+                invited_by,
+                ADMIN,
+                username,
+                username,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user,
+                user_address,
                 ts::ctx(scenario)
             );
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                user
+                user_address
             );
 
             user_membership::leave(
                 user_membership,
                 ADMIN,
-                ts::ctx(scenario)
+                ADMIN
             );
 
             let user_member_count_leave = user_membership::get_member_length(
@@ -258,7 +269,7 @@ module sage_user::test_user_membership {
             user_membership::join(
                 user_membership,
                 ADMIN,
-                ts::ctx(scenario)
+                ADMIN
             );
 
             let user_member_count_join = user_membership::get_member_length(
@@ -267,7 +278,7 @@ module sage_user::test_user_membership {
 
             assert!(user_member_count_join == 1, EUserMembershipCountMismatch);
 
-            user_membership::destroy_for_testing(user_membership_registry_val);
+            destroy(user_membership_registry_val);
         };
 
         ts::end(scenario_val);
