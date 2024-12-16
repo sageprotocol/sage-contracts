@@ -4,8 +4,8 @@ module sage_post::post_comments {
     use sui::package::{claim_and_keep};
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable},
-        immutable_vector::{Self, ImmutableVector}
+        immutable_table::{Self, Table},
+        immutable_vector::{Self, Vector}
     };
 
     // --------------- Constants ---------------
@@ -18,7 +18,7 @@ module sage_post::post_comments {
 
     public struct PostCommentsRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<String, ImmutableVector<String>>
+        registry: Table<String, Vector<String>>
     }
 
     public struct POST_COMMENTS has drop {}
@@ -92,7 +92,7 @@ module sage_post::post_comments {
     public(package) fun borrow_post_comment_keys_mut(
         post_comments_registry: &mut PostCommentsRegistry,
         post_key: String
-    ): &mut ImmutableVector<String> {
+    ): &mut Vector<String> {
         post_comments_registry.registry.borrow_mut(post_key)
     }
 

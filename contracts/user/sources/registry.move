@@ -6,7 +6,7 @@ module sage_user::user_registry {
     };
     
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable}
+        immutable_table::{Self, Table}
     };
 
     use sage_utils::{
@@ -26,10 +26,10 @@ module sage_user::user_registry {
     // user: user key <-> user object
     public struct UserRegistry has key, store {
         id: UID,
-        address_registry: ImmutableTable<address, String>,
-        address_reverse_registry: ImmutableTable<String, address>,
-        user_registry: ImmutableTable<String, address>,
-        user_reverse_registry: ImmutableTable<address, String>
+        address_registry: Table<address, String>,
+        address_reverse_registry: Table<String, address>,
+        user_registry: Table<String, address>,
+        user_reverse_registry: Table<address, String>
     }
 
     public struct USER_REGISTRY has drop {}

@@ -8,7 +8,7 @@ module sage_channel::channel_registry {
     };
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable}
+        immutable_table::{Self, Table}
     };
 
     // --------------- Constants ---------------
@@ -22,7 +22,7 @@ module sage_channel::channel_registry {
 
     public struct ChannelRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<String, Channel>
+        registry: Table<String, Channel>
     }
 
     public struct CHANNEL_REGISTRY has drop {}

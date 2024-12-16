@@ -7,8 +7,8 @@ module sage_post::post_likes {
     };
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable},
-        immutable_vector::{Self, ImmutableVector}
+        immutable_table::{Self, Table},
+        immutable_vector::{Self, Vector}
     };
 
     // --------------- Constants ---------------
@@ -21,20 +21,20 @@ module sage_post::post_likes {
 
     public struct PostLikesRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<String, PostLikes>
+        registry: Table<String, PostLikes>
     }
 
     public struct PostLikes has store {
-        likes: ImmutableVector<address>
+        likes: Vector<address>
     }
 
     public struct UserPostLikesRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<address, UserPostLikes>
+        registry: Table<address, UserPostLikes>
     }
 
     public struct UserPostLikes has store {
-        likes: ImmutableVector<String>
+        likes: Vector<String>
     }
 
     public struct POST_LIKES has drop {}

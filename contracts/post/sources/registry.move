@@ -8,7 +8,7 @@ module sage_post::post_registry {
     };
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable}
+        immutable_table::{Self, Table}
     };
 
     // --------------- Constants ---------------
@@ -21,7 +21,7 @@ module sage_post::post_registry {
 
     public struct PostRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<String, Post>
+        registry: Table<String, Post>
     }
 
     public struct POST_REGISTRY has drop {}

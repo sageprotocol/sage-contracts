@@ -4,8 +4,8 @@ module sage_notification::notification_registry {
     use sage_notification::{notification::{Notification}};
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable},
-        immutable_vector::{Self, ImmutableVector}
+        immutable_table::{Self, Table},
+        immutable_vector::{Self, Vector}
     };
 
     // --------------- Constants ---------------
@@ -18,11 +18,11 @@ module sage_notification::notification_registry {
 
     public struct NotificationRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<address, UserNotifications>
+        registry: Table<address, UserNotifications>
     }
 
     public struct UserNotifications has store {
-        notifications: ImmutableVector<Notification>
+        notifications: Vector<Notification>
     }
 
     public struct NOTIFICATION_REGISTRY has drop {}

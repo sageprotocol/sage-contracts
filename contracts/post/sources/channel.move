@@ -6,8 +6,8 @@ module sage_post::channel_posts {
     use sage_channel::{channel::{Channel}};
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable},
-        immutable_vector::{Self, ImmutableVector}
+        immutable_table::{Self, Table},
+        immutable_vector::{Self, Vector}
     };
 
     // --------------- Constants ---------------
@@ -20,7 +20,7 @@ module sage_post::channel_posts {
 
     public struct ChannelPostsRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<Channel, ImmutableVector<String>>
+        registry: Table<Channel, Vector<String>>
     }
 
     public struct CHANNEL_POSTS has drop {}
@@ -94,7 +94,7 @@ module sage_post::channel_posts {
     public(package) fun borrow_channel_post_keys_mut(
         channel_posts_registry: &mut ChannelPostsRegistry,
         channel: Channel
-    ): &mut ImmutableVector<String> {
+    ): &mut Vector<String> {
         channel_posts_registry.registry.borrow_mut(channel)
     }
 

@@ -4,8 +4,8 @@ module sage_post::user_posts {
     use sui::package::{claim_and_keep};
 
     use sage_immutable::{
-        immutable_table::{Self, ImmutableTable},
-        immutable_vector::{Self, ImmutableVector}
+        immutable_table::{Self, Table},
+        immutable_vector::{Self, Vector}
     };
 
     // --------------- Constants ---------------
@@ -19,7 +19,7 @@ module sage_post::user_posts {
     // user key <-> post keys
     public struct UserPostsRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<String, ImmutableVector<String>>
+        registry: Table<String, Vector<String>>
     }
 
     public struct USER_POSTS has drop {}
@@ -93,7 +93,7 @@ module sage_post::user_posts {
     public(package) fun borrow_user_post_keys_mut(
         user_posts_registry: &mut UserPostsRegistry,
         user_key: String
-    ): &mut ImmutableVector<String> {
+    ): &mut Vector<String> {
         user_posts_registry.registry.borrow_mut(user_key)
     }
 
