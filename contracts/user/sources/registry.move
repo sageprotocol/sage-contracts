@@ -1,12 +1,11 @@
 module sage_user::user_registry {
-    use std::string::{String};
+    use std::{
+        string::{String}
+    };
 
     use sui::{
-        package::{claim_and_keep}
-    };
-    
-    use sage_immutable::{
-        immutable_table::{Self, Table}
+        package::{claim_and_keep},
+        table::{Self, Table}
     };
 
     use sage_utils::{
@@ -46,10 +45,10 @@ module sage_user::user_registry {
 
         let user_registry = UserRegistry {
             id: object::new(ctx),
-            address_registry: immutable_table::new(ctx),
-            address_reverse_registry: immutable_table::new(ctx),
-            user_registry: immutable_table::new(ctx),
-            user_reverse_registry: immutable_table::new(ctx)
+            address_registry: table::new(ctx),
+            address_reverse_registry: table::new(ctx),
+            user_registry: table::new(ctx),
+            user_reverse_registry: table::new(ctx)
         };
 
         transfer::share_object(user_registry);

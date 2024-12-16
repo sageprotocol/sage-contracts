@@ -1,14 +1,12 @@
 module sage_post::post_likes {
-    use std::string::{String};
+    use std::{
+        string::{String}
+    };
 
     use sui::{
         event,
-        package::{claim_and_keep}
-    };
-
-    use sage_immutable::{
-        immutable_table::{Self, Table},
-        immutable_vector::{Self, Vector}
+        package::{claim_and_keep},
+        table::{Self, Table}
     };
 
     // --------------- Constants ---------------
@@ -25,7 +23,7 @@ module sage_post::post_likes {
     }
 
     public struct PostLikes has store {
-        likes: Vector<address>
+        likes: vector<address>
     }
 
     public struct UserPostLikesRegistry has key, store {
@@ -34,7 +32,7 @@ module sage_post::post_likes {
     }
 
     public struct UserPostLikes has store {
-        likes: Vector<String>
+        likes: vector<String>
     }
 
     public struct POST_LIKES has drop {}
@@ -56,11 +54,11 @@ module sage_post::post_likes {
 
         let post_likes_registry = PostLikesRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
         let user_post_likes_registry = UserPostLikesRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(post_likes_registry);
@@ -193,7 +191,7 @@ module sage_post::post_likes {
         post_key: String
     ) {
         let post_likes = PostLikes {
-            likes: immutable_vector::empty<address>()
+            likes: vector::empty<address>()
         };
 
         post_likes_registry.registry.add(post_key, post_likes);
@@ -204,7 +202,7 @@ module sage_post::post_likes {
         user: address
     ) {
         let user_post_likes = UserPostLikes {
-            likes: immutable_vector::empty<String>()
+            likes: vector::empty<String>()
         };
 
         user_post_likes_registry.registry.add(user, user_post_likes);

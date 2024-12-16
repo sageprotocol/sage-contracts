@@ -1,12 +1,10 @@
 module sage_notification::notification_registry {
-    use sui::package::{claim_and_keep};
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
     use sage_notification::{notification::{Notification}};
-
-    use sage_immutable::{
-        immutable_table::{Self, Table},
-        immutable_vector::{Self, Vector}
-    };
 
     // --------------- Constants ---------------
 
@@ -22,7 +20,7 @@ module sage_notification::notification_registry {
     }
 
     public struct UserNotifications has store {
-        notifications: Vector<Notification>
+        notifications: vector<Notification>
     }
 
     public struct NOTIFICATION_REGISTRY has drop {}
@@ -39,7 +37,7 @@ module sage_notification::notification_registry {
 
         let notification_registry = NotificationRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(notification_registry);
@@ -88,7 +86,7 @@ module sage_notification::notification_registry {
         assert!(!has_record, EUserNotificationsExists);
 
         let user_notifications = UserNotifications {
-            notifications: immutable_vector::empty<Notification>()
+            notifications: vector::empty<Notification>()
         };
 
         notification_registry.registry.add(user, user_notifications);

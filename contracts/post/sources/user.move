@@ -1,11 +1,11 @@
 module sage_post::user_posts {
-    use std::string::{String};
+    use std::{
+        string::{String}
+    };
 
-    use sui::package::{claim_and_keep};
-
-    use sage_immutable::{
-        immutable_table::{Self, Table},
-        immutable_vector::{Self, Vector}
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
     };
 
     // --------------- Constants ---------------
@@ -19,7 +19,7 @@ module sage_post::user_posts {
     // user key <-> post keys
     public struct UserPostsRegistry has key, store {
         id: UID,
-        registry: Table<String, Vector<String>>
+        registry: Table<String, vector<String>>
     }
 
     public struct USER_POSTS has drop {}
@@ -36,7 +36,7 @@ module sage_post::user_posts {
 
         let user_post_registry = UserPostsRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(user_post_registry);
@@ -93,7 +93,7 @@ module sage_post::user_posts {
     public(package) fun borrow_user_post_keys_mut(
         user_posts_registry: &mut UserPostsRegistry,
         user_key: String
-    ): &mut Vector<String> {
+    ): &mut vector<String> {
         user_posts_registry.registry.borrow_mut(user_key)
     }
 
@@ -110,7 +110,7 @@ module sage_post::user_posts {
 
         assert!(!has_record, EUserPostsExists);
 
-        let user_post_keys = immutable_vector::empty();
+        let user_post_keys = vector::empty();
 
         user_posts_registry.registry.add(user_key, user_post_keys);
     }

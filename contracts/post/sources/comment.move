@@ -1,11 +1,11 @@
 module sage_post::post_comments {
-    use std::string::{String};
+    use std::{
+        string::{String}
+    };
 
-    use sui::package::{claim_and_keep};
-
-    use sage_immutable::{
-        immutable_table::{Self, Table},
-        immutable_vector::{Self, Vector}
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
     };
 
     // --------------- Constants ---------------
@@ -18,7 +18,7 @@ module sage_post::post_comments {
 
     public struct PostCommentsRegistry has key, store {
         id: UID,
-        registry: Table<String, Vector<String>>
+        registry: Table<String, vector<String>>
     }
 
     public struct POST_COMMENTS has drop {}
@@ -35,7 +35,7 @@ module sage_post::post_comments {
 
         let post_comments_registry = PostCommentsRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(post_comments_registry);
@@ -92,7 +92,7 @@ module sage_post::post_comments {
     public(package) fun borrow_post_comment_keys_mut(
         post_comments_registry: &mut PostCommentsRegistry,
         post_key: String
-    ): &mut Vector<String> {
+    ): &mut vector<String> {
         post_comments_registry.registry.borrow_mut(post_key)
     }
 
@@ -109,7 +109,7 @@ module sage_post::post_comments {
 
         assert!(!has_record, EPostCommentsExists);
 
-        let parent_post_comment_keys = immutable_vector::empty();
+        let parent_post_comment_keys = vector::empty();
 
         post_comments_registry.registry.add(parent_post_key, parent_post_comment_keys);
     }

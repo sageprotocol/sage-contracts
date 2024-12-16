@@ -1,13 +1,15 @@
 module sage_post::channel_posts {
-    use std::string::{String};
+    use std::{
+        string::{String}
+    };
 
-    use sui::package::{claim_and_keep};
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
-    use sage_channel::{channel::{Channel}};
-
-    use sage_immutable::{
-        immutable_table::{Self, Table},
-        immutable_vector::{Self, Vector}
+    use sage_channel::{
+        channel::{Channel}
     };
 
     // --------------- Constants ---------------
@@ -20,7 +22,7 @@ module sage_post::channel_posts {
 
     public struct ChannelPostsRegistry has key, store {
         id: UID,
-        registry: Table<Channel, Vector<String>>
+        registry: Table<Channel, vector<String>>
     }
 
     public struct CHANNEL_POSTS has drop {}
@@ -37,7 +39,7 @@ module sage_post::channel_posts {
 
         let post_registry = ChannelPostsRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(post_registry);
@@ -94,7 +96,7 @@ module sage_post::channel_posts {
     public(package) fun borrow_channel_post_keys_mut(
         channel_posts_registry: &mut ChannelPostsRegistry,
         channel: Channel
-    ): &mut Vector<String> {
+    ): &mut vector<String> {
         channel_posts_registry.registry.borrow_mut(channel)
     }
 
@@ -108,7 +110,7 @@ module sage_post::channel_posts {
 
         assert!(!has_record, EChannelPostsExists);
 
-        let channel_post_keys = immutable_vector::empty();
+        let channel_post_keys = vector::empty();
 
         channel_posts_registry.registry.add(channel, channel_post_keys);
     }

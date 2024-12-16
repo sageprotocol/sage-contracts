@@ -1,14 +1,13 @@
 module sage_channel::channel_registry {
     use std::string::{String};
 
-    use sui::package::{claim_and_keep};
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
     use sage_channel::{
         channel::{Channel}
-    };
-
-    use sage_immutable::{
-        immutable_table::{Self, Table}
     };
 
     // --------------- Constants ---------------
@@ -39,7 +38,7 @@ module sage_channel::channel_registry {
 
         let channel_registry = ChannelRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(channel_registry);
