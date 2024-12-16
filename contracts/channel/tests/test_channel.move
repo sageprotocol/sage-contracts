@@ -71,7 +71,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun update_avatar() {
+    fun update() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -92,155 +92,34 @@ module sage_channel::test_channel {
                 ADMIN
             );
 
-            let channel_avatar = channel::get_avatar(channel);
-
-            assert!(channel_avatar == avatar_hash, EChannelAvatarMismatch);
-
             let new_channel_avatar = utf8(b"new_avatar_hash");
-            let updated_at: u64 = 9999;
-
-            channel::update_avatar(
-                channel_name,
-                &mut channel,
-                new_channel_avatar,
-                updated_at
-            );
-
-            let channel_avatar = channel::get_avatar(channel);
-
-            assert!(channel_avatar == new_channel_avatar, EChannelAvatarMismatch);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun update_banner() {
-        let mut scenario_val = ts::begin(ADMIN);
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let banner_hash = utf8(b"banner_hash");
-
-            let mut channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                banner_hash,
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
-
-            let channel_banner = channel::get_banner(channel);
-
-            assert!(channel_banner == banner_hash, EChannelBannerMismatch);
-
             let new_channel_banner = utf8(b"new_banner_hash");
-            let updated_at: u64 = 9999;
-
-            channel::update_banner(
-                channel_name,
-                &mut channel,
-                new_channel_banner,
-                updated_at
-            );
-
-            let channel_banner = channel::get_banner(channel);
-
-            assert!(channel_banner == new_channel_banner, EChannelBannerMismatch);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun update_description() {
-        let mut scenario_val = ts::begin(ADMIN);
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let description = utf8(b"description");
-
-            let mut channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                description,
-                created_at,
-                ADMIN
-            );
-
-            let channel_description = channel::get_description(channel);
-
-            assert!(channel_description == description, EChannelDescriptionMismatch);
-
             let new_channel_description = utf8(b"new_description");
+            let new_channel_name = utf8(b"new-name");
+
             let updated_at: u64 = 9999;
 
-            channel::update_description(
-                channel_name,
+            channel::update(
                 &mut channel,
+                channel_name,
+                new_channel_name,
+                new_channel_avatar,
+                new_channel_banner,
                 new_channel_description,
                 updated_at
             );
 
+            let channel_avatar = channel::get_avatar(channel);
+            assert!(channel_avatar == new_channel_avatar, EChannelAvatarMismatch);
+
+            let channel_banner = channel::get_banner(channel);
+            assert!(channel_banner == new_channel_banner, EChannelBannerMismatch);
+
             let channel_description = channel::get_description(channel);
-
             assert!(channel_description == new_channel_description, EChannelDescriptionMismatch);
-        };
 
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun update_name() {
-        let mut scenario_val = ts::begin(ADMIN);
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let description = utf8(b"description");
-
-            let mut channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                description,
-                created_at,
-                ADMIN
-            );
-
-            let retrieved_name = channel::get_name(channel);
-
-            assert!(channel_name == retrieved_name, EChannelNameMismatch);
-
-            let new_channel_name = utf8(b"new-name");
-            let updated_at: u64 = 9999;
-
-            channel::update_name(
-                channel_name,
-                &mut channel,
-                new_channel_name,
-                updated_at
-            );
-
-            let retrieved_name = channel::get_name(channel);
-
-            assert!(retrieved_name == new_channel_name, EChannelNameMismatch);
+            let channel_name = channel::get_name(channel);
+            assert!(channel_name == new_channel_name, EChannelNameMismatch);
         };
 
         ts::end(scenario_val);

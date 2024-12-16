@@ -76,29 +76,30 @@ module sage_user::test_user_membership {
             let user_membership_registry = &mut user_membership_registry_val;
 
             let created_at: u64 = 999;
-            let invited_by = option::none();
+            let invited_by = option::none<address>();
             let name = utf8(b"user-name");
 
-            let user = user::create(
-                ADMIN,
+            let user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
                 invited_by,
+                ADMIN,
                 name,
-                name
+                name,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user,
+                user_address,
                 ts::ctx(scenario)
             );
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                user
+                user_address
             );
 
             let user_member_count = user_membership::get_member_length(
@@ -132,63 +133,65 @@ module sage_user::test_user_membership {
         let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, OTHER);
-        let other_user = {
+        let other_user_address = {
             let other_username = utf8(b"other-name");
             let created_at: u64 = 999;
-            let invited_by = option::none();
+            let invited_by = option::none<address>();
 
-            let other_user = user::create(
-                ADMIN,
+            let other_user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
                 invited_by,
+                OTHER,
                 other_username,
-                other_username
+                other_username,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                other_user,
+                other_user_address,
                 ts::ctx(scenario)
             );
 
-            other_user
+            other_user_address
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none();
+            let invited_by = option::none<address>();
 
-            let user = user::create(
-                ADMIN,
+            let user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
                 invited_by,
+                ADMIN,
                 username,
-                username
+                username,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user,
+                user_address,
                 ts::ctx(scenario)
             );
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                other_user
+                other_user_address
             );
 
             user_membership::join(
                 user_membership,
-                ADMIN,
-                ts::ctx(scenario)
+                OTHER,
+                ADMIN
             );
 
             let is_member = user_membership::is_member(
@@ -226,34 +229,35 @@ module sage_user::test_user_membership {
 
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none();
+            let invited_by = option::none<address>();
 
-            let user = user::create(
-                ADMIN,
+            let user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
                 invited_by,
+                ADMIN,
                 username,
-                username
+                username,
+                ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user,
+                user_address,
                 ts::ctx(scenario)
             );
 
             let user_membership = user_membership::borrow_membership_mut(
                 user_membership_registry,
-                user
+                user_address
             );
 
             user_membership::leave(
                 user_membership,
                 ADMIN,
-                ts::ctx(scenario)
+                ADMIN
             );
 
             let user_member_count_leave = user_membership::get_member_length(
@@ -265,7 +269,7 @@ module sage_user::test_user_membership {
             user_membership::join(
                 user_membership,
                 ADMIN,
-                ts::ctx(scenario)
+                ADMIN
             );
 
             let user_member_count_join = user_membership::get_member_length(

@@ -9,10 +9,6 @@ module sage_user::user_registry {
         immutable_table::{Self, ImmutableTable}
     };
 
-    use sage_user::{
-        user::{User}
-    };
-
     use sage_utils::{
         string_helpers::{Self}
     };
@@ -23,14 +19,17 @@ module sage_user::user_registry {
 
     const EAddressRecordExists: u64 = 370;
     const EUsernameRecordExists: u64 = 371;
-    const EUserRecordDoesNotExist: u64 = 372;
 
     // --------------- Name Tag ---------------
 
+    // address: wallet/kiosk <-> user key
+    // user: user key <-> user object
     public struct UserRegistry has key, store {
         id: UID,
         address_registry: ImmutableTable<address, String>,
-        user_registry: ImmutableTable<String, User>
+        address_reverse_registry: ImmutableTable<String, address>,
+        user_registry: ImmutableTable<String, address>,
+        user_reverse_registry: ImmutableTable<address, String>
     }
 
     public struct USER_REGISTRY has drop {}
@@ -39,7 +38,7 @@ module sage_user::user_registry {
 
     // --------------- Constructor ---------------
 
-    fun init(
+    fun init (
         otw: USER_REGISTRY,
         ctx: &mut TxContext
     ) {
@@ -48,7 +47,9 @@ module sage_user::user_registry {
         let user_registry = UserRegistry {
             id: object::new(ctx),
             address_registry: immutable_table::new(ctx),
-            user_registry: immutable_table::new(ctx)
+            address_reverse_registry: immutable_table::new(ctx),
+            user_registry: immutable_table::new(ctx),
+            user_reverse_registry: immutable_table::new(ctx)
         };
 
         transfer::share_object(user_registry);
@@ -56,32 +57,44 @@ module sage_user::user_registry {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_user(
+    public fun get_owner_address_from_key (
         user_registry: &UserRegistry,
-        username: String
-    ): User {
-        let user_key = string_helpers::to_lowercase(
-            &username
-        );
+        user_key: String
+    ): address {
+        *user_registry.address_reverse_registry.borrow(user_key)
+    }
 
+    public fun get_user_address_from_key (
+        user_registry: &UserRegistry,
+        user_key: String
+    ): address {
         *user_registry.user_registry.borrow(user_key)
     }
 
-    public fun borrow_user_key(
-        user_registry: &mut UserRegistry,
+    // from wallet/kiosk
+    public fun get_user_key_from_owner (
+        user_registry: &UserRegistry,
         address: address
     ): String {
         *user_registry.address_registry.borrow(address)
     }
 
-    public fun has_address_record(
+    // from user object
+    public fun get_user_key_from_user (
+        user_registry: &UserRegistry,
+        address: address
+    ): String {
+        *user_registry.user_reverse_registry.borrow(address)
+    }
+
+    public fun has_address_record (
         user_registry: &UserRegistry,
         address: address
     ): bool {
         user_registry.address_registry.contains(address)
     }
 
-    public fun has_username_record(
+    public fun has_username_record (
         user_registry: &UserRegistry,
         username: String
     ): bool {
@@ -94,13 +107,13 @@ module sage_user::user_registry {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun add(
+    public(package) fun add (
         user_registry: &mut UserRegistry,
         user_key: String,
-        address: address,
-        user: User
+        self_address: address,
+        user_address: address
     ) {
-        let address_record_exists = user_registry.has_address_record(address);
+        let address_record_exists = user_registry.has_address_record(self_address);
 
         assert!(!address_record_exists, EAddressRecordExists);
 
@@ -108,31 +121,11 @@ module sage_user::user_registry {
 
         assert!(!username_record_exists, EUsernameRecordExists);
 
-        user_registry.address_registry.add(address, user_key);
-        user_registry.user_registry.add(user_key, user);
-    }
+        user_registry.address_registry.add(self_address, user_key);
+        user_registry.user_registry.add(user_key, user_address);
 
-    public(package) fun borrow_user_mut(
-        user_registry: &mut UserRegistry,
-        username: String
-    ): &mut User {
-        let user_key = string_helpers::to_lowercase(
-            &username
-        );
-
-        user_registry.user_registry.borrow_mut(user_key)
-    }
-
-    public(package) fun replace(
-        user_registry: &mut UserRegistry,
-        user_key: String,
-        user: User
-    ) {
-        let record_exists = user_registry.has_username_record(user_key);
-
-        assert!(record_exists, EUserRecordDoesNotExist);
-
-        user_registry.user_registry.replace(user_key, user);
+        user_registry.address_reverse_registry.add(user_key, self_address);
+        user_registry.user_reverse_registry.add(user_address, user_key);
     }
 
     // --------------- Internal Functions ---------------

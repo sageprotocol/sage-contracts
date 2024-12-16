@@ -3,9 +3,13 @@ module sage_post::post_registry {
 
     use sui::package::{claim_and_keep};
 
-    use sage_post::{post::{Post}};
+    use sage_post::{
+        post::{Post}
+    };
 
-    use sage_immutable::{immutable_table::{Self, ImmutableTable}};
+    use sage_immutable::{
+        immutable_table::{Self, ImmutableTable}
+    };
 
     // --------------- Constants ---------------
 

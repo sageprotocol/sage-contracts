@@ -157,115 +157,33 @@ module sage_channel::channel {
         channel
     }
 
-    public(package) fun update_avatar (
-        channel_key: String,
+    public(package) fun update (
         channel: &mut Channel,
+        channel_key: String,
+        channel_name: String,
         avatar_hash: String,
-        updated_at: u64
-    ): Channel {
-        channel.avatar_hash = avatar_hash;
-        channel.updated_at = updated_at;
-
-        let Channel {
-            banner_hash,
-            description,
-            name,
-            ..
-        } = channel;
-
-        event::emit(ChannelUpdated {
-            avatar_hash,
-            banner_hash: *banner_hash,
-            channel_key,
-            channel_name: *name,
-            description: *description,
-            updated_at
-        });
-
-        *channel
-    }
-
-    public(package) fun update_banner (
-        channel_key: String,
-        channel: &mut Channel,
         banner_hash: String,
-        updated_at: u64
-    ): Channel {
-        channel.banner_hash = banner_hash;
-        channel.updated_at = updated_at;
-
-        let Channel {
-            avatar_hash,
-            description,
-            name,
-            ..
-        } = channel;
-
-        event::emit(ChannelUpdated {
-            avatar_hash: *avatar_hash,
-            banner_hash,
-            channel_key,
-            channel_name: *name,
-            description: *description,
-            updated_at
-        });
-
-        *channel
-    }
-
-    public(package) fun update_description (
-        channel_key: String,
-        channel: &mut Channel,
         description: String,
         updated_at: u64
     ): Channel {
-        let is_valid_description = is_valid_description(&description);
-
-        assert!(is_valid_description, EInvalidChannelDescription);
-
+        channel.avatar_hash = avatar_hash;
+        channel.banner_hash = banner_hash;
         channel.description = description;
-        channel.updated_at = updated_at;
-
-        let Channel {
-            avatar_hash,
-            banner_hash,
-            name,
-            ..
-        } = channel;
-
-        event::emit(ChannelUpdated {
-            avatar_hash: *avatar_hash,
-            banner_hash: *banner_hash,
-            channel_key,
-            channel_name: *name,
-            description,
-            updated_at
-        });
-
-        *channel
-    }
-
-    public(package) fun update_name (
-        channel_key: String,
-        channel: &mut Channel,
-        channel_name: String,
-        updated_at: u64
-    ): Channel {
         channel.name = channel_name;
         channel.updated_at = updated_at;
 
         let Channel {
-            avatar_hash,
             banner_hash,
             description,
+            name,
             ..
         } = channel;
 
         event::emit(ChannelUpdated {
-            avatar_hash: *avatar_hash,
+            avatar_hash,
             banner_hash: *banner_hash,
             channel_key,
-            channel_name,
+            channel_name: *name,
             description: *description,
             updated_at
         });

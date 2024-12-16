@@ -1,8 +1,16 @@
 module sage_post::post_actions {
     use std::string::{String};
 
-    use sui::clock::Clock;
-    use sui::event;
+    use sui::{
+        clock::Clock,
+        coin::{Coin},
+        event,
+        sui::{SUI}
+    };
+
+    use sage_admin::{
+        fees::{Self, Royalties}
+    };
 
     use sage_channel::{
         channel_membership::{Self, ChannelMembershipRegistry},
@@ -13,6 +21,7 @@ module sage_post::post_actions {
         channel_posts::{Self, ChannelPostsRegistry},
         post::{Self},
         post_comments::{Self, PostCommentsRegistry},
+        post_fees::{Self, PostFees},
         post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
         post_registry::{Self, PostRegistry},
         user_posts::{Self, UserPostsRegistry}
@@ -66,19 +75,23 @@ module sage_post::post_actions {
         post_key: String,
         title: String,
         updated_at: u64,
-        user_key: address
+        user_key: String
     }
 
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
-    public fun like(
-        post_registry: &mut PostRegistry,
+    public fun like<CoinType> (
+        post_registry: &PostRegistry,
         post_likes_registry: &mut PostLikesRegistry,
-        user_registry: &mut UserRegistry,
+        user_registry: &UserRegistry,
         user_post_likes_registry: &mut UserPostLikesRegistry,
+        post_fees: &PostFees,
+        royalties: &Royalties,
         post_key: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
         let self = tx_context::sender(ctx);
@@ -97,6 +110,30 @@ module sage_post::post_actions {
 
         assert!(has_record, EPostDoesNotExist);
 
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_like_post_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        let post = post_registry::borrow_post(
+            post_registry,
+            post_key
+        );
+
+        let recipient = post::get_author(post);
+
+        fees::distribute_payment<CoinType>(
+            royalties,
+            custom_payment,
+            sui_payment,
+            recipient,
+            ctx
+        );
+
         let user = tx_context::sender(ctx);
 
         post_likes::add(
@@ -107,19 +144,36 @@ module sage_post::post_actions {
         );
     }
 
-    public fun post_from_channel(
+    public fun post_from_channel<CoinType>(
         clock: &Clock,
-        channel_registry: &mut ChannelRegistry,
+        channel_registry: &ChannelRegistry,
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_posts_registry: &mut ChannelPostsRegistry,
         post_registry: &mut PostRegistry,
-        user_registry: &mut UserRegistry,
+        user_registry: &UserRegistry,
+        post_fees: &PostFees,
         channel_key: String,
         data: String,
         description: String,
         title: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): String {
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_channel_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
         let self = tx_context::sender(ctx);
 
         let user_exists = user_registry::has_address_record(
@@ -145,7 +199,7 @@ module sage_post::post_actions {
 
         let is_member = channel_membership::is_channel_member(
             channel_membership_registry,
-            channel,
+            channel_key,
             user
         );
 
@@ -188,17 +242,34 @@ module sage_post::post_actions {
         post_key
     }
 
-    public fun post_from_post(
+    public fun post_from_post<CoinType> (
         clock: &Clock,
         post_registry: &mut PostRegistry,
         post_comments_registry: &mut PostCommentsRegistry,
         user_registry: &mut UserRegistry,
+        post_fees: &PostFees,
         parent_key: String,
         data: String,
         description: String,
         title: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): String {
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_post_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
         let self = tx_context::sender(ctx);
         let timestamp = clock.timestamp_ms();
 
@@ -251,17 +322,34 @@ module sage_post::post_actions {
         post_key
     }
 
-    public fun post_from_user(
+    public fun post_from_user<CoinType> (
         clock: &Clock,
         post_registry: &mut PostRegistry,
         user_posts_registry: &mut UserPostsRegistry,
         user_registry: &mut UserRegistry,
+        post_fees: &PostFees,
         data: String,
         description: String,
         title: String,
-        user_address: address,
+        user_key: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): String {
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_user_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
         let self = tx_context::sender(ctx);
 
         let self_exists = user_registry::has_address_record(
@@ -271,22 +359,12 @@ module sage_post::post_actions {
 
         assert!(self_exists, EUserDoesNotExist);
 
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            user_address
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let user_key = user_registry::borrow_user_key(
-            user_registry,
-            user_address
-        );
-
-        let user = user_registry::borrow_user(
+        let user_exists = user_registry::has_username_record(
             user_registry,
             user_key
         );
+
+        assert!(user_exists, EUserDoesNotExist);
 
         let timestamp = clock.timestamp_ms();
 
@@ -307,7 +385,7 @@ module sage_post::post_actions {
 
         user_posts::add(
             user_posts_registry,
-            user,
+            user_key,
             post_key
         );
 
@@ -319,7 +397,7 @@ module sage_post::post_actions {
             post_key,
             title,
             updated_at: timestamp,
-            user_key: user_address
+            user_key
         });
 
         post_key

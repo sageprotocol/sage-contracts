@@ -11,11 +11,9 @@ The order which the contracts are published is important, and errors will be enc
 5. User
 6. Channel
 7. Post
-8. Sage
 
 This is due to dependencies between the packages:
 
-- "Sage" depends on Admin, Immutable, Channel, Notification, Post, and User.
 - "Post" depends on Admin, Immutable, Channel, and User.
 - "Channel" depends on Admin, Immutable, User, Utils.
 - "User" depends on Admin, Immutable, and Utils.

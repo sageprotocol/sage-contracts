@@ -21,25 +21,30 @@ module sage_user::user {
 
     // --------------- Name Tag ---------------
 
-    public struct User has copy, drop, store {
-        address: address,
+    public struct User has key {
+        id: UID,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
         description: String,
+        owner: address,
         name: String,
         total_earnings: u64,
         updated_at: u64
     }
 
+    public struct UserRequest {
+        user: User
+    }
+
     // --------------- Events ---------------
 
     public struct UserCreated has copy, drop {
-        address: address,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
         description: String,
+        owner: address,
         invited_by: Option<address>,
         user_key: String,
         user_name: String
@@ -49,6 +54,7 @@ module sage_user::user {
         avatar_hash: String,
         banner_hash: String,
         description: String,
+        owner: address,
         updated_at: u64,
         user_key: String,
         user_name: String
@@ -58,73 +64,74 @@ module sage_user::user {
 
     // --------------- Public Functions ---------------
 
-    public fun get_address(
+    public fun create_user_request (
         user: User
-    ): address {
-        let User {
-            address,
-            ..
-        } = user;
+    ): UserRequest {
+        UserRequest { user }
+    }
 
-        address
+    public fun destroy_user_request (
+        user_request: UserRequest,
+        self: address
+    ) {
+        let UserRequest { user } = user_request;
+
+        transfer::transfer(user, self);
     }
 
     public fun get_avatar(
-        user: User
-    ): String {
-        let User {
-            avatar_hash,
-            ..
-        } = user;
+        user_request: UserRequest
+    ): (String, UserRequest) {
+        let UserRequest { user } = user_request;
 
-        avatar_hash
+        (user.avatar_hash, create_user_request(user))
     }
 
     public fun get_banner(
-        user: User
-    ): String {
-        let User {
-            banner_hash,
-            ..
-        } = user;
+        user_request: UserRequest
+    ): (String, UserRequest) {
+        let UserRequest { user } = user_request;
 
-        banner_hash
+        (user.banner_hash, create_user_request(user))
     }
 
     public fun get_description(
-        user: User
-    ): String {
-        let User {
-            description,
-            ..
-        } = user;
+        user_request: UserRequest
+    ): (String, UserRequest) {
+        let UserRequest { user } = user_request;
 
-        description
+        (user.description, create_user_request(user))
+    }
+
+    public fun get_owner(
+        user_request: UserRequest
+    ): (address, UserRequest) {
+        let UserRequest { user } = user_request;
+
+        (user.owner, create_user_request(user))
     }
 
     public fun get_name(
-        user: User
-    ): String {
-        let User {
-            name,
-            ..
-        } = user;
+        user_request: UserRequest
+    ): (String, UserRequest) {
+        let UserRequest { user } = user_request;
 
-        name
+        (user.name, create_user_request(user))
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
-        address: address,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
         description: String,
         invited_by: Option<address>,
+        owner: address,
         name: String,
-        user_key: String
-    ): User {
+        user_key: String,
+        ctx: &mut TxContext
+    ): address {
         let is_valid_name = string_helpers::is_valid_name(
             &name,
             USERNAME_MIN_LENGTH,
@@ -138,142 +145,62 @@ module sage_user::user {
         assert!(is_valid_description, EInvalidUserDescription);
 
         event::emit(UserCreated {
-            address,
             avatar_hash,
             banner_hash,
             created_at,
             description,
             invited_by,
+            owner,
             user_key,
             user_name: name
         });
 
-        User {
-            address,
+        let user = User {
+            id: object::new(ctx),
             avatar_hash,
             banner_hash,
             created_at,
             description,
+            owner,
             name,
             total_earnings: 0,
             updated_at: created_at
-        }
+        };
+
+        let user_address = user.id.to_address();
+
+        transfer::transfer(user, tx_context::sender(ctx));
+
+        user_address
     }
 
-    public(package) fun update_avatar (
+    public(package) fun update (
         user_key: String,
-        user: &mut User,
+        user_request: UserRequest,
         avatar_hash: String,
-        updated_at: u64
-    ): User {
-        user.avatar_hash = avatar_hash;
-        user.updated_at = updated_at;
-
-        let User {
-            banner_hash,
-            description,
-            name,
-            ..
-        } = user;
-
-        event::emit(UserUpdated {
-            avatar_hash,
-            banner_hash: *banner_hash,
-            user_key,
-            user_name: *name,
-            description: *description,
-            updated_at
-        });
-
-        *user
-    }
-
-    public(package) fun update_banner (
-        user_key: String,
-        user: &mut User,
         banner_hash: String,
-        updated_at: u64
-    ): User {
-        user.banner_hash = banner_hash;
-        user.updated_at = updated_at;
-
-        let User {
-            avatar_hash,
-            description,
-            name,
-            ..
-        } = user;
-
-        event::emit(UserUpdated {
-            avatar_hash: *avatar_hash,
-            banner_hash,
-            user_key,
-            user_name: *name,
-            description: *description,
-            updated_at
-        });
-
-        *user
-    }
-
-    public(package) fun update_description (
-        user_key: String,
-        user: &mut User,
         description: String,
+        name: String,
         updated_at: u64
-    ): User {
-        let is_valid_description = is_valid_description(&description);
+    ): UserRequest {
+        let UserRequest { mut user } = user_request;
 
-        assert!(is_valid_description, EInvalidUserDescription);
-
+        user.avatar_hash = avatar_hash;
+        user.banner_hash = banner_hash;
         user.description = description;
-        user.updated_at = updated_at;
-
-        let User {
-            avatar_hash,
-            banner_hash,
-            name,
-            ..
-        } = user;
+        user.name = name;
 
         event::emit(UserUpdated {
-            avatar_hash: *avatar_hash,
-            banner_hash: *banner_hash,
+            avatar_hash,
+            banner_hash,
+            owner: user.owner,
             user_key,
-            user_name: *name,
+            user_name: name,
             description,
             updated_at
         });
 
-        *user
-    }
-
-    public(package) fun update_name (
-        user_key: String,
-        user: &mut User,
-        user_name: String,
-        updated_at: u64
-    ): User {
-        user.name = user_name;
-        user.updated_at = updated_at;
-
-        let User {
-            avatar_hash,
-            banner_hash,
-            description,
-            ..
-        } = user;
-
-        event::emit(UserUpdated {
-            avatar_hash: *avatar_hash,
-            banner_hash: *banner_hash,
-            user_key,
-            user_name,
-            description: *description,
-            updated_at
-        });
-
-        *user
+        create_user_request(user)
     }
 
     // --------------- Internal Functions ---------------
@@ -291,29 +218,6 @@ module sage_user::user {
     }
 
     // --------------- Test Functions ---------------
-
-    #[test_only]
-    public fun create_for_testing(
-        address: address,
-        avatar_hash: String,
-        banner_hash: String,
-        created_at: u64,
-        description: String,
-        invited_by: Option<address>,
-        name: String,
-        user_key: String
-    ): User {
-        create(
-            address,
-            avatar_hash,
-            banner_hash,
-            created_at,
-            description,
-            invited_by,
-            name,
-            user_key
-        )
-    }
 
     #[test_only]
     public fun is_valid_description_for_testing(

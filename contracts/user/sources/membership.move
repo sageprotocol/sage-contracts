@@ -4,8 +4,6 @@ module sage_user::user_membership {
         package::{claim_and_keep},
         table::{Self, Table}
     };
-    
-    use sage_user::{user::{User}};
 
     // --------------- Constants ---------------
 
@@ -32,7 +30,7 @@ module sage_user::user_membership {
 
     public struct UserMembershipRegistry has key, store {
         id: UID,
-        registry: Table<User, UserMembership>
+        registry: Table<address, UserMembership>
     }
     
     public struct USER_MEMBERSHIP has drop {}
@@ -80,30 +78,28 @@ module sage_user::user_membership {
 
     public(package) fun borrow_membership_mut(
         user_membership_registry: &mut UserMembershipRegistry,
-        user: User
+        user_address: address
     ): &mut UserMembership {
-        &mut user_membership_registry.registry[user]
+        &mut user_membership_registry.registry[user_address]
     }
 
     public(package) fun create(
         user_membership_registry: &mut UserMembershipRegistry,
-        user: User,
+        user_address: address,
         ctx: &mut TxContext
     ) {
         let user_membership = UserMembership {
             membership: table::new(ctx)
         };
 
-        user_membership_registry.registry.add(user, user_membership);
+        user_membership_registry.registry.add(user_address, user_membership);
     }
 
     public(package) fun join(
         user_membership: &mut UserMembership,
         followed_user: address,
-        ctx: &TxContext
+        self: address
     ) {
-        let self = tx_context::sender(ctx);
-
         join_user(
             user_membership,
             self
@@ -119,10 +115,8 @@ module sage_user::user_membership {
     public(package) fun leave(
         user_membership: &mut UserMembership,
         followed_user: address,
-        ctx: &TxContext
+        self: address
     ) {
-        let self = tx_context::sender(ctx);
-
         let is_member = is_member(
             user_membership,
             self
