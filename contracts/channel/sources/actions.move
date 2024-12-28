@@ -138,6 +138,11 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
+        let created_by = channel::get_created_by(channel);
+        let self = tx_context::sender(ctx);
+
+        assert!(self == created_by, ENotChannelOwner);
+
         let (
             custom_payment,
             sui_payment
@@ -146,16 +151,6 @@ module sage_channel::channel_actions {
             custom_payment,
             sui_payment
         );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let created_by = channel::get_created_by(channel);
-        let self = tx_context::sender(ctx);
-
-        assert!(self == created_by, ENotChannelOwner);
 
         let channel_name = channel::get_name(channel);
         let channel_key = string_helpers::to_lowercase(
@@ -184,6 +179,11 @@ module sage_channel::channel_actions {
 
         channel_moderation.add(user_address);
 
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
         event::emit(ChannelModerationUpdate {
             channel_key,
             message: MODERATOR_ADD,
@@ -206,20 +206,6 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext,
     ): address {
-        let (
-            custom_payment,
-            sui_payment
-        ) = channel_fees::assert_create_channel_payment<CoinType>(
-            channel_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
 
         let user_exists = user_registry::has_address_record(
@@ -228,6 +214,15 @@ module sage_channel::channel_actions {
         );
 
         assert!(user_exists, EUserDoesNotExist);
+
+        let (
+            custom_payment,
+            sui_payment
+        ) = channel_fees::assert_create_channel_payment<CoinType>(
+            channel_fees,
+            custom_payment,
+            sui_payment
+        );
 
         let created_at = clock.timestamp_ms();
         let created_by = tx_context::sender(ctx);
@@ -262,6 +257,11 @@ module sage_channel::channel_actions {
             channel_registry,
             channel_key,
             channel_address
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(ChannelCreated {
@@ -301,20 +301,6 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let (
-            custom_payment,
-            sui_payment
-        ) = channel_fees::assert_join_channel_payment<CoinType>(
-            channel_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
 
         let user_exists = user_registry::has_address_record(
@@ -323,6 +309,15 @@ module sage_channel::channel_actions {
         );
 
         assert!(user_exists, EUserDoesNotExist);
+
+        let (
+            custom_payment,
+            sui_payment
+        ) = channel_fees::assert_join_channel_payment<CoinType>(
+            channel_fees,
+            custom_payment,
+            sui_payment
+        );
 
         let channel_name = channel::get_name(channel);
         let channel_key = string_helpers::to_lowercase(
@@ -343,6 +338,11 @@ module sage_channel::channel_actions {
             channel_membership,
             self,
             ctx
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(ChannelMembershipUpdate {
@@ -370,13 +370,6 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let self = tx_context::sender(ctx);
-
         let channel_name = channel::get_name(channel);
         let channel_key = string_helpers::to_lowercase(
             &channel_name
@@ -392,9 +385,16 @@ module sage_channel::channel_actions {
 
         assert!(membership_address == expected_membership_address, EChannelMembershipMismatch);
 
+        let self = tx_context::sender(ctx);
+
         channel_membership::leave(
             channel_membership,
             self
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(ChannelMembershipUpdate {
@@ -439,20 +439,6 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let (
-            custom_payment,
-            sui_payment
-        ) = channel_fees::assert_remove_moderator_owner_payment<CoinType>(
-            channel_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let created_by = channel::get_created_by(channel);
         let self = tx_context::sender(ctx);
 
@@ -461,6 +447,15 @@ module sage_channel::channel_actions {
         let length = channel_moderation.get_moderator_length();
 
         assert!(length - 1 >= MIN_NUM_MODERATORS, EChannelModeratorLength);
+
+        let (
+            custom_payment,
+            sui_payment
+        ) = channel_fees::assert_remove_moderator_owner_payment<CoinType>(
+            channel_fees,
+            custom_payment,
+            sui_payment
+        );
 
         let channel_name = channel::get_name(channel);
         let channel_key = string_helpers::to_lowercase(
@@ -481,6 +476,11 @@ module sage_channel::channel_actions {
         );
 
         channel_moderation.remove(user_address);
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
 
         event::emit(ChannelModerationUpdate {
             channel_key,
@@ -544,6 +544,11 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
+        let created_by = channel::get_created_by(channel);
+        let self = tx_context::sender(ctx);
+
+        assert!(self == created_by, ENotChannelOwner);
+
         let (
             custom_payment,
             sui_payment
@@ -552,16 +557,6 @@ module sage_channel::channel_actions {
             custom_payment,
             sui_payment
         );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let created_by = channel::get_created_by(channel);
-        let self = tx_context::sender(ctx);
-
-        assert!(self == created_by, ENotChannelOwner);
 
         let channel_key = string_helpers::to_lowercase(
             &name
@@ -585,6 +580,11 @@ module sage_channel::channel_actions {
             banner_hash,
             description,
             updated_at
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(ChannelUpdated {

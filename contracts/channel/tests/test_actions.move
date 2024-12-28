@@ -101,14 +101,13 @@ module sage_channel::test_channel_actions {
     const EChannelAvatarMismatch: u64 = 2;
     const EChannelBannerMismatch: u64 = 3;
     const EChannelDescriptionMismatch: u64 = 4;
-    const EInvalidEventsLength: u64 = 5;
-    const EIsModerator: u64 = 6;
-    const EIsNotModerator: u64 = 7;
-    const EIsMember: u64 = 8;
-    const EIsNotMember: u64 = 9;
-    const EChannelMembershipCountMismatch: u64 = 10;
-    const EModeratorLengthMismatch: u64 = 11;
-    const ETestChannelNameMismatch: u64 = 12;
+    const EIsModerator: u64 = 5;
+    const EIsNotModerator: u64 = 6;
+    const EIsMember: u64 = 7;
+    const EIsNotMember: u64 = 8;
+    const EChannelMembershipCountMismatch: u64 = 9;
+    const EModeratorLengthMismatch: u64 = 10;
+    const ETestChannelNameMismatch: u64 = 11;
 
     // --------------- Test Functions ---------------
 
