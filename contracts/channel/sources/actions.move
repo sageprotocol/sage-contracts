@@ -4,6 +4,7 @@ module sage_channel::channel_actions {
     use sui::{
         clock::Clock,
         coin::{Coin},
+        event,
         sui::{SUI}
     };
 
@@ -15,8 +16,16 @@ module sage_channel::channel_actions {
     use sage_channel::{
         channel::{Self, Channel},
         channel_fees::{Self, ChannelFees},
-        channel_membership::{Self, ChannelMembershipRegistry},
-        channel_moderation::{Self, ChannelModerationRegistry},
+        channel_membership::{
+            Self,
+            ChannelMembership,
+            ChannelMembershipRegistry
+        },
+        channel_moderation::{
+            Self,
+            ChannelModeration,
+            ChannelModerationRegistry
+        },
         channel_registry::{Self, ChannelRegistry}
     };
 
@@ -32,18 +41,58 @@ module sage_channel::channel_actions {
 
     const MIN_NUM_MODERATORS: u64 = 1;
 
+    const CHANNEL_JOIN: u8 = 10;
+    const CHANNEL_LEAVE: u8 = 11;
+
+    const MODERATOR_ADD: u8 = 10;
+    const MODERATOR_REMOVE: u8 = 11;
+
     // --------------- Errors ---------------
 
     const EAlreadyChannelModerator: u64 = 370;
-    const EChannelModeratorLength: u64 = 371;
-    const EChannelNameMismatch: u64 = 372;
-    const ENotChannelModerator: u64 = 373;
-    const ENotChannelOwner: u64 = 374;
-    const EUserDoesNotExist: u64 = 375;
+    const EChannelMembershipMismatch: u64 = 371;
+    const EChannelModeratorLength: u64 = 372;
+    const EChannelModerationMismatch: u64 = 373;
+    const EChannelNameMismatch: u64 = 374;
+    const ENotChannelOwner: u64 = 375;
+    const EUserDoesNotExist: u64 = 376;
 
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
+
+    public struct ChannelCreated has copy, drop {
+        channel_address: address,
+        channel_membership_address: address,
+        channel_moderation_address: address,
+        avatar_hash: String,
+        banner_hash: String,
+        channel_name: String,
+        created_at: u64,
+        created_by: address,
+        description: String
+    }
+
+    public struct ChannelUpdated has copy, drop {
+        avatar_hash: String,
+        banner_hash: String,
+        channel_key: String,
+        channel_name: String,
+        description: String,
+        updated_at: u64
+    }
+
+    public struct ChannelMembershipUpdate has copy, drop {
+        channel_key: String,
+        message: u8,
+        user: address
+    }
+
+    public struct ChannelModerationUpdate has copy, drop {
+        channel_key: String,
+        message: u8,
+        user: address
+    }
 
     // --------------- Constructor ---------------
 
@@ -51,44 +100,39 @@ module sage_channel::channel_actions {
 
     public fun add_moderator_as_admin (
         _: &AdminCap,
-        channel_moderation_registry: &mut ChannelModerationRegistry,
+        channel_moderation: &mut ChannelModeration,
         user_registry: &UserRegistry,
-        channel_key: String,
         user_key: String
     ) {
-        let address = user_registry::get_owner_address_from_key(
+        let user_address = user_registry::get_owner_address_from_key(
             user_registry,
             user_key
         );
 
         let is_moderator = channel_moderation::is_moderator(
-            channel_moderation_registry,
-            channel_key,
-            address
+            channel_moderation,
+            user_address
         );
 
         assert!(!is_moderator, EAlreadyChannelModerator);
 
-        let channel_moderators = channel_moderation::borrow_moderators_mut(
-            channel_moderation_registry,
-            channel_key
-        );
+        channel_moderation.add(user_address);
 
-        channel_moderators.push_back(address);
+        // let channel_key = 
 
-        channel_moderation::replace(
-            channel_moderation_registry,
-            channel_key,
-            *channel_moderators
-        );
+        // event::emit(ChannelModerationUpdate {
+        //     channel_key,
+        //     message: MODERATOR_ADD,
+        //     user: user_address
+        // });
     }
 
     public fun add_moderator_as_owner<CoinType> (
-        channel_registry: &mut ChannelRegistry,
-        channel_moderation_registry: &mut ChannelModerationRegistry,
+        channel_moderation_registry: &ChannelModerationRegistry,
         user_registry: &UserRegistry,
+        channel: &Channel,
+        channel_moderation: &mut ChannelModeration,
         channel_fees: &ChannelFees,
-        channel_key: String,
         user_key: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
@@ -108,41 +152,43 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let channel = channel_registry::borrow_channel(
-            channel_registry,
-            channel_key
-        );
-
         let created_by = channel::get_created_by(channel);
         let self = tx_context::sender(ctx);
 
         assert!(self == created_by, ENotChannelOwner);
 
-        let address = user_registry::get_owner_address_from_key(
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(
+            &channel_name
+        );
+
+        let moderation_address = channel_moderation::get_address(channel_moderation);
+        let expected_moderation_address = channel_moderation::borrow_moderation_address(
+            channel_moderation_registry,
+            channel_key
+        );
+
+        assert!(moderation_address == expected_moderation_address, EChannelModerationMismatch);
+
+        let user_address = user_registry::get_owner_address_from_key(
             user_registry,
             user_key
         );
 
         let is_moderator = channel_moderation::is_moderator(
-            channel_moderation_registry,
-            channel_key,
-            address
+            channel_moderation,
+            user_address
         );
 
         assert!(!is_moderator, EAlreadyChannelModerator);
 
-        let channel_moderators = channel_moderation::borrow_moderators_mut(
-            channel_moderation_registry,
-            channel_key
-        );
+        channel_moderation.add(user_address);
 
-        channel_moderators.push_back(address);
-
-        channel_moderation::replace(
-            channel_moderation_registry,
+        event::emit(ChannelModerationUpdate {
             channel_key,
-            *channel_moderators
-        );
+            message: MODERATOR_ADD,
+            user: user_address
+        });
     }
 
     public fun create<CoinType> (
@@ -159,7 +205,7 @@ module sage_channel::channel_actions {
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext,
-    ): Channel {
+    ): address {
         let (
             custom_payment,
             sui_payment
@@ -190,23 +236,23 @@ module sage_channel::channel_actions {
             &channel_name
         );
 
-        let channel = channel::create(
-            channel_key,
+        let channel_address = channel::create(
             channel_name,
             avatar_hash,
             banner_hash,
             description,
             created_at,
-            created_by
+            created_by,
+            ctx
         );
 
-        channel_membership::create(
+        let channel_membership_address = channel_membership::create(
             channel_membership_registry,
             channel_key,
             ctx
         );
 
-        channel_moderation::create(
+        let channel_moderation_address = channel_moderation::create(
             channel_moderation_registry,
             channel_key,
             ctx
@@ -215,17 +261,42 @@ module sage_channel::channel_actions {
         channel_registry::add(
             channel_registry,
             channel_key,
-            channel
+            channel_address
         );
 
-        channel
+        event::emit(ChannelCreated {
+            channel_address,
+            channel_membership_address,
+            channel_moderation_address,
+            avatar_hash,
+            banner_hash,
+            channel_name,
+            created_at,
+            created_by,
+            description
+        });
+
+        event::emit(ChannelMembershipUpdate {
+            channel_key,
+            message: CHANNEL_JOIN,
+            user: self
+        });
+
+        event::emit(ChannelModerationUpdate {
+            channel_key,
+            message: MODERATOR_ADD,
+            user: self
+        });
+
+        channel_address
     }
 
     public fun join<CoinType> (
-        channel_membership_registry: &mut ChannelMembershipRegistry,
+        channel_membership_registry: &ChannelMembershipRegistry,
         user_registry: &UserRegistry,
+        channel: &Channel,
+        channel_membership: &mut ChannelMembership,
         channel_fees: &ChannelFees,
-        channel_key: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -253,23 +324,39 @@ module sage_channel::channel_actions {
 
         assert!(user_exists, EUserDoesNotExist);
 
-        let channel_membership = channel_membership::borrow_membership_mut(
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(
+            &channel_name
+        );
+
+        let membership_address = channel_membership::get_address(
+            channel_membership
+        );
+        let expected_membership_address = channel_membership::borrow_membership_address(
             channel_membership_registry,
             channel_key
         );
 
+        assert!(membership_address == expected_membership_address, EChannelMembershipMismatch);
+
         channel_membership::join(
             channel_membership,
-            channel_key,
+            self,
             ctx
         );
+
+        event::emit(ChannelMembershipUpdate {
+            channel_key,
+            message: CHANNEL_JOIN,
+            user: self
+        });
     }
 
     public fun leave<CoinType> (
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        user_registry: &UserRegistry,
+        channel_membership_registry: &ChannelMembershipRegistry,
+        channel: &Channel,
+        channel_membership: &mut ChannelMembership,
         channel_fees: &ChannelFees,
-        channel_key: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -290,65 +377,63 @@ module sage_channel::channel_actions {
 
         let self = tx_context::sender(ctx);
 
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            self
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(
+            &channel_name
         );
 
-        assert!(user_exists, EUserDoesNotExist);
-
-        let channel_membership = channel_membership::borrow_membership_mut(
+        let membership_address = channel_membership::get_address(
+            channel_membership
+        );
+        let expected_membership_address = channel_membership::borrow_membership_address(
             channel_membership_registry,
             channel_key
         );
 
+        assert!(membership_address == expected_membership_address, EChannelMembershipMismatch);
+
         channel_membership::leave(
             channel_membership,
-            channel_key,
-            ctx
+            self
         );
+
+        event::emit(ChannelMembershipUpdate {
+            channel_key,
+            message: CHANNEL_LEAVE,
+            user: self
+        });
     }
 
     public fun remove_moderator_as_admin (
         _: &AdminCap,
-        channel_moderation_registry: &mut ChannelModerationRegistry,
+        channel_moderation: &mut ChannelModeration,
         user_registry: &UserRegistry,
-        channel_key: String,
         user_key: String
     ) {
-        let address = user_registry::get_owner_address_from_key(
+        let length = channel_moderation.get_moderator_length();
+
+        assert!(length - 1 >= MIN_NUM_MODERATORS, EChannelModeratorLength);
+
+        let user_address = user_registry::get_owner_address_from_key(
             user_registry,
             user_key
         );
 
-        let channel_moderators = channel_moderation::borrow_moderators_mut(
-            channel_moderation_registry,
-            channel_key
-        );
+        channel_moderation.remove(user_address);
 
-        let (is_moderator, index) = channel_moderators.index_of(&address);
-
-        assert!(is_moderator, ENotChannelModerator);
-
-        let length = channel_moderators.length();
-
-        assert!(length >= MIN_NUM_MODERATORS + 1, EChannelModeratorLength);
-
-        channel_moderators.remove(index);
-
-        channel_moderation::replace(
-            channel_moderation_registry,
-            channel_key,
-            *channel_moderators
-        );
+        // event::emit(ChannelModerationUpdate {
+        //     channel_key,
+        //     message: MODERATOR_REMOVE,
+        //     user: user_address
+        // });
     }
 
     public fun remove_moderator_as_owner<CoinType> (
-        channel_registry: &mut ChannelRegistry,
-        channel_moderation_registry: &mut ChannelModerationRegistry,
+        channel_moderation_registry: &ChannelModerationRegistry,
         user_registry: &UserRegistry,
+        channel: &Channel,
+        channel_moderation: &mut ChannelModeration,
         channel_fees: &ChannelFees,
-        channel_key: String,
         user_key: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
@@ -368,69 +453,68 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let channel = channel_registry::borrow_channel(
-            channel_registry,
-            channel_key
-        );
-
         let created_by = channel::get_created_by(channel);
         let self = tx_context::sender(ctx);
 
         assert!(self == created_by, ENotChannelOwner);
 
-        let address = user_registry::get_owner_address_from_key(
-            user_registry,
-            user_key
+        let length = channel_moderation.get_moderator_length();
+
+        assert!(length - 1 >= MIN_NUM_MODERATORS, EChannelModeratorLength);
+
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(
+            &channel_name
         );
 
-        let channel_moderators = channel_moderation::borrow_moderators_mut(
+        let moderation_address = channel_moderation::get_address(channel_moderation);
+        let expected_moderation_address = channel_moderation::borrow_moderation_address(
             channel_moderation_registry,
             channel_key
         );
 
-        let (is_moderator, index) = channel_moderators.index_of(&address);
+        assert!(moderation_address == expected_moderation_address, EChannelModerationMismatch);
 
-        assert!(is_moderator, ENotChannelModerator);
-
-        let length = channel_moderators.length();
-
-        assert!(length >= MIN_NUM_MODERATORS + 1, EChannelModeratorLength);
-
-        channel_moderators.remove(index);
-
-        channel_moderation::replace(
-            channel_moderation_registry,
-            channel_key,
-            *channel_moderators
+        let user_address = user_registry::get_owner_address_from_key(
+            user_registry,
+            user_key
         );
+
+        channel_moderation.remove(user_address);
+
+        event::emit(ChannelModerationUpdate {
+            channel_key,
+            message: MODERATOR_REMOVE,
+            user: user_address
+        });
     }
 
     public fun update_channel_as_admin (
         _: &AdminCap,
         clock: &Clock,
-        channel_registry: &mut ChannelRegistry,
-        channel_key: String,
+        channel: &mut Channel,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         name: String
     ) {
-        let lowercase_channel_name = string_helpers::to_lowercase(
+        let channel_key = string_helpers::to_lowercase(
             &name
         );
 
-        assert!(lowercase_channel_name == channel_key, EChannelNameMismatch);
-
-        let mut channel = channel_registry::borrow_channel(
-            channel_registry,
-            channel_key
+        let existing_name = channel::get_name(
+            channel
         );
+        let expected_channel_key = string_helpers::to_lowercase(
+            &existing_name
+        );
+
+        assert!(channel_key == expected_channel_key, EChannelNameMismatch);
         
         let updated_at = clock.timestamp_ms();
 
-        let channel = channel::update(
-            &mut channel,
-            channel_key,
+        channel::update(
+            channel,
             name,
             avatar_hash,
             banner_hash,
@@ -438,22 +522,24 @@ module sage_channel::channel_actions {
             updated_at
         );
 
-        channel_registry::replace(
-            channel_registry,
+        event::emit(ChannelUpdated {
+            avatar_hash,
+            banner_hash,
             channel_key,
-            channel
-        );
+            channel_name: name,
+            description,
+            updated_at
+        });
     }
 
     public fun update_channel_as_owner<CoinType> (
         clock: &Clock,
-        channel_registry: &mut ChannelRegistry,
+        channel: &mut Channel,
         channel_fees: &ChannelFees,
-        channel_key: String,
         avatar_hash: String,
         banner_hash: String,
-        channel_name: String,
         description: String,
+        name: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -472,39 +558,43 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let mut channel = channel_registry::borrow_channel(
-            channel_registry,
-            channel_key
-        );
-
         let created_by = channel::get_created_by(channel);
         let self = tx_context::sender(ctx);
 
-        assert!(self == created_by, ENotChannelModerator);
+        assert!(self == created_by, ENotChannelOwner);
 
-        let lowercase_channel_name = string_helpers::to_lowercase(
-            &channel_name
+        let channel_key = string_helpers::to_lowercase(
+            &name
         );
 
-        assert!(lowercase_channel_name == channel_key, EChannelNameMismatch);
+        let existing_name = channel::get_name(
+            channel
+        );
+        let expected_channel_key = string_helpers::to_lowercase(
+            &existing_name
+        );
+
+        assert!(channel_key == expected_channel_key, EChannelNameMismatch);
 
         let updated_at = clock.timestamp_ms();
 
-        let channel = channel::update(
-            &mut channel,
-            channel_key,
-            channel_name,
+        channel::update(
+            channel,
+            name,
             avatar_hash,
             banner_hash,
             description,
             updated_at
         );
 
-        channel_registry::replace(
-            channel_registry,
+        event::emit(ChannelUpdated {
+            avatar_hash,
+            banner_hash,
             channel_key,
-            channel
-        );
+            channel_name: name,
+            description,
+            updated_at
+        });
     }
 
     // --------------- Friend Functions ---------------

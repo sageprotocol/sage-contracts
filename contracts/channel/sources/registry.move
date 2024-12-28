@@ -6,22 +6,17 @@ module sage_channel::channel_registry {
         table::{Self, Table}
     };
 
-    use sage_channel::{
-        channel::{Channel}
-    };
-
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const EChannelRecordDoesNotExist: u64 = 370;
-    const EChannelRecordExists: u64 = 371;
+    const EChannelRecordExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelRegistry has key, store {
+    public struct ChannelRegistry has key {
         id: UID,
-        registry: Table<String, Channel>
+        registry: Table<String, address>
     }
 
     public struct CHANNEL_REGISTRY has drop {}
@@ -46,10 +41,10 @@ module sage_channel::channel_registry {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_channel(
+    public fun borrow_channel_address(
         channel_registry: &ChannelRegistry,
         channel_key: String
-    ): Channel {
+    ): address {
         *channel_registry.registry.borrow(channel_key)
     }
 
@@ -65,25 +60,13 @@ module sage_channel::channel_registry {
     public(package) fun add(
         channel_registry: &mut ChannelRegistry,
         channel_key: String,
-        channel: Channel
+        channel_address: address
     ) {
         let record_exists = channel_registry.has_record(channel_key);
 
         assert!(!record_exists, EChannelRecordExists);
 
-        channel_registry.registry.add(channel_key, channel);
-    }
-
-    public(package) fun replace(
-        channel_registry: &mut ChannelRegistry,
-        channel_key: String,
-        channel: Channel
-    ) {
-        let record_exists = channel_registry.has_record(channel_key);
-
-        assert!(record_exists, EChannelRecordDoesNotExist);
-
-        channel_registry.registry.replace(channel_key, channel);
+        channel_registry.registry.add(channel_key, channel_address);
     }
 
     // --------------- Internal Functions ---------------

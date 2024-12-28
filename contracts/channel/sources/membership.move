@@ -1,7 +1,6 @@
 module sage_channel::channel_membership {
     use std::string::{String};
 
-    use sui::event;
     use sui::{
         package::{claim_and_keep},
         table::{Self, Table}
@@ -12,9 +11,6 @@ module sage_channel::channel_membership {
     const CHANNEL_MEMBER_WALLET: u8 = 0;
     // const CHANNEL_MEMBER_KIOSK: u8 = 1;
 
-    const CHANNEL_JOIN: u8 = 10;
-    const CHANNEL_LEAVE: u8 = 11;
-
     // --------------- Errors ---------------
 
     const EChannelMemberExists: u64 = 370;
@@ -22,28 +18,26 @@ module sage_channel::channel_membership {
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelMember has copy, store, drop {
+    public struct ChannelMember has key {
+        id: UID,
         member_type: u8
     }
 
-    public struct ChannelMembership has store {
-        membership: Table<address, ChannelMember>
+    // user wallet address <-> channel member address
+    public struct ChannelMembership has key {
+        id: UID,
+        membership: Table<address, address>
     }
 
-    public struct ChannelMembershipRegistry has key, store {
+    // channel key <-> channel membership address
+    public struct ChannelMembershipRegistry has key {
         id: UID,
-        registry: Table<String, ChannelMembership>
+        registry: Table<String, address>
     }
     
     public struct CHANNEL_MEMBERSHIP has drop {}
 
     // --------------- Events ---------------
-
-    public struct ChannelMembershipUpdate has copy, drop {
-        channel_key: String,
-        message: u8,
-        user: address
-    }
 
     // --------------- Constructor ---------------
 
@@ -63,124 +57,115 @@ module sage_channel::channel_membership {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_membership_address(
+        channel_membership_registry: &ChannelMembershipRegistry,
+        channel_key: String
+    ): address {
+        channel_membership_registry.registry[channel_key]
+    }
+
+    public fun get_address(
+        channel_membership: &ChannelMembership
+    ): address {
+        channel_membership.id.to_address()
+    }
+
     public fun get_member_length(
         channel_membership: &ChannelMembership
     ): u64 {
         channel_membership.membership.length()
     }
 
-    public fun is_channel_member(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_key: String,
-        user: address
-    ): bool {
-        let channel_membership = borrow_membership_mut(
-            channel_membership_registry,
-            channel_key
-        );
-
-        is_member(
-            channel_membership,
-            user
-        )
-    }
-
     public fun is_member(
         channel_membership: &ChannelMembership,
-        user: address
+        user_address: address
     ): bool {
-        channel_membership.membership.contains(user)
+        channel_membership.membership.contains(user_address)
     }
 
     // --------------- Friend Functions ---------------
-
-    public(package) fun borrow_membership_mut(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_key: String
-    ): &mut ChannelMembership {
-        &mut channel_membership_registry.registry[channel_key]
-    }
 
     public(package) fun create(
         channel_membership_registry: &mut ChannelMembershipRegistry,
         channel_key: String,
         ctx: &mut TxContext
-    ) {
+    ): address {
         let mut channel_membership = ChannelMembership {
+            id: object::new(ctx),
             membership: table::new(ctx)
         };
 
-        let channel_membership_val = &mut channel_membership;
-        let user = tx_context::sender(ctx);
+        let user_address = tx_context::sender(ctx);
 
         join_channel(
-            channel_membership_val,
-            user
+            &mut channel_membership,
+            user_address,
+            ctx
         );
 
-        channel_membership_registry.registry.add(channel_key, channel_membership);
+        let channel_membership_address = channel_membership.id.to_address();
+
+        channel_membership_registry.registry.add(
+            channel_key,
+            channel_membership.id.to_address()
+        );
+
+        transfer::share_object(channel_membership);
+
+        channel_membership_address
     }
 
     public(package) fun join(
         channel_membership: &mut ChannelMembership,
-        channel_key: String,
-        ctx: &TxContext
+        user_address: address,
+        ctx: &mut TxContext
     ) {
-        let user = tx_context::sender(ctx);
-
         join_channel(
             channel_membership,
-            user
+            user_address,
+            ctx
         );
-
-        event::emit(ChannelMembershipUpdate {
-            channel_key,
-            message: CHANNEL_JOIN,
-            user
-        });
     }
 
     public(package) fun leave(
         channel_membership: &mut ChannelMembership,
-        channel_key: String,
-        ctx: &TxContext
+        user_address: address
     ) {
-        let user = tx_context::sender(ctx);
-
         let is_member = is_member(
             channel_membership,
-            user
+            user_address
         );
 
         assert!(is_member, EChannelMemberDoesNotExist);
 
-        channel_membership.membership.remove(user);
-
-        event::emit(ChannelMembershipUpdate {
-            channel_key,
-            message: CHANNEL_LEAVE,
-            user
-        });
+        channel_membership.membership.remove(user_address);
     }
 
     // --------------- Internal Functions ---------------
 
     fun join_channel(
         channel_membership: &mut ChannelMembership,
-        user: address
+        user_address: address,
+        ctx: &mut TxContext
     ) {
         let is_member = is_member(
             channel_membership,
-            user
+            user_address
         );
 
         assert!(!is_member, EChannelMemberExists);
 
         let channel_member = ChannelMember {
+            id: object::new(ctx),
             member_type: CHANNEL_MEMBER_WALLET
         };
 
-        channel_membership.membership.add(user, channel_member);
+        channel_membership.membership.add(
+            user_address,
+            channel_member.id.to_address()
+        );
+
+        transfer::share_object(channel_member);
     }
 
     // --------------- Test Functions ---------------

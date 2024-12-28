@@ -10,17 +10,26 @@ module sage_channel::test_channel_membership {
     use sage_admin::{admin::{Self}};
 
     use sage_channel::{
-        channel_membership::{Self, ChannelMembershipRegistry, EChannelMemberExists}
+        channel_membership::{
+            Self,
+            ChannelMembership,
+            ChannelMembershipRegistry,
+            EChannelMemberDoesNotExist,
+            EChannelMemberExists
+        }
     };
 
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const SERVER: address = @server;
 
     // --------------- Errors ---------------
 
     const EChannelMembershipCountMismatch: u64 = 0;
-    const EChannelNotMember: u64 = 1;
+    const EChannelMembershipDoesNotExist: u64 = 1;
+    const EChannelAlreadyMember: u64 = 2;
+    const EChannelNotMember: u64 = 3;
 
     // --------------- Test Functions ---------------
 
@@ -44,7 +53,7 @@ module sage_channel::test_channel_membership {
     }
 
     #[test]
-    fun registry_init() {
+    fun test_init() {
         let (
             mut scenario_val,
             channel_membership_registry_val
@@ -75,29 +84,40 @@ module sage_channel::test_channel_membership {
 
             let channel_key = utf8(b"channel-name");
 
-            channel_membership::create(
+            let channel_membership_address = channel_membership::create(
                 channel_membership_registry,
                 channel_key,
                 ts::ctx(scenario)
             );
 
-            let channel_membership = channel_membership::borrow_membership_mut(
+            let borrowed_membership_address = channel_membership::borrow_membership_address(
                 channel_membership_registry,
                 channel_key
             );
 
+            assert!(channel_membership_address == borrowed_membership_address, EChannelMembershipDoesNotExist);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_membership = ts::take_shared<ChannelMembership>(
+                scenario
+            );
+
             let channel_member_count = channel_membership::get_member_length(
-                channel_membership
+                &channel_membership
             );
 
             assert!(channel_member_count == 1, EChannelMembershipCountMismatch);
 
             let is_member = channel_membership::is_member(
-                channel_membership,
+                &channel_membership,
                 ADMIN
             );
 
             assert!(is_member, EChannelNotMember);
+
+            ts::return_shared(channel_membership);
 
             destroy(channel_membership_registry_val);
         };
@@ -106,7 +126,6 @@ module sage_channel::test_channel_membership {
     }
 
     #[test]
-    #[expected_failure(abort_code = EChannelMemberExists)]
     fun join() {
         let (
             mut scenario_val,
@@ -121,36 +140,89 @@ module sage_channel::test_channel_membership {
 
             let channel_key = utf8(b"channel-name");
 
-            channel_membership::create(
+            let _channel_membership_address = channel_membership::create(
                 channel_membership_registry,
                 channel_key,
                 ts::ctx(scenario)
             );
+        };
 
-            let channel_membership = channel_membership::borrow_membership_mut(
-                channel_membership_registry,
-                channel_key
+        ts::next_tx(scenario, SERVER);
+        {
+            let mut channel_membership = ts::take_shared<ChannelMembership>(
+                scenario
             );
 
             channel_membership::join(
-                channel_membership,
-                channel_key,
+                &mut channel_membership,
+                SERVER,
                 ts::ctx(scenario)
             );
 
+            let channel_member_count = channel_membership::get_member_length(
+                &channel_membership
+            );
+
+            assert!(channel_member_count == 2, EChannelMembershipCountMismatch);
+
             let is_member = channel_membership::is_member(
-                channel_membership,
-                ADMIN
+                &channel_membership,
+                SERVER
             );
 
             assert!(is_member, EChannelNotMember);
 
-            let member_length = channel_membership::get_member_length(
-                channel_membership
+            ts::return_shared(channel_membership);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy(channel_membership_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelMemberExists)]
+    fun join_fail() {
+        let (
+            mut scenario_val,
+            mut channel_membership_registry_val,
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_membership_registry = &mut channel_membership_registry_val;
+
+            let channel_key = utf8(b"channel-name");
+
+            let _channel_membership_address = channel_membership::create(
+                channel_membership_registry,
+                channel_key,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut channel_membership = ts::take_shared<ChannelMembership>(
+                scenario
             );
 
-            assert!(member_length == 1, EChannelMembershipCountMismatch);
+            channel_membership::join(
+                &mut channel_membership,
+                ADMIN,
+                ts::ctx(scenario)
+            );
 
+            ts::return_shared(channel_membership);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
             destroy(channel_membership_registry_val);
         };
 
@@ -172,41 +244,87 @@ module sage_channel::test_channel_membership {
 
             let channel_key = utf8(b"channel-name");
 
-            channel_membership::create(
+            let _channel_membership_address = channel_membership::create(
                 channel_membership_registry,
                 channel_key,
                 ts::ctx(scenario)
             );
+        };
 
-            let channel_membership = channel_membership::borrow_membership_mut(
-                channel_membership_registry,
-                channel_key
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut channel_membership = ts::take_shared<ChannelMembership>(
+                scenario
             );
 
             channel_membership::leave(
-                channel_membership,
+                &mut channel_membership,
+                ADMIN
+            );
+
+            let channel_member_count = channel_membership::get_member_length(
+                &channel_membership
+            );
+
+            assert!(channel_member_count == 0, EChannelMembershipCountMismatch);
+
+            let is_member = channel_membership::is_member(
+                &channel_membership,
+                SERVER
+            );
+
+            assert!(!is_member, EChannelAlreadyMember);
+
+            ts::return_shared(channel_membership);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy(channel_membership_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EChannelMemberDoesNotExist)]
+    fun leave_fail() {
+        let (
+            mut scenario_val,
+            mut channel_membership_registry_val,
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_membership_registry = &mut channel_membership_registry_val;
+
+            let channel_key = utf8(b"channel-name");
+
+            let _channel_membership_address = channel_membership::create(
+                channel_membership_registry,
                 channel_key,
                 ts::ctx(scenario)
             );
+        };
 
-            let channel_member_count_leave = channel_membership::get_member_length(
-                channel_membership
+        ts::next_tx(scenario, SERVER);
+        {
+            let mut channel_membership = ts::take_shared<ChannelMembership>(
+                scenario
             );
 
-            assert!(channel_member_count_leave == 0, EChannelMembershipCountMismatch);
-
-            channel_membership::join(
-                channel_membership,
-                channel_key,
-                ts::ctx(scenario)
+            channel_membership::leave(
+                &mut channel_membership,
+                SERVER
             );
 
-            let channel_member_count_join = channel_membership::get_member_length(
-                channel_membership
-            );
+            ts::return_shared(channel_membership);
+        };
 
-            assert!(channel_member_count_join == 1, EChannelMembershipCountMismatch);
-
+        ts::next_tx(scenario, ADMIN);
+        {
             destroy(channel_membership_registry_val);
         };
 

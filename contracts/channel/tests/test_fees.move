@@ -20,6 +20,7 @@ module sage_channel::test_channel_fees {
     use sage_channel::{
         channel_fees::{
             Self,
+            ChannelFees,
             EIncorrectCoinType,
             EIncorrectCustomPayment,
             EIncorrectSuiPayment
@@ -118,7 +119,8 @@ module sage_channel::test_channel_fees {
         {
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            let channel_fees = channel_fees::create_for_testing<SUI>(
+            channel_fees::create<SUI>(
+                &fee_cap,
                 &mut app,
                 ADD_MODERATOR_CUSTOM_FEE,
                 ADD_MODERATOR_SUI_FEE,
@@ -133,6 +135,15 @@ module sage_channel::test_channel_fees {
                 UPDATE_CHANNEL_CUSTOM_FEE,
                 UPDATE_CHANNEL_SUI_FEE,
                 ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, fee_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_fees = ts::take_shared<ChannelFees>(
+                scenario
             );
 
             let custom_payment = mint_for_testing<SUI>(
@@ -243,13 +254,11 @@ module sage_channel::test_channel_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
+            ts::return_shared(channel_fees);
 
             destroy_for_testing(
                 app
             );
-
-            destroy(channel_fees);
         };
 
         ts::end(scenario_val);
@@ -1058,10 +1067,11 @@ module sage_channel::test_channel_fees {
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let fee_cap = {
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            let mut channel_fees = channel_fees::create_for_testing<SUI>(
+            channel_fees::create<SUI>(
+                &fee_cap,
                 &mut app,
                 ADD_MODERATOR_CUSTOM_FEE,
                 ADD_MODERATOR_SUI_FEE,
@@ -1076,6 +1086,15 @@ module sage_channel::test_channel_fees {
                 UPDATE_CHANNEL_CUSTOM_FEE,
                 UPDATE_CHANNEL_SUI_FEE,
                 ts::ctx(scenario)
+            );
+
+            fee_cap
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut channel_fees = ts::take_shared<ChannelFees>(
+                scenario
             );
 
             channel_fees::update<SUI>(
@@ -1095,13 +1114,130 @@ module sage_channel::test_channel_fees {
                 INCORRECT_FEE
             );
 
+            ts::return_shared(channel_fees);
+
             ts::return_to_sender(scenario, fee_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_fees = ts::take_shared<ChannelFees>(
+                scenario
+            );
+
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = channel_fees::assert_add_moderator_owner_payment<SUI>(
+                &channel_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = channel_fees::assert_create_channel_payment<SUI>(
+                &channel_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = channel_fees::assert_join_channel_payment<SUI>(
+                &channel_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = channel_fees::assert_leave_channel_payment<SUI>(
+                &channel_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = channel_fees::assert_remove_moderator_owner_payment<SUI>(
+                &channel_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = channel_fees::assert_update_channel_payment<SUI>(
+                &channel_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            ts::return_shared(channel_fees);
 
             destroy_for_testing(
                 app
             );
-
-            destroy(channel_fees);
         };
 
         ts::end(scenario_val);

@@ -35,7 +35,8 @@ module sage_user::user_actions {
     const ENotInvited: u64 = 373;
     const ENoSelfJoin: u64 = 374;
     const EUserDoesNotExist: u64 = 375;
-    const EUserNameMismatch: u64 = 376;
+    const EUserExists: u64 = 376;
+    const EUserNameMismatch: u64 = 377;
 
     // --------------- Name Tag ---------------
 
@@ -81,6 +82,15 @@ module sage_user::user_actions {
             custom_payment,
             sui_payment
         );
+
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(!user_exists, EUserExists);
 
         let is_invite_included = invite_key.length() > 0;
 
@@ -129,7 +139,6 @@ module sage_user::user_actions {
         };
 
         let created_at = clock.timestamp_ms();
-        let self = tx_context::sender(ctx);
         let user_key = string_helpers::to_lowercase(
             &name
         );
