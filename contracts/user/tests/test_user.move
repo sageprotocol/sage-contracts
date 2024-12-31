@@ -4,7 +4,14 @@ module sage_user::test_user {
 
     use sui::test_scenario::{Self as ts};
 
-    use sage_user::{user::{Self, User}};
+    use sage_user::{
+        user::{
+            Self,
+            User,
+            EInvalidUserDescription,
+            EInvalidUsername
+        }
+    };
 
     // --------------- Constants ---------------
 
@@ -29,7 +36,6 @@ module sage_user::test_user {
         ts::next_tx(scenario, ADMIN);
         {
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
             let name = utf8(b"name");
 
             let _user_address = user::create(
@@ -37,9 +43,7 @@ module sage_user::test_user {
                 utf8(b"banner-hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                name,
                 name,
                 ts::ctx(scenario)
             );
@@ -49,7 +53,132 @@ module sage_user::test_user {
     }
 
     #[test]
-    fun test_description_validity() {
+    #[expected_failure(abort_code = EInvalidUserDescription)]
+    fun test_user_create_description_length() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let created_at: u64 = 999;
+            let description = utf8(b"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg");
+
+            let _user_address = user::create(
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                created_at,
+                description,
+                ADMIN,
+                utf8(b"name"),
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+    
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_create_name_special() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let created_at: u64 = 999;
+            let name = utf8(b"nam*e");
+
+            let _user_address = user::create(
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                name,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_create_name_dash() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let created_at: u64 = 999;
+            let name = utf8(b"name-");
+
+            let _user_address = user::create(
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                name,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_create_name_max_length() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let created_at: u64 = 999;
+            let name = utf8(b"abcdefghijklmnop");
+
+            let _user_address = user::create(
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                name,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_create_name_min_length() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let created_at: u64 = 999;
+            let name = utf8(b"ab");
+
+            let _user_address = user::create(
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                name,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_description_valid() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -92,16 +221,13 @@ module sage_user::test_user {
             let user_name = utf8(b"user-name");
 
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
                 created_at,
                 description,
-                invited_by,
                 ADMIN,
-                user_name,
                 user_name,
                 ts::ctx(scenario)
             );
@@ -138,10 +264,9 @@ module sage_user::test_user {
             let new_user_banner = utf8(b"banner_hash");
             let new_user_description = utf8(b"new_description");
             let new_user_name = utf8(b"new-name");
-            let updated_at: u64 = 9999;
+            let updated_at: u64 = 999;
 
             let user_request = user::update(
-                user_name,
                 user_request,
                 new_user_avatar,
                 new_user_banner,

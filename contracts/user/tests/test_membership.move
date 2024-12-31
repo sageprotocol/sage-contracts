@@ -11,7 +11,13 @@ module sage_user::test_user_membership {
 
     use sage_user::{
         user::{Self},
-        user_membership::{Self, UserMembershipRegistry, EUserMemberDoesNotExist}
+        user_membership::{
+            Self,
+            UserMembership,
+            UserMembershipRegistry,
+            EUserMemberExists,
+            EUserMemberDoesNotExist
+        }
     };
 
     // --------------- Constants ---------------
@@ -22,7 +28,8 @@ module sage_user::test_user_membership {
     // --------------- Errors ---------------
 
     const EUserMembershipCountMismatch: u64 = 0;
-    const EUserNotMember: u64 = 1;
+    const EUserMember: u64 = 1;
+    const EUserNotMember: u64 = 2;
 
     // --------------- Test Functions ---------------
 
@@ -76,44 +83,45 @@ module sage_user::test_user_membership {
             let user_membership_registry = &mut user_membership_registry_val;
 
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
             let name = utf8(b"user-name");
 
-            let user_address = user::create(
+            let _user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                name,
                 name,
                 ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user_address,
+                name,
                 ts::ctx(scenario)
             );
+        };
 
-            let user_membership = user_membership::borrow_membership_mut(
-                user_membership_registry,
-                user_address
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_membership = ts::take_shared<UserMembership>(
+                scenario
             );
 
             let user_member_count = user_membership::get_member_length(
-                user_membership
+                &user_membership
             );
 
             assert!(user_member_count == 0, EUserMembershipCountMismatch);
 
             let is_member = user_membership::is_member(
-                user_membership,
+                &user_membership,
                 ADMIN
             );
 
             assert!(!is_member, EUserNotMember);
+
+            ts::return_shared(user_membership);
 
             destroy(user_membership_registry_val);
         };
@@ -133,79 +141,264 @@ module sage_user::test_user_membership {
         let user_membership_registry = &mut user_membership_registry_val;
 
         ts::next_tx(scenario, OTHER);
-        let other_user_address = {
+        {
             let other_username = utf8(b"other-name");
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
-            let other_user_address = user::create(
+            let _other_user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 OTHER,
-                other_username,
                 other_username,
                 ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                other_user_address,
+                other_username,
                 ts::ctx(scenario)
             );
-
-            other_user_address
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
-            let user_address = user::create(
+            let _user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                username,
                 username,
                 ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user_address,
+                username,
                 ts::ctx(scenario)
             );
+        };
 
-            let user_membership = user_membership::borrow_membership_mut(
-                user_membership_registry,
-                other_user_address
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut user_membership = ts::take_shared<UserMembership>(
+                scenario
             );
 
             user_membership::join(
-                user_membership,
+                &mut user_membership,
                 OTHER,
                 ADMIN
             );
 
             let is_member = user_membership::is_member(
-                user_membership,
+                &user_membership,
                 ADMIN
             );
 
             assert!(is_member, EUserNotMember);
 
             let member_length = user_membership::get_member_length(
-                user_membership
+                &user_membership
             );
 
             assert!(member_length == 1, EUserMembershipCountMismatch);
+
+            ts::return_shared(user_membership);
+
+            destroy(user_membership_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUserMemberExists)]
+    fun test_user_join_fail() {
+        let (
+            mut scenario_val,
+            mut user_membership_registry_val,
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let other_username = utf8(b"other-name");
+            let created_at: u64 = 999;
+
+            let _other_user_address = user::create(
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                created_at,
+                utf8(b"description"),
+                OTHER,
+                other_username,
+                ts::ctx(scenario)
+            );
+
+            user_membership::create(
+                user_membership_registry,
+                other_username,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let username = utf8(b"user-name");
+            let created_at: u64 = 999;
+
+            let _user_address = user::create(
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                username,
+                ts::ctx(scenario)
+            );
+
+            user_membership::create(
+                user_membership_registry,
+                username,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut user_membership = ts::take_shared<UserMembership>(
+                scenario
+            );
+
+            user_membership::join(
+                &mut user_membership,
+                OTHER,
+                ADMIN
+            );
+
+            user_membership::join(
+                &mut user_membership,
+                OTHER,
+                ADMIN
+            );
+
+            ts::return_shared(user_membership);
+
+            destroy(user_membership_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_leave() {
+        let (
+            mut scenario_val,
+            mut user_membership_registry_val,
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_membership_registry = &mut user_membership_registry_val;
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let other_username = utf8(b"other-name");
+            let created_at: u64 = 999;
+
+            let _other_user_address = user::create(
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                created_at,
+                utf8(b"description"),
+                OTHER,
+                other_username,
+                ts::ctx(scenario)
+            );
+
+            user_membership::create(
+                user_membership_registry,
+                other_username,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let username = utf8(b"user-name");
+            let created_at: u64 = 999;
+
+            let _user_address = user::create(
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                username,
+                ts::ctx(scenario)
+            );
+
+            user_membership::create(
+                user_membership_registry,
+                username,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut user_membership = ts::take_shared<UserMembership>(
+                scenario
+            );
+
+            user_membership::join(
+                &mut user_membership,
+                OTHER,
+                ADMIN
+            );
+
+            let is_member = user_membership::is_member(
+                &user_membership,
+                ADMIN
+            );
+
+            assert!(is_member, EUserNotMember);
+
+            let member_length = user_membership::get_member_length(
+                &user_membership
+            );
+
+            assert!(member_length == 1, EUserMembershipCountMismatch);
+
+            user_membership::leave(
+                &mut user_membership,
+                OTHER,
+                ADMIN
+            );
+
+            let is_member = user_membership::is_member(
+                &user_membership,
+                ADMIN
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let member_length = user_membership::get_member_length(
+                &user_membership
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            ts::return_shared(user_membership);
 
             destroy(user_membership_registry_val);
         };
@@ -215,7 +408,7 @@ module sage_user::test_user_membership {
 
     #[test]
     #[expected_failure(abort_code = EUserMemberDoesNotExist)]
-    fun test_user_leave() {
+    fun test_user_leave_fail() {
         let (
             mut scenario_val,
             mut user_membership_registry_val,
@@ -229,54 +422,55 @@ module sage_user::test_user_membership {
 
             let username = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
-            let user_address = user::create(
+            let _user_address = user::create(
                 utf8(b"avatar_hash"),
                 utf8(b"banner_hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                username,
                 username,
                 ts::ctx(scenario)
             );
 
             user_membership::create(
                 user_membership_registry,
-                user_address,
+                username,
                 ts::ctx(scenario)
             );
+        };
 
-            let user_membership = user_membership::borrow_membership_mut(
-                user_membership_registry,
-                user_address
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut user_membership = ts::take_shared<UserMembership>(
+                scenario
             );
 
             user_membership::leave(
-                user_membership,
+                &mut user_membership,
                 ADMIN,
                 ADMIN
             );
 
             let user_member_count_leave = user_membership::get_member_length(
-                user_membership
+                &user_membership
             );
 
             assert!(user_member_count_leave == 0, EUserMembershipCountMismatch);
 
             user_membership::join(
-                user_membership,
+                &mut user_membership,
                 ADMIN,
                 ADMIN
             );
 
             let user_member_count_join = user_membership::get_member_length(
-                user_membership
+                &user_membership
             );
 
             assert!(user_member_count_join == 1, EUserMembershipCountMismatch);
+
+            ts::return_shared(user_membership);
 
             destroy(user_membership_registry_val);
         };

@@ -27,12 +27,12 @@ module sage_user::user_invite {
         user: address
     }
 
-    public struct InviteConfig has key, store {
+    public struct InviteConfig has key {
         id: UID,
         required: bool
     }
 
-    public struct UserInviteRegistry has key, store {
+    public struct UserInviteRegistry has key {
         id: UID,
         registry: Table<String, Invite>
     }
@@ -70,7 +70,7 @@ module sage_user::user_invite {
     // --------------- Public Functions ---------------
 
     public fun get_destructured_invite(
-        user_invite_registry: &mut UserInviteRegistry,
+        user_invite_registry: &UserInviteRegistry,
         invite_key: String
     ): (vector<u8>, address) {
         let invite = *user_invite_registry.registry.borrow(invite_key);

@@ -1,8 +1,6 @@
 module sage_user::user {
     use std::string::{String};
 
-    use sui::event;
-
     use sage_utils::{
         string_helpers::{Self}
     };
@@ -38,27 +36,6 @@ module sage_user::user {
     }
 
     // --------------- Events ---------------
-
-    public struct UserCreated has copy, drop {
-        avatar_hash: String,
-        banner_hash: String,
-        created_at: u64,
-        description: String,
-        owner: address,
-        invited_by: Option<address>,
-        user_key: String,
-        user_name: String
-    }
-
-    public struct UserUpdated has copy, drop {
-        avatar_hash: String,
-        banner_hash: String,
-        description: String,
-        owner: address,
-        updated_at: u64,
-        user_key: String,
-        user_name: String
-    }
 
     // --------------- Constructor ---------------
 
@@ -103,6 +80,12 @@ module sage_user::user {
         (user.description, create_user_request(user))
     }
 
+    public fun get_immutable_name(
+        user: &User
+    ): String {
+        user.name
+    }
+
     public fun get_owner(
         user_request: UserRequest
     ): (address, UserRequest) {
@@ -126,10 +109,8 @@ module sage_user::user {
         banner_hash: String,
         created_at: u64,
         description: String,
-        invited_by: Option<address>,
         owner: address,
         name: String,
-        user_key: String,
         ctx: &mut TxContext
     ): address {
         let is_valid_name = string_helpers::is_valid_name(
@@ -143,17 +124,6 @@ module sage_user::user {
         let is_valid_description = is_valid_description(&description);
 
         assert!(is_valid_description, EInvalidUserDescription);
-
-        event::emit(UserCreated {
-            avatar_hash,
-            banner_hash,
-            created_at,
-            description,
-            invited_by,
-            owner,
-            user_key,
-            user_name: name
-        });
 
         let user = User {
             id: object::new(ctx),
@@ -175,7 +145,6 @@ module sage_user::user {
     }
 
     public(package) fun update (
-        user_key: String,
         user_request: UserRequest,
         avatar_hash: String,
         banner_hash: String,
@@ -189,16 +158,7 @@ module sage_user::user {
         user.banner_hash = banner_hash;
         user.description = description;
         user.name = name;
-
-        event::emit(UserUpdated {
-            avatar_hash,
-            banner_hash,
-            owner: user.owner,
-            user_key,
-            user_name: name,
-            description,
-            updated_at
-        });
+        user.updated_at = updated_at;
 
         create_user_request(user)
     }

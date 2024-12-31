@@ -11,7 +11,11 @@ module sage_user::test_user_registry {
 
     use sage_user::{
         user::{Self},
-        user_registry::{Self, UserRegistry}
+        user_registry::{
+            Self,
+            UserRegistry,
+            EAddressRecordExists
+        }
     };
 
     // --------------- Constants ---------------
@@ -77,16 +81,13 @@ module sage_user::test_user_registry {
 
             let name = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
             let user_address = user::create(
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                name,
                 name,
                 ts::ctx(scenario)
             );
@@ -149,17 +150,14 @@ module sage_user::test_user_registry {
 
             let user_key = utf8(b"all-caps");
             let user_name = utf8(b"ALL-CAPS");
-            let invited_by = option::none<address>();
 
             let user_address = user::create(
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
                 user_name,
-                user_key,
                 ts::ctx(scenario)
             );
 
@@ -219,16 +217,13 @@ module sage_user::test_user_registry {
 
             let name = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
             let user_address = user::create(
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                name,
                 name,
                 ts::ctx(scenario)
             );
@@ -268,16 +263,13 @@ module sage_user::test_user_registry {
 
             let name = utf8(b"user-name");
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
             let user_address = user::create(
                 utf8(b"avatar-hash"),
                 utf8(b"banner-hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
-                name,
                 name,
                 ts::ctx(scenario)
             );
@@ -316,7 +308,6 @@ module sage_user::test_user_registry {
             let user_registry = &mut user_registry_val;
 
             let created_at: u64 = 999;
-            let invited_by = option::none<address>();
 
             let user_key = utf8(b"all-caps");
             let user_name = utf8(b"ALL-CAPS");
@@ -326,10 +317,8 @@ module sage_user::test_user_registry {
                 utf8(b"banner-hash"),
                 created_at,
                 utf8(b"description"),
-                invited_by,
                 ADMIN,
                 user_name,
-                user_key,
                 ts::ctx(scenario)
             );
 
@@ -346,6 +335,53 @@ module sage_user::test_user_registry {
             );
 
             assert!(has_username_record, EUsernameExistsMismatch);
+
+            destroy(user_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+     #[expected_failure(abort_code = EAddressRecordExists)]
+    fun test_user_registry_add_record_exists() {
+        let (
+            mut scenario_val,
+            mut user_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_registry = &mut user_registry_val;
+
+            let name = utf8(b"user-name");
+            let created_at: u64 = 999;
+
+            let user_address = user::create(
+                utf8(b"avatar-hash"),
+                utf8(b"banner-hash"),
+                created_at,
+                utf8(b"description"),
+                ADMIN,
+                name,
+                ts::ctx(scenario)
+            );
+
+            user_registry::add(
+                user_registry,
+                name,
+                ADMIN,
+                user_address
+            );
+
+            user_registry::add(
+                user_registry,
+                name,
+                ADMIN,
+                user_address
+            );
 
             destroy(user_registry_val);
         };

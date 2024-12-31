@@ -19,10 +19,11 @@ module sage_user::test_user_invite {
 
     // --------------- Errors ---------------
 
-    const EConfigMismatch: u64 = 370;
-    // const EInvalidHashLength: u64 = 371;
-    const EInviteInvalid: u64 = 372;
-    const EInviteRecord: u64 = 373;
+    const EConfigMismatch: u64 = 0;
+    // const EInvalidHashLength: u64 = 1;
+    const EInviteInvalid: u64 = 2;
+    const EInviteRecord: u64 = 3;
+    const EInviteValid: u64 = 4;
 
     // --------------- Test Functions ---------------
 
@@ -134,6 +135,18 @@ module sage_user::test_user_invite {
             );
 
             assert!(is_invite_required, EConfigMismatch);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                invite_config,
+                false
+            );
+
+            let is_invite_required = user_invite::is_invite_required(
+                invite_config
+            );
+
+            assert!(!is_invite_required, EConfigMismatch);
 
             ts::return_to_sender(scenario, invite_cap);
         };
@@ -400,6 +413,127 @@ module sage_user::test_user_invite {
             );
 
             assert!(is_invite_valid, EInviteInvalid);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_validity_mismatch() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            // test known cases of sha3 computed in javascript
+
+            let mut invite_hash = vector::empty<u8>();
+
+            // let invite_hash = create_hash_array(
+            //     b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+            // );
+
+            invite_hash.push_back(0xa7);
+            invite_hash.push_back(0xff);
+            invite_hash.push_back(0xc6);
+            invite_hash.push_back(0xf8);
+            invite_hash.push_back(0xbf);
+            invite_hash.push_back(0x1e);
+            invite_hash.push_back(0xd7);
+            invite_hash.push_back(0x66);
+            invite_hash.push_back(0x51);
+            invite_hash.push_back(0xc1);
+            invite_hash.push_back(0x47);
+            invite_hash.push_back(0x56);
+            invite_hash.push_back(0xa0);
+            invite_hash.push_back(0x61);
+            invite_hash.push_back(0xd6);
+            invite_hash.push_back(0x62);
+            invite_hash.push_back(0xf5);
+            invite_hash.push_back(0x80);
+            invite_hash.push_back(0xff);
+            invite_hash.push_back(0x4d);
+            invite_hash.push_back(0xe4);
+            invite_hash.push_back(0x3b);
+            invite_hash.push_back(0x49);
+            invite_hash.push_back(0xfa);
+            invite_hash.push_back(0x82);
+            invite_hash.push_back(0xd8);
+            invite_hash.push_back(0x0a);
+            invite_hash.push_back(0x4b);
+            invite_hash.push_back(0x80);
+            invite_hash.push_back(0xf8);
+            invite_hash.push_back(0x43);
+
+            // this is incorrect
+            invite_hash.push_back(0x00);
+
+            let is_invite_valid = user_invite::is_invite_valid(
+                utf8(b""),
+                utf8(b""),
+                invite_hash
+            );
+
+            assert!(!is_invite_valid, EInviteValid);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_validity_length_mismatch() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            // test known cases of sha3 computed in javascript
+
+            let mut invite_hash = vector::empty<u8>();
+
+            // let invite_hash = create_hash_array(
+            //     b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+            // );
+
+            invite_hash.push_back(0xa7);
+            invite_hash.push_back(0xff);
+            invite_hash.push_back(0xc6);
+            invite_hash.push_back(0xf8);
+            invite_hash.push_back(0xbf);
+            invite_hash.push_back(0x1e);
+            invite_hash.push_back(0xd7);
+            invite_hash.push_back(0x66);
+            invite_hash.push_back(0x51);
+            invite_hash.push_back(0xc1);
+            invite_hash.push_back(0x47);
+            invite_hash.push_back(0x56);
+            invite_hash.push_back(0xa0);
+            invite_hash.push_back(0x61);
+            invite_hash.push_back(0xd6);
+            invite_hash.push_back(0x62);
+            invite_hash.push_back(0xf5);
+            invite_hash.push_back(0x80);
+            invite_hash.push_back(0xff);
+            invite_hash.push_back(0x4d);
+            invite_hash.push_back(0xe4);
+            invite_hash.push_back(0x3b);
+            invite_hash.push_back(0x49);
+            invite_hash.push_back(0xfa);
+            invite_hash.push_back(0x82);
+            invite_hash.push_back(0xd8);
+            invite_hash.push_back(0x0a);
+            invite_hash.push_back(0x4b);
+            invite_hash.push_back(0x80);
+            invite_hash.push_back(0xf8);
+            invite_hash.push_back(0x43);
+
+            let is_invite_valid = user_invite::is_invite_valid(
+                utf8(b""),
+                utf8(b""),
+                invite_hash
+            );
+
+            assert!(!is_invite_valid, EInviteValid);
         };
 
         ts::end(scenario_val);

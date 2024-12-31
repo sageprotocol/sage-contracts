@@ -1,4 +1,6 @@
 module sage_user::user_membership {
+    use std::string::{String};
+
     use sui::{
         event,
         package::{claim_and_keep},
@@ -20,17 +22,19 @@ module sage_user::user_membership {
 
     // --------------- Name Tag ---------------
 
-    public struct UserMember has copy, store, drop {
+    public struct UserMember has store, copy, drop {
         member_type: u8
     }
 
-    public struct UserMembership has store {
+    public struct UserMembership has key {
+        id: UID,
         membership: Table<address, UserMember>
     }
 
-    public struct UserMembershipRegistry has key, store {
+    // user key <-> user membership object
+    public struct UserMembershipRegistry has key {
         id: UID,
-        registry: Table<address, UserMembership>
+        registry: Table<String, address>
     }
     
     public struct USER_MEMBERSHIP has drop {}
@@ -61,6 +65,19 @@ module sage_user::user_membership {
 
     // --------------- Public Functions ---------------
 
+    public fun borrow_membership_address(
+        user_membership_registry: &UserMembershipRegistry,
+        user_key: String
+    ): address {
+        user_membership_registry.registry[user_key]
+    }
+
+    public fun get_address(
+        user_membership: &UserMembership
+    ): address {
+        user_membership.id.to_address()
+    }
+
     public fun get_member_length(
         user_membership: &UserMembership
     ): u64 {
@@ -69,30 +86,30 @@ module sage_user::user_membership {
 
     public fun is_member(
         user_membership: &UserMembership,
-        user: address
+        user_address: address
     ): bool {
-        user_membership.membership.contains(user)
+        user_membership.membership.contains(user_address)
     }
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun borrow_membership_mut(
-        user_membership_registry: &mut UserMembershipRegistry,
-        user_address: address
-    ): &mut UserMembership {
-        &mut user_membership_registry.registry[user_address]
-    }
-
     public(package) fun create(
         user_membership_registry: &mut UserMembershipRegistry,
-        user_address: address,
+        user_key: String,
         ctx: &mut TxContext
-    ) {
+    ): address {
         let user_membership = UserMembership {
+            id: object::new(ctx),
             membership: table::new(ctx)
         };
 
-        user_membership_registry.registry.add(user_address, user_membership);
+        let user_membership_address = user_membership.id.to_address();
+
+        transfer::share_object(user_membership);
+
+        user_membership_registry.registry.add(user_key, user_membership_address);
+
+        user_membership_address
     }
 
     public(package) fun join(

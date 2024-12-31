@@ -23,7 +23,7 @@ module sage_user::user_registry {
 
     // address: wallet/kiosk <-> user key
     // user: user key <-> user object
-    public struct UserRegistry has key, store {
+    public struct UserRegistry has key {
         id: UID,
         address_registry: Table<address, String>,
         address_reverse_registry: Table<String, address>,
