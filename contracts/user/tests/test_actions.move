@@ -1583,20 +1583,64 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            user_registry_val,
+            mut user_registry_val,
             mut user_invite_registry_val,
-            user_membership_registry_val,
+            mut user_membership_registry_val,
             invite_config,
             user_fees
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
+        let user_registry = &mut user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
+        let user_membership_registry = &mut user_membership_registry_val;
 
         let invite_code = utf8(b"code");
         let invite_key = utf8(b"key");
         let invite_hash = b"hash";
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut clock = clock::create_for_testing(ts::ctx(scenario));
+
+            clock::set_for_testing(&mut clock, 0);
+            clock::share_for_testing(clock);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let clock: Clock = ts::take_shared(scenario);
+
+            let _user_address = user_actions::create(
+                &clock,
+                user_registry,
+                user_invite_registry,
+                user_membership_registry,
+                &user_fees,
+                &invite_config,
+                utf8(b""),
+                utf8(b""),
+                utf8(b"avatar_hash"),
+                utf8(b"banner_hash"),
+                utf8(b"description"),
+                utf8(b"user-name"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(clock);
+        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -1610,6 +1654,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::create_invite(
+                user_registry,
                 user_invite_registry,
                 &invite_config,
                 &user_fees,
@@ -1653,8 +1698,70 @@ module sage_user::test_user_actions {
     }
 
     #[test]
+    #[expected_failure(abort_code = EUserDoesNotExist)]
+    fun test_user_invite_create_no_user() {
+        let (
+            mut scenario_val,
+            app,
+            user_registry_val,
+            mut user_invite_registry_val,
+            user_membership_registry_val,
+            invite_config,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let user_registry = &user_registry_val;
+        let user_invite_registry = &mut user_invite_registry_val;
+
+        let invite_code = utf8(b"code");
+        let invite_key = utf8(b"key");
+        let invite_hash = b"hash";
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_INVITE_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_INVITE_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::create_invite(
+                user_registry,
+                user_invite_registry,
+                &invite_config,
+                &user_fees,
+                invite_code,
+                invite_hash,
+                invite_key,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                app,
+                user_registry_val,
+                user_invite_registry_val,
+                user_membership_registry_val,
+                invite_config
+          ,
+          user_fees  );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     #[expected_failure(abort_code = EInviteNotAllowed)]
-    fun test_user_invite_create_fail() {
+    fun test_user_invite_create_not_allowed() {
         let (
             mut scenario_val,
             app,
@@ -1667,6 +1774,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
+        let user_registry = &user_registry_val;
         let user_invite_registry = &mut user_invite_registry_val;
 
         let invite_code = utf8(b"code");
@@ -1698,6 +1806,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::create_invite(
+                user_registry,
                 user_invite_registry,
                 &invite_config,
                 &user_fees,

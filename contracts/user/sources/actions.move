@@ -213,6 +213,7 @@ module sage_user::user_actions {
     }
 
     public fun create_invite<CoinType> (
+        user_registry: &UserRegistry,
         user_invite_registry: &mut UserInviteRegistry,
         invite_config: &InviteConfig,
         user_fees: &UserFees,
@@ -229,6 +230,15 @@ module sage_user::user_actions {
 
         assert!(!is_invite_required, EInviteNotAllowed);
 
+        let self = tx_context::sender(ctx);
+
+        let user_exists = user_registry::has_address_record(
+            user_registry,
+            self
+        );
+
+        assert!(user_exists, EUserDoesNotExist);
+
         let (
             custom_payment,
             sui_payment
@@ -237,8 +247,6 @@ module sage_user::user_actions {
             custom_payment,
             sui_payment
         );
-
-        let self = tx_context::sender(ctx);
 
         user_invite::create_invite(
             user_invite_registry,
