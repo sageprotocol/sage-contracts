@@ -249,7 +249,7 @@ module sage_user::test_user_registry {
     }
 
     #[test]
-    fun test_user_registry_has_username_record_lower() {
+    fun test_user_registry_has_username_record() {
         let (
             mut scenario_val,
             mut user_registry_val
@@ -284,54 +284,6 @@ module sage_user::test_user_registry {
             let has_username_record = user_registry::has_username_record(
                 user_registry,
                 name
-            );
-
-            assert!(has_username_record, EUsernameExistsMismatch);
-
-            destroy(user_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_user_registry_has_username_record_upper() {
-        let (
-            mut scenario_val,
-            mut user_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let user_registry = &mut user_registry_val;
-
-            let created_at: u64 = 999;
-
-            let user_key = utf8(b"all-caps");
-            let user_name = utf8(b"ALL-CAPS");
-
-            let user_address = user::create(
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                ADMIN,
-                user_name,
-                ts::ctx(scenario)
-            );
-
-            user_registry::add(
-                user_registry,
-                user_key,
-                ADMIN,
-                user_address
-            );
-
-            let has_username_record = user_registry::has_username_record(
-                user_registry,
-                user_name
             );
 
             assert!(has_username_record, EUsernameExistsMismatch);

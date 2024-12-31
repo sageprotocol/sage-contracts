@@ -8,10 +8,6 @@ module sage_user::user_registry {
         table::{Self, Table}
     };
 
-    use sage_utils::{
-        string_helpers::{Self}
-    };
-
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
@@ -95,12 +91,8 @@ module sage_user::user_registry {
 
     public fun has_username_record (
         user_registry: &UserRegistry,
-        username: String
+        user_key: String
     ): bool {
-        let user_key = string_helpers::to_lowercase(
-            &username
-        );
-
         user_registry.user_registry.contains(user_key)
     }
 
