@@ -336,8 +336,7 @@ module sage_channel::channel_actions {
 
         channel_membership::join(
             channel_membership,
-            self,
-            ctx
+            self
         );
 
         fees::collect_payment<CoinType>(

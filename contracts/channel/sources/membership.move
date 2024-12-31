@@ -18,15 +18,13 @@ module sage_channel::channel_membership {
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelMember has key {
-        id: UID,
+    public struct ChannelMember has store, copy, drop {
         member_type: u8
     }
 
-    // user wallet address <-> channel member address
     public struct ChannelMembership has key {
         id: UID,
-        membership: Table<address, address>
+        membership: Table<address, ChannelMember>
     }
 
     // channel key <-> channel membership address
@@ -99,8 +97,7 @@ module sage_channel::channel_membership {
 
         join_channel(
             &mut channel_membership,
-            user_address,
-            ctx
+            user_address
         );
 
         let channel_membership_address = channel_membership.id.to_address();
@@ -117,13 +114,11 @@ module sage_channel::channel_membership {
 
     public(package) fun join(
         channel_membership: &mut ChannelMembership,
-        user_address: address,
-        ctx: &mut TxContext
+        user_address: address
     ) {
         join_channel(
             channel_membership,
-            user_address,
-            ctx
+            user_address
         );
     }
 
@@ -145,8 +140,7 @@ module sage_channel::channel_membership {
 
     fun join_channel(
         channel_membership: &mut ChannelMembership,
-        user_address: address,
-        ctx: &mut TxContext
+        user_address: address
     ) {
         let is_member = is_member(
             channel_membership,
@@ -156,16 +150,13 @@ module sage_channel::channel_membership {
         assert!(!is_member, EChannelMemberExists);
 
         let channel_member = ChannelMember {
-            id: object::new(ctx),
             member_type: CHANNEL_MEMBER_WALLET
         };
 
         channel_membership.membership.add(
             user_address,
-            channel_member.id.to_address()
+            channel_member
         );
-
-        transfer::share_object(channel_member);
     }
 
     // --------------- Test Functions ---------------

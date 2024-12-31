@@ -155,8 +155,7 @@ module sage_channel::test_channel_membership {
 
             channel_membership::join(
                 &mut channel_membership,
-                SERVER,
-                ts::ctx(scenario)
+                SERVER
             );
 
             let channel_member_count = channel_membership::get_member_length(
@@ -214,8 +213,7 @@ module sage_channel::test_channel_membership {
 
             channel_membership::join(
                 &mut channel_membership,
-                ADMIN,
-                ts::ctx(scenario)
+                ADMIN
             );
 
             ts::return_shared(channel_membership);
