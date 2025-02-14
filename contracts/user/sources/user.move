@@ -1,6 +1,11 @@
 module sage_user::user {
     use std::string::{String};
 
+    use sage_user::{
+        user::{User},
+        user_posts::{Self}
+    };
+
     use sage_utils::{
         string_helpers::{Self}
     };
@@ -24,15 +29,13 @@ module sage_user::user {
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
+        // current_shard: address,
         description: String,
+        first_shard: address,
         owner: address,
         name: String,
         total_earnings: u64,
         updated_at: u64
-    }
-
-    public struct UserRequest {
-        user: User
     }
 
     // --------------- Events ---------------
@@ -41,65 +44,10 @@ module sage_user::user {
 
     // --------------- Public Functions ---------------
 
-    public fun create_user_request (
-        user: User
-    ): UserRequest {
-        UserRequest { user }
-    }
-
-    public fun destroy_user_request (
-        user_request: UserRequest,
-        self: address
-    ) {
-        let UserRequest { user } = user_request;
-
-        transfer::transfer(user, self);
-    }
-
-    public fun get_avatar(
-        user_request: UserRequest
-    ): (String, UserRequest) {
-        let UserRequest { user } = user_request;
-
-        (user.avatar_hash, create_user_request(user))
-    }
-
-    public fun get_banner(
-        user_request: UserRequest
-    ): (String, UserRequest) {
-        let UserRequest { user } = user_request;
-
-        (user.banner_hash, create_user_request(user))
-    }
-
-    public fun get_description(
-        user_request: UserRequest
-    ): (String, UserRequest) {
-        let UserRequest { user } = user_request;
-
-        (user.description, create_user_request(user))
-    }
-
     public fun get_immutable_name(
         user: &User
     ): String {
         user.name
-    }
-
-    public fun get_owner(
-        user_request: UserRequest
-    ): (address, UserRequest) {
-        let UserRequest { user } = user_request;
-
-        (user.owner, create_user_request(user))
-    }
-
-    public fun get_name(
-        user_request: UserRequest
-    ): (String, UserRequest) {
-        let UserRequest { user } = user_request;
-
-        (user.name, create_user_request(user))
     }
 
     // --------------- Friend Functions ---------------
@@ -125,12 +73,19 @@ module sage_user::user {
 
         assert!(is_valid_description, EInvalidUserDescription);
 
+        let shard_address = user_posts::create(
+            created_at,
+            ctx
+        );
+
         let user = User {
             id: object::new(ctx),
             avatar_hash,
             banner_hash,
             created_at,
+            // current_shard: shard_address,
             description,
+            first_shard: shard_address,
             owner,
             name,
             total_earnings: 0,
@@ -139,28 +94,24 @@ module sage_user::user {
 
         let user_address = user.id.to_address();
 
-        transfer::transfer(user, tx_context::sender(ctx));
+        transfer::share_object(user);
 
         user_address
     }
 
     public(package) fun update (
-        user_request: UserRequest,
+        user: &mut User,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         name: String,
         updated_at: u64
-    ): UserRequest {
-        let UserRequest { mut user } = user_request;
-
+    ) {
         user.avatar_hash = avatar_hash;
         user.banner_hash = banner_hash;
         user.description = description;
         user.name = name;
         user.updated_at = updated_at;
-
-        create_user_request(user)
     }
 
     // --------------- Internal Functions ---------------

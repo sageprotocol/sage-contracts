@@ -1,86 +1,86 @@
-module sage_post::post_registry {
-    use std::{
-        string::{String}
-    };
+// module sage_post::post_registry {
+//     use std::{
+//         string::{String}
+//     };
 
-    use sui::{
-        package::{claim_and_keep},
-        table::{Self, Table}
-    };
+//     use sui::{
+//         package::{claim_and_keep},
+//         table::{Self, Table}
+//     };
 
-    use sage_post::{
-        post::{Post}
-    };
+//     use sage_post::{
+//         post::{Post}
+//     };
 
-    // --------------- Constants ---------------
+//     // --------------- Constants ---------------
 
-    // --------------- Errors ---------------
+//     // --------------- Errors ---------------
 
-    const EPostRecordExists: u64 = 370;
+//     const EPostRecordExists: u64 = 370;
 
-    // --------------- Name Tag ---------------
+//     // --------------- Name Tag ---------------
 
-    public struct PostRegistry has key, store {
-        id: UID,
-        registry: Table<String, Post>
-    }
+//     public struct PostRegistry has key, store {
+//         id: UID,
+//         registry: Table<String, Post>
+//     }
 
-    public struct POST_REGISTRY has drop {}
+//     public struct POST_REGISTRY has drop {}
 
-    // --------------- Events ---------------
+//     // --------------- Events ---------------
 
-    // --------------- Constructor ---------------
+//     // --------------- Constructor ---------------
 
-    fun init(
-        otw: POST_REGISTRY,
-        ctx: &mut TxContext
-    ) {
-        claim_and_keep(otw, ctx);
+//     fun init(
+//         otw: POST_REGISTRY,
+//         ctx: &mut TxContext
+//     ) {
+//         claim_and_keep(otw, ctx);
 
-        let post_registry = PostRegistry {
-            id: object::new(ctx),
-            registry: table::new(ctx)
-        };
+//         let post_registry = PostRegistry {
+//             id: object::new(ctx),
+//             registry: table::new(ctx)
+//         };
 
-        transfer::share_object(post_registry);
-    }
+//         transfer::share_object(post_registry);
+//     }
 
-    // --------------- Public Functions ---------------
+//     // --------------- Public Functions ---------------
 
-    public fun borrow_post(
-        post_registry: &PostRegistry,
-        post_key: String
-    ): Post {
-        *post_registry.registry.borrow(post_key)
-    }
+//     public fun borrow_post(
+//         post_registry: &PostRegistry,
+//         post_key: String
+//     ): Post {
+//         *post_registry.registry.borrow(post_key)
+//     }
 
-    public fun has_record(
-        post_registry: &PostRegistry,
-        post_key: String
-    ): bool {
-        post_registry.registry.contains(post_key)
-    }
+//     public fun has_record(
+//         post_registry: &PostRegistry,
+//         post_key: String
+//     ): bool {
+//         post_registry.registry.contains(post_key)
+//     }
 
-    // --------------- Friend Functions ---------------
+//     // --------------- Friend Functions ---------------
 
-    public(package) fun add(
-        post_registry: &mut PostRegistry,
-        post_key: String,
-        post: Post
-    ) {
-        let record_exists = post_registry.has_record(post_key);
+//     public(package) fun add(
+//         post_registry: &mut PostRegistry,
+//         post_key: String,
+//         post: Post
+//     ) {
+//         let record_exists = post_registry.has_record(post_key);
 
-        assert!(!record_exists, EPostRecordExists);
+//         assert!(!record_exists, EPostRecordExists);
 
-        post_registry.registry.add(post_key, post);
-    }
+//         post_registry.registry.add(post_key, post);
+//     }
 
-    // --------------- Internal Functions ---------------
+//     // --------------- Internal Functions ---------------
 
-    // --------------- Test Functions ---------------
+//     // --------------- Test Functions ---------------
 
-    #[test_only]
-    public fun init_for_testing(ctx: &mut TxContext) {
-        init(POST_REGISTRY {}, ctx);
-    }
-}
+//     #[test_only]
+//     public fun init_for_testing(ctx: &mut TxContext) {
+//         init(POST_REGISTRY {}, ctx);
+//     }
+// }

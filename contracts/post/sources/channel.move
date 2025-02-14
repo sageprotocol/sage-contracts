@@ -9,7 +9,14 @@ module sage_post::channel_posts {
     };
 
     use sage_channel::{
-        channel::{Channel}
+        channel::{
+            Self,
+            Channel
+        }
+    };
+
+    use sage_utils::{
+        string_helpers::{Self}
     };
 
     // --------------- Constants ---------------
@@ -20,9 +27,10 @@ module sage_post::channel_posts {
 
     // --------------- Name Tag ---------------
 
+    // channel key <-> post keys
     public struct ChannelPostsRegistry has key, store {
         id: UID,
-        registry: Table<Channel, vector<String>>
+        registry: Table<String, vector<String>>
     }
 
     public struct CHANNEL_POSTS has drop {}
@@ -48,12 +56,15 @@ module sage_post::channel_posts {
     // --------------- Public Functions ---------------
 
     public fun has_post(
-        channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel,
+        channel_posts_registry: &ChannelPostsRegistry,
+        channel: &Channel,
         post_key: String
     ): bool {
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(&channel_name);
+
         let channel_post_keys = *channel_posts_registry.registry.borrow(
-            channel
+            channel_key
         );
 
         channel_post_keys.contains(&post_key)
@@ -61,16 +72,19 @@ module sage_post::channel_posts {
 
     public fun has_record(
         channel_posts_registry: &ChannelPostsRegistry,
-        channel: Channel
+        channel: &Channel
     ): bool {
-        channel_posts_registry.registry.contains(channel)
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(&channel_name);
+
+        channel_posts_registry.registry.contains(channel_key)
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun add(
         channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel,
+        channel: &Channel,
         post_key: String
     ) {
         let has_record = has_record(
@@ -85,9 +99,12 @@ module sage_post::channel_posts {
             );
         };
 
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(&channel_name);
+
         let channel_post_keys = borrow_channel_post_keys_mut(
             channel_posts_registry,
-            channel
+            channel_key
         );
 
         channel_post_keys.push_back(post_key);
@@ -95,16 +112,16 @@ module sage_post::channel_posts {
 
     public(package) fun borrow_channel_post_keys_mut(
         channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel
+        channel_key: String
     ): &mut vector<String> {
-        channel_posts_registry.registry.borrow_mut(channel)
+        channel_posts_registry.registry.borrow_mut(channel_key)
     }
 
     // --------------- Internal Functions ---------------
 
     fun create(
         channel_posts_registry: &mut ChannelPostsRegistry,
-        channel: Channel
+        channel: &Channel
     ) {
         let has_record = has_record(channel_posts_registry, channel);
 
@@ -112,7 +129,13 @@ module sage_post::channel_posts {
 
         let channel_post_keys = vector::empty();
 
-        channel_posts_registry.registry.add(channel, channel_post_keys);
+        let channel_name = channel::get_name(channel);
+        let channel_key = string_helpers::to_lowercase(&channel_name);
+
+        channel_posts_registry.registry.add(
+            channel_key,
+            channel_post_keys
+        );
     }
 
     // --------------- Test Functions ---------------

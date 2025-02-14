@@ -16,6 +16,7 @@ module sage_post::post_comments {
 
     // --------------- Name Tag ---------------
 
+    // post key <-> post keys
     public struct PostCommentsRegistry has key, store {
         id: UID,
         registry: Table<String, vector<String>>
@@ -44,7 +45,7 @@ module sage_post::post_comments {
     // --------------- Public Functions ---------------
 
     public fun has_post(
-        post_comments_registry: &mut PostCommentsRegistry,
+        post_comments_registry: &PostCommentsRegistry,
         parent_post_key: String,
         post_key: String
     ): bool {

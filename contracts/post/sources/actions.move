@@ -23,8 +23,8 @@ module sage_post::post_actions {
         post_comments::{Self, PostCommentsRegistry},
         post_fees::{Self, PostFees},
         post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
-        post_registry::{Self, PostRegistry},
-        user_posts::{Self, UserPostsRegistry}
+        post_shard::{Self, PostShard},
+        user::{Self, User}
     };
 
     use sage_user::{
@@ -37,7 +37,7 @@ module sage_post::post_actions {
 
     const EChannelDoesNotExist: u64 = 370;
     const EParentPostDoesNotExist: u64 = 371;
-    const EPostDoesNotExist: u64 = 372;
+    const EPostShardMismatch: u64 = 372;
     const EUserDoesNotExist: u64 = 373;
     const EUserNotChannelMember: u64 = 374;
 
@@ -73,6 +73,7 @@ module sage_post::post_actions {
         data: String,
         description: String,
         post_key: String,
+        shard_address: address,
         title: String,
         updated_at: u64,
         user_key: String
@@ -83,7 +84,6 @@ module sage_post::post_actions {
     // --------------- Public Functions ---------------
 
     public fun like<CoinType> (
-        post_registry: &PostRegistry,
         post_likes_registry: &mut PostLikesRegistry,
         user_registry: &UserRegistry,
         user_post_likes_registry: &mut UserPostLikesRegistry,
@@ -103,13 +103,6 @@ module sage_post::post_actions {
 
         assert!(user_exists, EUserDoesNotExist);
 
-        let has_record = post_registry::has_record(
-            post_registry,
-            post_key
-        );
-
-        assert!(has_record, EPostDoesNotExist);
-
         let (
             custom_payment,
             sui_payment
@@ -126,14 +119,6 @@ module sage_post::post_actions {
 
         let recipient = post::get_author(post);
 
-        fees::distribute_payment<CoinType>(
-            royalties,
-            custom_payment,
-            sui_payment,
-            recipient,
-            ctx
-        );
-
         let user = tx_context::sender(ctx);
 
         post_likes::add(
@@ -141,6 +126,14 @@ module sage_post::post_actions {
             user_post_likes_registry,
             post_key,
             user
+        );
+
+        fees::distribute_payment<CoinType>(
+            royalties,
+            custom_payment,
+            sui_payment,
+            recipient,
+            ctx
         );
     }
 
@@ -160,20 +153,6 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): String {
-        let (
-            custom_payment,
-            sui_payment
-        ) = post_fees::assert_post_from_channel_payment<CoinType>(
-            post_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
 
         let user_exists = user_registry::has_address_record(
@@ -189,6 +168,15 @@ module sage_post::post_actions {
         );
 
         assert!(has_record, EChannelDoesNotExist);
+
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_channel_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
 
         let user = tx_context::sender(ctx);
 
@@ -228,6 +216,11 @@ module sage_post::post_actions {
             post_key
         );
 
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
         event::emit(ChannelPostCreated {
             channel_key,
             created_at: timestamp,
@@ -244,6 +237,7 @@ module sage_post::post_actions {
 
     public fun post_from_post<CoinType> (
         clock: &Clock,
+        post_shard: &mut PostShard,
         post_registry: &mut PostRegistry,
         post_comments_registry: &mut PostCommentsRegistry,
         user_registry: &mut UserRegistry,
@@ -256,20 +250,6 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): String {
-        let (
-            custom_payment,
-            sui_payment
-        ) = post_fees::assert_post_from_post_payment<CoinType>(
-            post_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
         let timestamp = clock.timestamp_ms();
 
@@ -287,6 +267,15 @@ module sage_post::post_actions {
 
         assert!(has_record, EParentPostDoesNotExist);
 
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_post_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
+
         let (post, post_key) = post::create(
             self,
             data,
@@ -296,16 +285,22 @@ module sage_post::post_actions {
             ctx
         );
 
-        post_registry::add(
-            post_registry,
-            post_key,
-            post
+        let shard_address = add_post_to_shard(
+            post_shard,
+            post_address,
+            timestamp,
+            ctx
         );
 
         post_comments::add(
             post_comments_registry,
             parent_key,
             post_key
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(CommentCreated {
@@ -324,10 +319,10 @@ module sage_post::post_actions {
 
     public fun post_from_user<CoinType> (
         clock: &Clock,
-        post_registry: &mut PostRegistry,
-        user_posts_registry: &mut UserPostsRegistry,
-        user_registry: &mut UserRegistry,
+        post_shard: &mut PostShard,
+        user_registry: &UserRegistry,
         post_fees: &PostFees,
+        user: &User,
         data: String,
         description: String,
         title: String,
@@ -336,20 +331,6 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): String {
-        let (
-            custom_payment,
-            sui_payment
-        ) = post_fees::assert_post_from_user_payment<CoinType>(
-            post_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
 
         let self_exists = user_registry::has_address_record(
@@ -359,16 +340,18 @@ module sage_post::post_actions {
 
         assert!(self_exists, EUserDoesNotExist);
 
-        let user_exists = user_registry::has_username_record(
-            user_registry,
-            user_key
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_user_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
         );
-
-        assert!(user_exists, EUserDoesNotExist);
 
         let timestamp = clock.timestamp_ms();
 
-        let (post, post_key) = post::create(
+        let (post_key, post_address) = post::create(
             self,
             data,
             description,
@@ -377,16 +360,16 @@ module sage_post::post_actions {
             ctx
         );
 
-        post_registry::add(
-            post_registry,
-            post_key,
-            post
+        let shard_address = add_post_to_shard(
+            post_shard,
+            post_address,
+            timestamp,
+            ctx
         );
 
-        user_posts::add(
-            user_posts_registry,
-            user_key,
-            post_key
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(UserPostCreated {
@@ -395,6 +378,7 @@ module sage_post::post_actions {
             data,
             description,
             post_key,
+            shard_address,
             title,
             updated_at: timestamp,
             user_key
@@ -406,6 +390,50 @@ module sage_post::post_actions {
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
+
+    fun add_post_to_shard(
+        post_shard: &mut PostShard,
+        post_address: address,
+        timestamp: u64,
+        ctx: &mut TxContext
+    ): address {
+        let is_shard_full = post_shard::is_full(post_shard);
+
+        if (is_shard_full) {
+            let prev_shard_address = post_shard::get_address(post_shard);
+
+            let (
+                next_shard,
+                next_shard_address
+            ) = post_shard::create(
+                option::some(prev_shard_address),
+                timestamp,
+                ctx
+            );
+
+            post_shard::complete(
+                post_shard,
+                next_shard_address,
+                timestamp
+            );
+
+            post_shard::add(
+                &mut next_shard,
+                post_address
+            );
+
+            post_shard::share(next_shard);
+
+            next_shard_address
+        } else {
+            post_shard::add(
+                post_shard,
+                post_address
+            );
+
+            post_shard::get_address(post_shard)
+        }
+    }
 
     // --------------- Test Functions ---------------
 }

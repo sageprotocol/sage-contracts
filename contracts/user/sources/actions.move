@@ -26,6 +26,7 @@ module sage_user::user_actions {
             UserMembership,
             UserMembershipRegistry
         },
+        user_posts::{Self},
         user_registry::{Self, UserRegistry}
     };
 
@@ -64,6 +65,7 @@ module sage_user::user_actions {
         description: String,
         owner: address,
         invited_by: Option<address>,
+        shard_address: address,
         user_key: String,
         user_membership_address: address,
         user_name: String
@@ -164,7 +166,7 @@ module sage_user::user_actions {
             option::none()
         };
 
-        let created_at = clock.timestamp_ms();
+        let timestamp = clock.timestamp_ms();
         let user_key = string_helpers::to_lowercase(
             &name
         );
@@ -172,7 +174,7 @@ module sage_user::user_actions {
         let user_address = user::create(
             avatar_hash,
             banner_hash,
-            created_at,
+            timestamp,
             description,
             self,
             name,
@@ -182,6 +184,11 @@ module sage_user::user_actions {
         let user_membership_address = user_membership::create(
             user_membership_registry,
             user_key,
+            ctx
+        );
+
+        let user_post_shard_address = user_posts::create(
+            timestamp,
             ctx
         );
 
@@ -200,10 +207,11 @@ module sage_user::user_actions {
         event::emit(UserCreated {
             avatar_hash,
             banner_hash,
-            created_at,
+            created_at: timestamp,
             description,
             invited_by,
             owner: self,
+            shard_address: user_post_shard_address,
             user_key,
             user_membership_address,
             user_name: name

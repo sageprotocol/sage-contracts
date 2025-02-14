@@ -7,7 +7,8 @@ module sage_post::post {
 
     // --------------- Name Tag ---------------
 
-    public struct Post has copy, drop, store {
+    public struct Post has key {
+        id: UID,
         key: String,
         created_at: u64,
         created_by: address,
@@ -26,46 +27,36 @@ module sage_post::post {
     // --------------- Public Functions ---------------
 
     public fun get_author(
-        post: Post
+        post: &Post
     ): address {
-        let Post {
-            created_by,
-            ..
-        } = post;
-
-        created_by
+        post.created_by
     }
 
     public fun get_key(
-        post: Post
+        post: &Post
     ): String {
-        let Post {
-            key,
-            ..
-        } = post;
-
-        key
+        post.key
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
-        user: address,
+        user_address: address,
         data: String,
         description: String,
         title: String,
         timestamp: u64,
         ctx: &mut TxContext
-    ): (Post, String) {
+    ): (String, address) {
         let uid = object::new(ctx);
         let id = uid.to_inner();
-
         let key = id_to_key(id);
 
         let post = Post {
+            id: uid,
             key,
             created_at: timestamp,
-            created_by: user,
+            created_by: user_address,
             data,
             description,
             is_deleted: false,
@@ -74,9 +65,11 @@ module sage_post::post {
             updated_at: timestamp
         };
 
-        object::delete(uid);
+        let post_address = post.id.to_address();
 
-        (post, key)
+        transfer::share_object(post);
+
+        (key, post_address)
     }
 
     // --------------- Internal Functions ---------------
