@@ -4,19 +4,18 @@
 
 The order which the contracts are published is important, and errors will be encountered if the proper order is not taken.
 
-1. Immutable
-2. Utils
-3. Admin
-4. Notification
+1. Utils
+2. Admin
+3. Notification
+4. Post
 5. User
 6. Channel
-7. Post
 
 This is due to dependencies between the packages:
 
-- "Post" depends on Admin, Immutable, Channel, and User.
-- "Channel" depends on Admin, Immutable, User, Utils.
-- "User" depends on Admin, Immutable, and Utils.
+- "Post" depends on Admin and Utils.
+- "User" depends on Admin, Post, and Utils.
+- "Channel" depends on Admin, Post, User, Utils.
 
 After each dependent contract is published or upgraded it is important to update the "published-at" and relevant address declaration in all files that depend on the package.
 

@@ -1,14 +1,13 @@
 module sage_channel::channel_registry {
     use std::string::{String};
 
-    use sui::package::{claim_and_keep};
+    use sui::{
+        package::{claim_and_keep},
+        table::{Self, Table}
+    };
 
     use sage_channel::{
         channel::{Channel}
-    };
-
-    use sage_immutable::{
-        immutable_table::{Self, ImmutableTable}
     };
 
     // --------------- Constants ---------------
@@ -22,7 +21,7 @@ module sage_channel::channel_registry {
 
     public struct ChannelRegistry has key, store {
         id: UID,
-        registry: ImmutableTable<String, Channel>
+        registry: Table<String, address>
     }
 
     public struct CHANNEL_REGISTRY has drop {}
@@ -39,7 +38,7 @@ module sage_channel::channel_registry {
 
         let channel_registry = ChannelRegistry {
             id: object::new(ctx),
-            registry: immutable_table::new(ctx)
+            registry: table::new(ctx)
         };
 
         transfer::share_object(channel_registry);
@@ -47,10 +46,10 @@ module sage_channel::channel_registry {
 
     // --------------- Public Functions ---------------
 
-    public fun borrow_channel(
+    public fun borrow_channel_address(
         channel_registry: &ChannelRegistry,
         channel_key: String
-    ): Channel {
+    ): address {
         *channel_registry.registry.borrow(channel_key)
     }
 
@@ -66,25 +65,13 @@ module sage_channel::channel_registry {
     public(package) fun add(
         channel_registry: &mut ChannelRegistry,
         channel_key: String,
-        channel: Channel
+        channel_address: address
     ) {
         let record_exists = channel_registry.has_record(channel_key);
 
         assert!(!record_exists, EChannelRecordExists);
 
-        channel_registry.registry.add(channel_key, channel);
-    }
-
-    public(package) fun replace(
-        channel_registry: &mut ChannelRegistry,
-        channel_key: String,
-        channel: Channel
-    ) {
-        let record_exists = channel_registry.has_record(channel_key);
-
-        assert!(record_exists, EChannelRecordDoesNotExist);
-
-        channel_registry.registry.replace(channel_key, channel);
+        channel_registry.registry.add(channel_key, channel_address);
     }
 
     // --------------- Internal Functions ---------------

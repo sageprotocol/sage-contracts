@@ -1,9 +1,5 @@
 module sage_channel::channel_membership {
-    use std::string::{String};
-
-    use sui::event;
     use sui::{
-        package::{claim_and_keep},
         table::{Self, Table}
     };
 
@@ -18,71 +14,36 @@ module sage_channel::channel_membership {
     // --------------- Errors ---------------
 
     const EChannelMemberExists: u64 = 370;
-    const EChannelMemberDoesNotExist: u64 = 371;
+    const EUserIsNotMember: u64 = 371;
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelMember has copy, store, drop {
-        member_type: u8
-    }
-
     public struct ChannelMembership has store {
-        membership: Table<address, ChannelMember>
+        membership: Table<address, u8>
     }
-
-    public struct ChannelMembershipRegistry has key, store {
-        id: UID,
-        registry: Table<String, ChannelMembership>
-    }
-    
-    public struct CHANNEL_MEMBERSHIP has drop {}
 
     // --------------- Events ---------------
 
-    public struct ChannelMembershipUpdate has copy, drop {
-        channel_key: String,
-        message: u8,
-        user: address
-    }
-
     // --------------- Constructor ---------------
 
-    fun init(
-        otw: CHANNEL_MEMBERSHIP,
-        ctx: &mut TxContext
-    ) {
-        claim_and_keep(otw, ctx);
-
-        let channel_membership_registry = ChannelMembershipRegistry {
-            id: object::new(ctx),
-            registry: table::new(ctx)
-        };
-
-        transfer::share_object(channel_membership_registry);
-    }
-
     // --------------- Public Functions ---------------
+
+    public fun assert_is_member(
+        channel_membership: &ChannelMembership,
+        user: address
+    ) {
+        let is_member = is_member(
+            channel_membership,
+            user
+        );
+
+        assert!(is_member, EUserIsNotMember);
+    }
 
     public fun get_member_length(
         channel_membership: &ChannelMembership
     ): u64 {
         channel_membership.membership.length()
-    }
-
-    public fun is_channel_member(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_key: String,
-        user: address
-    ): bool {
-        let channel_membership = borrow_membership_mut(
-            channel_membership_registry,
-            channel_key
-        );
-
-        is_member(
-            channel_membership,
-            user
-        )
     }
 
     public fun is_member(
@@ -94,73 +55,42 @@ module sage_channel::channel_membership {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun borrow_membership_mut(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_key: String
-    ): &mut ChannelMembership {
-        &mut channel_membership_registry.registry[channel_key]
-    }
-
     public(package) fun create(
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_key: String,
         ctx: &mut TxContext
-    ) {
+    ): (ChannelMembership, u8, u8) {
+        let self = tx_context::sender(ctx);
+
         let mut channel_membership = ChannelMembership {
             membership: table::new(ctx)
         };
 
-        let channel_membership_val = &mut channel_membership;
-        let user = tx_context::sender(ctx);
-
         join_channel(
-            channel_membership_val,
-            user
+            &mut channel_membership,
+            self
         );
 
-        channel_membership_registry.registry.add(channel_key, channel_membership);
+        (channel_membership, CHANNEL_JOIN, CHANNEL_MEMBER_WALLET)
     }
 
     public(package) fun join(
         channel_membership: &mut ChannelMembership,
-        channel_key: String,
-        ctx: &TxContext
-    ) {
-        let user = tx_context::sender(ctx);
-
+        user_address: address
+    ): (u8, u8) {
         join_channel(
             channel_membership,
-            user
+            user_address
         );
 
-        event::emit(ChannelMembershipUpdate {
-            channel_key,
-            message: CHANNEL_JOIN,
-            user
-        });
+        (CHANNEL_JOIN, CHANNEL_MEMBER_WALLET)
     }
 
     public(package) fun leave(
         channel_membership: &mut ChannelMembership,
-        channel_key: String,
-        ctx: &TxContext
-    ) {
-        let user = tx_context::sender(ctx);
+        user_address: address
+    ): (u8, u8) {
+        channel_membership.membership.remove(user_address);
 
-        let is_member = is_member(
-            channel_membership,
-            user
-        );
-
-        assert!(is_member, EChannelMemberDoesNotExist);
-
-        channel_membership.membership.remove(user);
-
-        event::emit(ChannelMembershipUpdate {
-            channel_key,
-            message: CHANNEL_LEAVE,
-            user
-        });
+        (CHANNEL_LEAVE, CHANNEL_MEMBER_WALLET)
     }
 
     // --------------- Internal Functions ---------------
@@ -176,17 +106,8 @@ module sage_channel::channel_membership {
 
         assert!(!is_member, EChannelMemberExists);
 
-        let channel_member = ChannelMember {
-            member_type: CHANNEL_MEMBER_WALLET
-        };
-
-        channel_membership.membership.add(user, channel_member);
+        channel_membership.membership.add(user, CHANNEL_MEMBER_WALLET);
     }
 
     // --------------- Test Functions ---------------
-
-    #[test_only]
-    public fun init_for_testing(ctx: &mut TxContext) {
-        init(CHANNEL_MEMBERSHIP {}, ctx);
-    }
 }

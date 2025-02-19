@@ -1,7 +1,14 @@
 module sage_channel::channel {
     use std::string::{String};
 
-    use sui::event;
+    use sage_channel::{
+        channel_membership::{Self, ChannelMembership},
+        channel_moderation::{Self, ChannelModeration}
+    };
+
+    use sage_post::{
+        post_registry::{Self, PostRegistry}
+    };
 
     use sage_utils::{
         string_helpers::{Self}
@@ -21,174 +28,153 @@ module sage_channel::channel {
 
     // --------------- Name Tag ---------------
 
-    public struct Channel has copy, drop, store {
+    public struct Channel has key {
+        id: UID,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
         created_by: address,
         description: String,
+        members: ChannelMembership,
+        moderators: ChannelModeration,
         name: String,
+        posts: PostRegistry,
         updated_at: u64
     }
 
     // --------------- Events ---------------
 
-    public struct ChannelCreated has copy, drop {
-        avatar_hash: String,
-        banner_hash: String,
-        channel_key: String,
-        channel_name: String,
-        created_at: u64,
-        created_by: address,
-        description: String,
-    }
-
-    public struct ChannelUpdated has copy, drop {
-        avatar_hash: String,
-        banner_hash: String,
-        channel_key: String,
-        channel_name: String,
-        description: String,
-        updated_at: u64
-    }
-
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
-    public fun get_avatar(
-        channel: Channel
-    ): String {
-        let Channel {
-            avatar_hash,
-            ..
-        } = channel;
+    public fun assert_channel_description(
+        description: String
+    ) {
+        let is_valid_description = is_valid_description(&description);
 
-        avatar_hash
+        assert!(is_valid_description, EInvalidChannelDescription);
     }
 
-    public fun get_banner(
-        channel: Channel
-    ): String {
-        let Channel {
-            banner_hash,
-            ..
-        } = channel;
-
-        banner_hash
-    }
-
-    public fun get_created_by(
-        channel: Channel
-    ): address {
-        let Channel {
-            created_by,
-            ..
-        } = channel;
-
-        created_by
-    }
-
-    public fun get_description(
-        channel: Channel
-    ): String {
-        let Channel {
-            description,
-            ..
-        } = channel;
-
-        description
-    }
-
-    public fun get_name(
-        channel: Channel
-    ): String {
-        let Channel {
-            name,
-            ..
-        } = channel;
-
-        name
-    }
-
-    // --------------- Friend Functions ---------------
-
-    public(package) fun create(
-        channel_key: String,
-        channel_name: String,
-        avatar_hash: String,
-        banner_hash: String,
-        description: String,
-        created_at: u64,
-        created_by: address
-    ): Channel {
+    public fun assert_channel_name(
+        name: String
+    ) {
         let is_valid_name = string_helpers::is_valid_name(
-            &channel_name,
+            &name,
             CHANNEL_NAME_MIN_LENGTH,
             CHANNEL_NAME_MAX_LENGTH
         );
 
         assert!(is_valid_name, EInvalidChannelName);
+    }
 
-        let is_valid_description = is_valid_description(&description);
+    public fun get_avatar(
+        channel: &Channel
+    ): String {
+        channel.avatar_hash
+    }
 
-        assert!(is_valid_description, EInvalidChannelDescription);
+    public fun get_banner(
+        channel: &Channel
+    ): String {
+        channel.banner_hash
+    }
+
+    public fun get_created_by(
+        channel: &Channel
+    ): address {
+        channel.created_by
+    }
+
+    public fun get_description(
+        channel: &Channel
+    ): String {
+        channel.description
+    }
+
+    public fun get_key(
+        channel: &Channel
+    ): String {
+        string_helpers::to_lowercase(&channel.name)
+    }
+
+    public fun get_name(
+        channel: &Channel
+    ): String {
+        channel.name
+    }
+
+    // --------------- Friend Functions ---------------
+
+    public(package) fun borrow_members_mut(
+        channel: &mut Channel
+    ): &mut ChannelMembership {
+        &mut channel.members
+    }
+
+    public(package) fun borrow_moderators_mut(
+        channel: &mut Channel
+    ): &mut ChannelModeration {
+        &mut channel.moderators
+    }
+
+    public(package) fun borrow_posts_mut(
+        channel: &mut Channel
+    ): &mut PostRegistry {
+        &mut channel.posts
+    }
+
+    public(package) fun create(
+        avatar_hash: String,
+        banner_hash: String,
+        description: String,
+        created_at: u64,
+        created_by: address,
+        members: ChannelMembership,
+        moderators: ChannelModeration,
+        name: String,
+        posts: PostRegistry,
+        ctx: &mut TxContext
+    ): address {
+        assert_channel_name(name);
+        assert_channel_description(description);
 
         let channel = Channel {
+            id: object::new(ctx),
             avatar_hash,
             banner_hash,
             created_at,
             created_by,
             description,
-            name: channel_name,
+            members,
+            moderators,
+            name,
+            posts,
             updated_at: created_at
         };
 
-        event::emit(ChannelCreated {
-            avatar_hash,
-            banner_hash,
-            channel_key,
-            channel_name,
-            created_at,
-            created_by,
-            description
-        });
+        let channel_address = channel.id.to_address();
 
-        channel
+        transfer::share_object(channel);
+
+        channel_address
     }
 
     public(package) fun update (
         channel: &mut Channel,
-        channel_key: String,
-        channel_name: String,
         avatar_hash: String,
         banner_hash: String,
         description: String,
+        name: String,
         updated_at: u64
-    ): Channel {
+    ) {
+        assert_channel_description(description);
+
         channel.avatar_hash = avatar_hash;
         channel.banner_hash = banner_hash;
         channel.description = description;
-        channel.name = channel_name;
+        channel.name = name;
         channel.updated_at = updated_at;
-
-        let Channel {
-            banner_hash,
-            description,
-            name,
-            ..
-        } = channel;
-
-        event::emit(ChannelUpdated {
-            avatar_hash,
-            banner_hash: *banner_hash,
-            channel_key,
-            channel_name: *name,
-            description: *description,
-            updated_at
-        });
-
-        *channel
     }
 
     // --------------- Internal Functions ---------------
@@ -209,23 +195,31 @@ module sage_channel::channel {
 
     #[test_only]
     public fun create_for_testing(
-        channel_key: String,
         channel_name: String,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         created_at: u64,
-        created_by: address
+        created_by: address,
+        ctx: &mut TxContext
     ): Channel {
-        create(
-            channel_key,
-            channel_name,
+        let (membership , _, _) = channel_membership::create(ctx);
+        let (moderation, _, _) = channel_moderation::create(ctx);
+        let post_registry = post_registry::create(ctx);
+
+        Channel {
+            id: object::new(ctx),
             avatar_hash,
             banner_hash,
-            description,
             created_at,
-            created_by
-        )
+            created_by,
+            description,
+            members: membership,
+            moderators: moderation,
+            name: channel_name,
+            posts: post_registry,
+            updated_at: created_at
+        }
     }
 
     #[test_only]

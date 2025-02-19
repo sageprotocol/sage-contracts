@@ -1,145 +1,145 @@
 module sage_channel::channel_moderation {
-    use std::string::{String};
-
     use sui::{
-        package::{claim_and_keep},
         table::{Self, Table}
     };
 
     // --------------- Constants ---------------
 
+    const CHANNEL_OWNER: u8 = 0;
+    const CHANNEL_MODERATOR: u8 = 1;
+
+    const MODERATOR_ADD: u8 = 10;
+    const MODERATOR_REMOVE: u8 = 11;
+
     // --------------- Errors ---------------
 
     const EChannelModerationRecordDoesNotExist: u64 = 370;
-    const EChannelModerationRecordExists: u64 = 371;
+    const EIsOwner: u64 = 371;
+    const EIsNotModerator: u64 = 372;
+    const EIsNotOwner: u64 = 373;
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelModerationRegistry has key, store {
-        id: UID,
-        registry: Table<String, vector<address>>
+    public struct ChannelModeration has store {
+        moderation: Table<address, u8>
     }
-
-    public struct CHANNEL_MODERATION has drop {}
 
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
 
-    fun init(
-        otw: CHANNEL_MODERATION,
-        ctx: &mut TxContext
-    ) {
-        claim_and_keep(otw, ctx);
-
-        let channel_moderation_registry = ChannelModerationRegistry {
-            id: object::new(ctx),
-            registry: table::new(ctx)
-        };
-
-        transfer::share_object(channel_moderation_registry);
-    }
-
     // --------------- Public Functions ---------------
 
-    public fun borrow_moderators(
-        channel_moderation_registry: &ChannelModerationRegistry,
-        channel_key: String
-    ): vector<address> {
-        let has_record = has_record(
-            channel_moderation_registry,
-            channel_key
+    public fun assert_is_moderator(
+        channel_moderation: &ChannelModeration,
+        user: address
+    ) {
+        let is_moderator = is_moderator(
+            channel_moderation,
+            user
         );
 
-        assert!(has_record, EChannelModerationRecordDoesNotExist);
+        assert!(is_moderator, EIsNotModerator);
+    }
 
-        *channel_moderation_registry.registry.borrow(channel_key)
+    public fun assert_is_owner(
+        channel_moderation: &ChannelModeration,
+        user: address
+    ) {
+        let is_owner = is_owner(
+            channel_moderation,
+            user
+        );
+
+        assert!(is_owner, EIsNotOwner);
     }
 
     public fun get_moderator_length(
-        channel_moderation_registry: &ChannelModerationRegistry,
-        channel_key: String
+        channel_moderation: &ChannelModeration
     ): u64 {
-        let channel_moderators = borrow_moderators(
-            channel_moderation_registry,
-            channel_key
-        );
-
-        channel_moderators.length()
-    }
-
-    public fun has_record(
-        channel_moderation_registry: &ChannelModerationRegistry,
-        channel_key: String
-    ): bool {
-        channel_moderation_registry.registry.contains(channel_key)
+        channel_moderation.moderation.length()
     }
 
     public fun is_moderator(
-        channel_moderation_registry: &ChannelModerationRegistry,
-        channel_key: String,
-        address: address
+        channel_moderation: &ChannelModeration,
+        user: address
     ): bool {
-        let channel_moderators = borrow_moderators(
-            channel_moderation_registry,
-            channel_key
-        );
+        channel_moderation.moderation.contains(user)
+    }
 
-        channel_moderators.contains(&address)
+    public fun is_owner(
+        channel_moderation: &ChannelModeration,
+        user: address
+    ): bool {
+        let does_exist = channel_moderation.moderation.contains(user);
+
+        if (!does_exist) {
+            false
+        } else {
+            channel_moderation.moderation[user] == CHANNEL_OWNER
+        }
     }
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun borrow_moderators_mut(
-        channel_moderation_registry: &mut ChannelModerationRegistry,
-        channel_key: String
-    ): &mut vector<address> {
-        let has_record = has_record(
-            channel_moderation_registry,
-            channel_key
-        );
-
-        assert!(has_record, EChannelModerationRecordDoesNotExist);
-
-        &mut channel_moderation_registry.registry[channel_key]
-    }
-
     public(package) fun create(
-        channel_moderation_registry: &mut ChannelModerationRegistry,
-        channel_key: String,
-        ctx: &TxContext
-    ) {
-        let has_record = channel_moderation_registry.has_record(channel_key);
-
-        assert!(!has_record, EChannelModerationRecordExists);
-
+        ctx: &mut TxContext
+    ): (ChannelModeration, u8, u8) {
         let self = tx_context::sender(ctx);
 
-        let mut channel_moderators = vector::empty<address>();
-        channel_moderators.push_back(self);
+        let mut channel_moderation = ChannelModeration {
+            moderation: table::new(ctx)
+        };
 
-        channel_moderation_registry.registry.add(channel_key, channel_moderators);
+        make_owner(
+            &mut channel_moderation,
+            self
+        );
+
+        (channel_moderation, MODERATOR_ADD, CHANNEL_OWNER)
     }
 
-    public(package) fun replace(
-        channel_moderation_registry: &mut ChannelModerationRegistry,
-        channel_key: String,
-        channel_moderators: vector<address>
-    ) {
-        let has_record = channel_moderation_registry.has_record(channel_key);
+    public(package) fun make_moderator(
+        channel_moderation: &mut ChannelModeration,
+        user: address
+    ): (u8, u8) {
+        channel_moderation.moderation.add(
+            user,
+            CHANNEL_MODERATOR
+        );
 
-        assert!(has_record, EChannelModerationRecordDoesNotExist);
+        (MODERATOR_ADD, CHANNEL_MODERATOR)
+    }
 
-        channel_moderation_registry.registry.remove(channel_key);
-        channel_moderation_registry.registry.add(channel_key, channel_moderators);
+    public(package) fun make_owner(
+        channel_moderation: &mut ChannelModeration,
+        user: address
+    ): (u8, u8) {
+        channel_moderation.moderation.add(
+            user,
+            CHANNEL_OWNER
+        );
+
+        (MODERATOR_ADD, CHANNEL_OWNER)
+    }
+
+    public(package) fun remove_moderator(
+        channel_moderation: &mut ChannelModeration,
+        user: address
+    ): (u8, u8) {
+        let is_owner = is_owner(
+            channel_moderation,
+            user
+        );
+
+        assert!(!is_owner, EIsOwner);
+
+        channel_moderation.moderation.remove(user);
+
+        (MODERATOR_REMOVE, CHANNEL_MODERATOR)
     }
 
     // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
-
-    #[test_only]
-    public fun init_for_testing(ctx: &mut TxContext) {
-        init(CHANNEL_MODERATION {}, ctx);
-    }
 }
