@@ -30,12 +30,8 @@ module sage_post::post_fees {
         custom_coin_type: TypeName,
         like_post_fee_custom: u64,
         like_post_fee_sui: u64,
-        post_from_channel_fee_custom: u64,
-        post_from_channel_fee_sui: u64,
         post_from_post_fee_custom: u64,
-        post_from_post_fee_sui: u64,
-        post_from_user_fee_custom: u64,
-        post_from_user_fee_sui: u64
+        post_from_post_fee_sui: u64
     }
 
     // --------------- Events ---------------
@@ -49,12 +45,8 @@ module sage_post::post_fees {
         app: &mut App,
         like_post_fee_custom: u64,
         like_post_fee_sui: u64,
-        post_from_channel_fee_custom: u64,
-        post_from_channel_fee_sui: u64,
         post_from_post_fee_custom: u64,
         post_from_post_fee_sui: u64,
-        post_from_user_fee_custom: u64,
-        post_from_user_fee_sui: u64,
         ctx: &mut TxContext
     ) {
         let app_address = app.get_address();
@@ -66,12 +58,8 @@ module sage_post::post_fees {
             custom_coin_type,
             like_post_fee_custom,
             like_post_fee_sui,
-            post_from_channel_fee_custom,
-            post_from_channel_fee_sui,
             post_from_post_fee_custom,
-            post_from_post_fee_sui,
-            post_from_user_fee_custom,
-            post_from_user_fee_sui
+            post_from_post_fee_sui
         };
 
         apps::add_fee_config(
@@ -89,24 +77,16 @@ module sage_post::post_fees {
         fees: &mut PostFees,
         like_post_fee_custom: u64,
         like_post_fee_sui: u64,
-        post_from_channel_fee_custom: u64,
-        post_from_channel_fee_sui: u64,
         post_from_post_fee_custom: u64,
-        post_from_post_fee_sui: u64,
-        post_from_user_fee_custom: u64,
-        post_from_user_fee_sui: u64
+        post_from_post_fee_sui: u64
     ) {
         let custom_coin_type = type_name::get<CoinType>();
 
         fees.custom_coin_type = custom_coin_type;
         fees.like_post_fee_custom = like_post_fee_custom;
         fees.like_post_fee_sui = like_post_fee_sui;
-        fees.post_from_channel_fee_custom = post_from_channel_fee_custom;
-        fees.post_from_channel_fee_sui = post_from_channel_fee_sui;
         fees.post_from_post_fee_custom = post_from_post_fee_custom;
         fees.post_from_post_fee_sui = post_from_post_fee_sui;
-        fees.post_from_user_fee_custom = post_from_user_fee_custom;
-        fees.post_from_user_fee_sui = post_from_user_fee_sui;
     }
 
     // --------------- Friend Functions ---------------
@@ -126,21 +106,6 @@ module sage_post::post_fees {
         )
     }
 
-    public(package) fun assert_post_from_channel_payment<CoinType> (
-        fees: &PostFees,
-        custom_payment: Coin<CoinType>,
-        sui_payment: Coin<SUI>
-    ): (Coin<CoinType>, Coin<SUI>) {
-        assert_coin_type<CoinType>(fees);
-
-        assert_payment<CoinType>(
-            custom_payment,
-            sui_payment,
-            fees.post_from_channel_fee_custom,
-            fees.post_from_channel_fee_sui
-        )
-    }
-
     public(package) fun assert_post_from_post_payment<CoinType> (
         fees: &PostFees,
         custom_payment: Coin<CoinType>,
@@ -153,21 +118,6 @@ module sage_post::post_fees {
             sui_payment,
             fees.post_from_post_fee_custom,
             fees.post_from_post_fee_sui
-        )
-    }
-
-    public(package) fun assert_post_from_user_payment<CoinType> (
-        fees: &PostFees,
-        custom_payment: Coin<CoinType>,
-        sui_payment: Coin<SUI>
-    ): (Coin<CoinType>, Coin<SUI>) {
-        assert_coin_type<CoinType>(fees);
-
-        assert_payment<CoinType>(
-            custom_payment,
-            sui_payment,
-            fees.post_from_user_fee_custom,
-            fees.post_from_user_fee_sui
         )
     }
 
@@ -200,12 +150,8 @@ module sage_post::post_fees {
         app: &mut App,
         like_post_fee_custom: u64,
         like_post_fee_sui: u64,
-        post_from_channel_fee_custom: u64,
-        post_from_channel_fee_sui: u64,
         post_from_post_fee_custom: u64,
         post_from_post_fee_sui: u64,
-        post_from_user_fee_custom: u64,
-        post_from_user_fee_sui: u64,
         ctx: &mut TxContext
     ): PostFees {
         let app_address = app.get_address();
@@ -217,12 +163,8 @@ module sage_post::post_fees {
             custom_coin_type,
             like_post_fee_custom,
             like_post_fee_sui,
-            post_from_channel_fee_custom,
-            post_from_channel_fee_sui,
             post_from_post_fee_custom,
-            post_from_post_fee_sui,
-            post_from_user_fee_custom,
-            post_from_user_fee_sui
+            post_from_post_fee_sui
         }
     }
 }
