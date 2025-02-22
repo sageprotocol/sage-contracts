@@ -7,7 +7,7 @@ module sage_channel::channel {
     };
 
     use sage_post::{
-        post_registry::{Self, PostRegistry}
+        posts::{Self, Posts}
     };
 
     use sage_utils::{
@@ -38,7 +38,7 @@ module sage_channel::channel {
         members: ChannelMembership,
         moderators: ChannelModeration,
         name: String,
-        posts: PostRegistry,
+        posts: Posts,
         updated_at: u64
     }
 
@@ -120,7 +120,7 @@ module sage_channel::channel {
 
     public(package) fun borrow_posts_mut(
         channel: &mut Channel
-    ): &mut PostRegistry {
+    ): &mut Posts {
         &mut channel.posts
     }
 
@@ -133,7 +133,7 @@ module sage_channel::channel {
         members: ChannelMembership,
         moderators: ChannelModeration,
         name: String,
-        posts: PostRegistry,
+        posts: Posts,
         ctx: &mut TxContext
     ): address {
         assert_channel_name(name);
@@ -205,7 +205,7 @@ module sage_channel::channel {
     ): Channel {
         let (membership , _, _) = channel_membership::create(ctx);
         let (moderation, _, _) = channel_moderation::create(ctx);
-        let post_registry = post_registry::create(ctx);
+        let posts = posts::create(ctx);
 
         Channel {
             id: object::new(ctx),
@@ -217,7 +217,7 @@ module sage_channel::channel {
             members: membership,
             moderators: moderation,
             name: channel_name,
-            posts: post_registry,
+            posts,
             updated_at: created_at
         }
     }

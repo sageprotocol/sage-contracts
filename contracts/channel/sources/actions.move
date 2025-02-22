@@ -23,7 +23,7 @@ module sage_channel::channel_actions {
 
     use sage_post::{
         post_actions::{Self},
-        post_registry::{Self}
+        posts::{Self}
     };
 
     use sage_user::{
@@ -234,7 +234,7 @@ module sage_channel::channel_actions {
             moderation_message,
             moderation_type
         ) = channel_moderation::create(ctx);
-        let posts = post_registry::create(ctx);
+        let posts = posts::create(ctx);
 
         let channel_address = channel::create(
             avatar_hash,

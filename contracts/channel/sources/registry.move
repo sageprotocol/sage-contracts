@@ -6,16 +6,11 @@ module sage_channel::channel_registry {
         table::{Self, Table}
     };
 
-    use sage_channel::{
-        channel::{Channel}
-    };
-
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const EChannelRecordDoesNotExist: u64 = 370;
-    const EChannelRecordExists: u64 = 371;
+    const EChannelRecordExists: u64 = 370;
 
     // --------------- Name Tag ---------------
 
