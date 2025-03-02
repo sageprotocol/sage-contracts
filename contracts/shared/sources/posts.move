@@ -1,4 +1,4 @@
-module sage_post::posts {
+module sage_shared::posts {
     use sui::{
         table::{Self, Table}
     };
@@ -19,6 +19,17 @@ module sage_post::posts {
 
     // --------------- Public Functions ---------------
 
+    public fun add(
+        posts: &mut Posts,
+        post_timestamp: u64,
+        post_address: address
+    ) {
+        posts.posts.add(
+            post_timestamp, 
+            post_address
+        );
+    }
+
     public fun create(
         ctx: &mut TxContext
     ): Posts {
@@ -35,17 +46,6 @@ module sage_post::posts {
     }
 
     // --------------- Friend Functions ---------------
-
-    public(package) fun add(
-        posts: &mut Posts,
-        post_timestamp: u64,
-        post_address: address
-    ) {
-        posts.posts.add(
-            post_timestamp, 
-            post_address
-        );
-    }
 
     // --------------- Internal Functions ---------------
 
