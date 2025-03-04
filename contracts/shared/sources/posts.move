@@ -38,6 +38,12 @@ module sage_shared::posts {
         }
     }
 
+    public fun get_length(
+        posts: &Posts
+    ): u64 {
+        posts.posts.length()
+    }
+
     public fun has_record(
         posts: &Posts,
         post_timestamp: u64

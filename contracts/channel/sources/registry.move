@@ -10,8 +10,6 @@ module sage_channel::channel_registry {
 
     // --------------- Errors ---------------
 
-    const EChannelRecordExists: u64 = 370;
-
     // --------------- Name Tag ---------------
 
     public struct ChannelRegistry has key, store {
@@ -62,10 +60,6 @@ module sage_channel::channel_registry {
         channel_key: String,
         channel_address: address
     ) {
-        let record_exists = channel_registry.has_record(channel_key);
-
-        assert!(!record_exists, EChannelRecordExists);
-
         channel_registry.registry.add(channel_key, channel_address);
     }
 

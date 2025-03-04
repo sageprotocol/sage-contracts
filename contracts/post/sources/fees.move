@@ -145,26 +145,4 @@ module sage_post::post_fees {
 
     // --------------- Test Functions ---------------
 
-    #[test_only]
-    public fun create_for_testing<CoinType> (
-        app: &mut App,
-        like_post_fee_custom: u64,
-        like_post_fee_sui: u64,
-        post_from_post_fee_custom: u64,
-        post_from_post_fee_sui: u64,
-        ctx: &mut TxContext
-    ): PostFees {
-        let app_address = app.get_address();
-        let custom_coin_type = type_name::get<CoinType>();
-
-        PostFees {
-            id: object::new(ctx),
-            app: app_address,
-            custom_coin_type,
-            like_post_fee_custom,
-            like_post_fee_sui,
-            post_from_post_fee_custom,
-            post_from_post_fee_sui
-        }
-    }
 }

@@ -9,6 +9,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 
 SageAdmin = { local = "../admin" }
 SagePost = { local = "../post" }
+SageShared = { local = "../shared" }
 SageUser = { local = "../user" }
 SageUtils = { local = "../utils" }
 
@@ -19,11 +20,13 @@ server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 # sage_admin = "0x756c7229c6dc1121998b551eb3737806a1ad37393fec8411e14ab17da1996755"
 # sage_channel = "0xcc37cb5974c7a8adddb923f6a1ef205f67de8f88afe64d3c9ef2624b09d7b211"
 # sage_post = ""
+# sage_shared = ""
 # sage_user = "0x15c584fea306182d89de5e105732fc9c9db6c988ed9c1d8f3b9ce0a17ff72e3d"
 # sage_utils = "0x9b73e9902685d9d893a9cbef9852827090a0eb62fabaf10fa970c4669d868623"
 
 sage_admin = "0x0"
 sage_channel = "0x0"
 sage_post = "0x0"
+sage_shared = "0x0"
 sage_user = "0x0"
 sage_utils  = "0x0"

@@ -18,7 +18,10 @@ module sage_user::user_invite {
 
     // --------------- Errors ---------------
 
-    const EInviteCodeExists: u64 = 370;
+    const EInviteNotAllowed: u64 = 370;
+    const EInviteDoesNotExist: u64 = 371;
+    const EInviteExists: u64 = 372;
+    const EInviteInvalid: u64 = 373;
 
     // --------------- Name Tag ---------------
 
@@ -68,6 +71,42 @@ module sage_user::user_invite {
     }
 
     // --------------- Public Functions ---------------
+
+    public fun assert_invite_exists(
+        user_invite_registry: &UserInviteRegistry,
+        invite_key: String
+    ) {
+        let has_record = has_record(
+            user_invite_registry,
+            invite_key
+        );
+
+        assert!(has_record, EInviteDoesNotExist);
+    }
+
+    public fun assert_invite_not_required(
+        invite_config: &InviteConfig
+    ) {
+        let is_invite_required = is_invite_required(
+            invite_config
+        );
+
+        assert!(!is_invite_required, EInviteNotAllowed);
+    }
+
+    public fun assert_invite_is_valid(
+        invite_code: String,
+        invite_key: String,
+        invite_hash: vector<u8>
+    ) {
+        let is_invite_valid = is_invite_valid(
+            invite_code,
+            invite_key,
+            invite_hash
+        );
+
+        assert!(!is_invite_valid, EInviteInvalid);
+    }
 
     public fun get_destructured_invite(
         user_invite_registry: &mut UserInviteRegistry,
@@ -151,7 +190,7 @@ module sage_user::user_invite {
             invite_key
         );
 
-        assert!(!has_record, EInviteCodeExists);
+        assert!(!has_record, EInviteExists);
 
         let invite = Invite {
             hash: invite_hash,

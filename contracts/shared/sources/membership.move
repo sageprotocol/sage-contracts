@@ -41,19 +41,12 @@ module sage_shared::membership {
 
     public fun create(
         ctx: &mut TxContext
-    ): (Membership, u8, u8) {
-        let self = tx_context::sender(ctx);
-        
-        let mut membership = Membership {
+    ): Membership {
+        let membership = Membership {
             membership: table::new(ctx)
         };
 
-        let (event, message) = wallet_join(
-            &mut membership,
-            self
-        );
-
-        (membership, event, message)
+        membership
     }
 
     public fun get_length(

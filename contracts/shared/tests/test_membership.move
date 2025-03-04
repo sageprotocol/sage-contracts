@@ -30,19 +30,13 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership_event: u8 = 10;
-            let membership_message: u8 = 0;
-
-            let (membership, retrieved_event, retrieved_message) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 
-            assert!(retrieved_event == membership_event, EMembershipMismatch);
-            assert!(retrieved_message == membership_message, EMembershipMismatch);
-
             let length = membership::get_length(&membership);
 
-            assert!(length == 1, ELengthMismatch);
+            assert!(length == 0, ELengthMismatch);
 
             destroy(membership);
         };
@@ -57,7 +51,7 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         let mut membership = {
-            let (membership, _, _) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 
@@ -86,7 +80,7 @@ module sage_shared::test_membership {
 
             let length = membership::get_length(&membership);
 
-            assert!(length == 2, ELengthMismatch);
+            assert!(length == 1, ELengthMismatch);
 
             let retrieved_type = membership::get_type(
                 &membership,
@@ -108,7 +102,7 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         let mut membership = {
-            let (membership, _, _) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 
@@ -142,7 +136,7 @@ module sage_shared::test_membership {
 
             let length = membership::get_length(&membership);
 
-            assert!(length == 1, ELengthMismatch);
+            assert!(length == 0, ELengthMismatch);
 
             destroy(membership);
         };
@@ -157,7 +151,7 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         let mut membership = {
-            let (membership, _, _) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 
@@ -186,7 +180,7 @@ module sage_shared::test_membership {
 
             let length = membership::get_length(&membership);
 
-            assert!(length == 2, ELengthMismatch);
+            assert!(length == 1, ELengthMismatch);
 
             let retrieved_type = membership::get_type(
                 &membership,
@@ -208,7 +202,7 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         let mut membership = {
-            let (membership, _, _) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 
@@ -242,7 +236,7 @@ module sage_shared::test_membership {
 
             let length = membership::get_length(&membership);
 
-            assert!(length == 1, ELengthMismatch);
+            assert!(length == 0, ELengthMismatch);
 
             destroy(membership);
         };
@@ -257,7 +251,7 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         let mut membership = {
-            let (membership, _, _) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 
@@ -290,7 +284,7 @@ module sage_shared::test_membership {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let (membership, _, _) = membership::create(
+            let membership = membership::create(
                 ts::ctx(scenario)
             );
 

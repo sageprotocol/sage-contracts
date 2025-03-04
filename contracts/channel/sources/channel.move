@@ -1,13 +1,10 @@
 module sage_channel::channel {
     use std::string::{String};
 
-    use sage_channel::{
-        channel_membership::{Self, ChannelMembership},
-        channel_moderation::{Self, ChannelModeration}
-    };
-
-    use sage_post::{
-        posts::{Self, Posts}
+    use sage_shared::{
+        membership::{Membership},
+        moderation::{Moderation},
+        posts::{Posts}
     };
 
     use sage_utils::{
@@ -35,8 +32,8 @@ module sage_channel::channel {
         created_at: u64,
         created_by: address,
         description: String,
-        members: ChannelMembership,
-        moderators: ChannelModeration,
+        members: Membership,
+        moderators: Moderation,
         name: String,
         posts: Posts,
         updated_at: u64
@@ -49,18 +46,18 @@ module sage_channel::channel {
     // --------------- Public Functions ---------------
 
     public fun assert_channel_description(
-        description: String
+        description: &String
     ) {
-        let is_valid_description = is_valid_description(&description);
+        let is_valid_description = is_valid_description(description);
 
         assert!(is_valid_description, EInvalidChannelDescription);
     }
 
     public fun assert_channel_name(
-        name: String
+        name: &String
     ) {
         let is_valid_name = string_helpers::is_valid_name(
-            &name,
+            name,
             CHANNEL_NAME_MIN_LENGTH,
             CHANNEL_NAME_MAX_LENGTH
         );
@@ -108,13 +105,13 @@ module sage_channel::channel {
 
     public(package) fun borrow_members_mut(
         channel: &mut Channel
-    ): &mut ChannelMembership {
+    ): &mut Membership {
         &mut channel.members
     }
 
     public(package) fun borrow_moderators_mut(
         channel: &mut Channel
-    ): &mut ChannelModeration {
+    ): &mut Moderation {
         &mut channel.moderators
     }
 
@@ -130,14 +127,14 @@ module sage_channel::channel {
         description: String,
         created_at: u64,
         created_by: address,
-        members: ChannelMembership,
-        moderators: ChannelModeration,
+        members: Membership,
+        moderators: Moderation,
         name: String,
         posts: Posts,
         ctx: &mut TxContext
     ): address {
-        assert_channel_name(name);
-        assert_channel_description(description);
+        assert_channel_name(&name);
+        assert_channel_description(&description);
 
         let channel = Channel {
             id: object::new(ctx),
@@ -160,7 +157,7 @@ module sage_channel::channel {
         channel_address
     }
 
-    public(package) fun update (
+    public(package) fun update(
         channel: &mut Channel,
         avatar_hash: String,
         banner_hash: String,
@@ -168,7 +165,7 @@ module sage_channel::channel {
         name: String,
         updated_at: u64
     ) {
-        assert_channel_description(description);
+        assert_channel_description(&description);
 
         channel.avatar_hash = avatar_hash;
         channel.banner_hash = banner_hash;
@@ -192,35 +189,6 @@ module sage_channel::channel {
     }
 
     // --------------- Test Functions ---------------
-
-    #[test_only]
-    public fun create_for_testing(
-        channel_name: String,
-        avatar_hash: String,
-        banner_hash: String,
-        description: String,
-        created_at: u64,
-        created_by: address,
-        ctx: &mut TxContext
-    ): Channel {
-        let (membership , _, _) = channel_membership::create(ctx);
-        let (moderation, _, _) = channel_moderation::create(ctx);
-        let posts = posts::create(ctx);
-
-        Channel {
-            id: object::new(ctx),
-            avatar_hash,
-            banner_hash,
-            created_at,
-            created_by,
-            description,
-            members: membership,
-            moderators: moderation,
-            name: channel_name,
-            posts,
-            updated_at: created_at
-        }
-    }
 
     #[test_only]
     public fun is_valid_description_for_testing(

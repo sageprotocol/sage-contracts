@@ -14,12 +14,13 @@ module sage_user::test_user_fees {
             Self,
             FeeCap
         },
-        apps::{Self, App}
+        apps::{Self}
     };
 
     use sage_user::{
         user_fees::{
             Self,
+            UserFees,
             EIncorrectCoinType,
             EIncorrectCustomPayment,
             EIncorrectSuiPayment
@@ -41,8 +42,10 @@ module sage_user::test_user_fees {
     const JOIN_USER_SUI_FEE: u64 = 6;
     const LEAVE_USER_CUSTOM_FEE: u64 = 7;
     const LEAVE_USER_SUI_FEE: u64 = 8;
-    const UPDATE_USER_CUSTOM_FEE: u64 = 9;
-    const UPDATE_USER_SUI_FEE: u64 = 10;
+    const POST_TO_USER_CUSTOM_FEE: u64 = 9;
+    const POST_TO_USER_SUI_FEE: u64 = 10;
+    const UPDATE_USER_CUSTOM_FEE: u64 = 11;
+    const UPDATE_USER_SUI_FEE: u64 = 12;
     const INCORRECT_FEE: u64 = 100;
 
     // --------------- Errors ---------------
@@ -51,15 +54,18 @@ module sage_user::test_user_fees {
 
     #[test_only]
     fun destroy_for_testing(
-        app: App
+        fee_cap: FeeCap,
+        user_fees: UserFees
     ) {
-        destroy(app);
+        ts::return_to_address(ADMIN, fee_cap);
+        destroy(user_fees);
     }
 
     #[test_only]
-    fun setup_for_testing(): (
+    fun setup_for_testing<CoinType>(): (
         Scenario,
-        App,
+        FeeCap,
+        UserFees
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -69,18 +75,48 @@ module sage_user::test_user_fees {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let app = {
-            let app = apps::create_for_testing(
+        let fee_cap = {
+            let mut app = apps::create_for_testing(
                 utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
-            app
+            let fee_cap = ts::take_from_address<FeeCap>(scenario, ADMIN);
+
+            user_fees::create<CoinType>(
+                &fee_cap,
+                &mut app,
+                CREATE_INVITE_CUSTOM_FEE,
+                CREATE_INVITE_SUI_FEE,
+                CREATE_USER_CUSTOM_FEE,
+                CREATE_USER_SUI_FEE,
+                JOIN_USER_CUSTOM_FEE,
+                JOIN_USER_SUI_FEE,
+                LEAVE_USER_CUSTOM_FEE,
+                LEAVE_USER_SUI_FEE,
+                POST_TO_USER_CUSTOM_FEE,
+                POST_TO_USER_SUI_FEE,
+                UPDATE_USER_CUSTOM_FEE,
+                UPDATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            destroy(app);
+
+            fee_cap
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let user_fees = {
+            let user_fees = ts::take_shared<UserFees>(scenario);
+
+            user_fees
         };
 
         (
             scenario_val,
-            app
+            fee_cap,
+            user_fees
         )
     }
 
@@ -88,15 +124,17 @@ module sage_user::test_user_fees {
     fun test_init() {
         let (
             mut scenario_val,
-            app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
         };
 
@@ -107,30 +145,14 @@ module sage_user::test_user_fees {
     fun test_create() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_INVITE_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -221,13 +243,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -238,30 +257,14 @@ module sage_user::test_user_fees {
     fun test_create_invite_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -280,13 +283,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -297,30 +297,14 @@ module sage_user::test_user_fees {
     fun test_create_invite_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_INVITE_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -339,13 +323,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -356,30 +337,14 @@ module sage_user::test_user_fees {
     fun test_create_user_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -398,13 +363,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -415,30 +377,14 @@ module sage_user::test_user_fees {
     fun test_create_user_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -457,13 +403,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -474,30 +417,14 @@ module sage_user::test_user_fees {
     fun test_join_user_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -516,13 +443,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -533,30 +457,14 @@ module sage_user::test_user_fees {
     fun test_join_user_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 JOIN_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -575,13 +483,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -592,30 +497,14 @@ module sage_user::test_user_fees {
     fun test_leave_user_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -634,13 +523,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -651,30 +537,14 @@ module sage_user::test_user_fees {
     fun test_leave_user_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 LEAVE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -693,13 +563,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -710,30 +577,14 @@ module sage_user::test_user_fees {
     fun test_update_user_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -752,13 +603,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -769,30 +617,14 @@ module sage_user::test_user_fees {
     fun test_update_user_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 UPDATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -811,13 +643,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -828,30 +657,14 @@ module sage_user::test_user_fees {
     fun test_fee_coin_type() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<FAKE_FEE_COIN>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let user_fees = user_fees::create_for_testing<FAKE_FEE_COIN>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 UPDATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -870,13 +683,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);
@@ -886,33 +696,19 @@ module sage_user::test_user_fees {
     fun test_update() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            mut user_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let mut user_fees = user_fees::create_for_testing<SUI>(
-                &mut app,
-                CREATE_INVITE_CUSTOM_FEE,
-                CREATE_INVITE_SUI_FEE,
-                CREATE_USER_CUSTOM_FEE,
-                CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
-                UPDATE_USER_CUSTOM_FEE,
-                UPDATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             user_fees::update<SUI>(
                 &fee_cap,
                 &mut user_fees,
+                INCORRECT_FEE,
+                INCORRECT_FEE,
                 INCORRECT_FEE,
                 INCORRECT_FEE,
                 INCORRECT_FEE,
@@ -967,13 +763,10 @@ module sage_user::test_user_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                user_fees
             );
-
-            destroy(user_fees);
         };
 
         ts::end(scenario_val);

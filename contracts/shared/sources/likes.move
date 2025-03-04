@@ -1,4 +1,4 @@
-module sage_post::post_likes {
+module sage_shared::likes {
     use sui::{
         table::{Self, Table}
     };
@@ -28,6 +28,13 @@ module sage_post::post_likes {
 
     // --------------- Public Functions ---------------
 
+    public fun add(
+        likes: &mut Likes,
+        key: address
+    ) {
+        likes.likes.add(key, LIKE);
+    }
+
     public fun assert_has_not_liked(
         likes: &Likes,
         key: address
@@ -40,7 +47,17 @@ module sage_post::post_likes {
         assert!(!has_liked, EAlreadyLiked);
     }
 
-    public fun get_likes_length(
+    public fun create(
+        ctx: &mut TxContext
+    ): Likes {
+        let likes = Likes {
+            likes: table::new(ctx)
+        };
+
+        likes
+    }
+
+    public fun get_length(
         likes: &Likes
     ): u64 {
         likes.likes.length()
@@ -54,23 +71,6 @@ module sage_post::post_likes {
     }
 
     // --------------- Friend Functions ---------------
-
-    public(package) fun add(
-        likes: &mut Likes,
-        key: address
-    ) {
-        likes.likes.add(key, LIKE);
-    }
-
-    public(package) fun create(
-        ctx: &mut TxContext
-    ): Likes {
-        let likes = Likes {
-            likes: table::new(ctx)
-        };
-
-        likes
-    }
 
     // --------------- Internal Functions ---------------
 

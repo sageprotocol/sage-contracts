@@ -15,7 +15,8 @@ module sage_shared::test_posts {
 
     // --------------- Errors ---------------
 
-    const ENoPostsRecord: u64 = 0;
+    const EPostsLengthMismatch: u64 = 0;
+    const ENoPostsRecord: u64 = 1;
 
     // --------------- Test Functions ---------------
 
@@ -55,37 +56,16 @@ module sage_shared::test_posts {
                 ADMIN
             );
 
-            destroy(posts);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_posts_has_record() {
-        let mut scenario_val = ts::begin(ADMIN);
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let mut posts = posts::create(
-                ts::ctx(scenario)
-            );
-
-            let timestamp: u64 = 0;
-
-            posts::add(
-                &mut posts,
-                timestamp,
-                ADMIN
-            );
-
             let has_record = posts::has_record(
                 &posts,
                 timestamp
             );
 
             assert!(has_record, ENoPostsRecord);
+
+            let length = posts::get_length(&posts);
+
+            assert!(length == 1, EPostsLengthMismatch);
 
             destroy(posts);
         };

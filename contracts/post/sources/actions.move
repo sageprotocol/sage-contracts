@@ -9,14 +9,18 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
+        authentication::{Self, AuthenticationConfig},
         fees::{Self, Royalties}
     };
 
     use sage_post::{
         post::{Self, Post},
         posts::{Self, Posts},
-        post_fees::{Self, PostFees},
-        post_likes::{Self, Likes},
+        post_fees::{Self, PostFees}
+    };
+
+    use sage_shared::{
+        likes::{Self}
     };
 
     // --------------- Constants ---------------
@@ -38,26 +42,16 @@ module sage_post::post_actions {
         updated_at: u64
     }
 
-    // public struct UserPostCreated has copy, drop {
-    //     created_at: u64,
-    //     created_by: address,
-    //     data: String,
-    //     description: String,
-    //     post_key: String,
-    //     title: String,
-    //     updated_at: u64,
-    //     user_key: String
-    // }
-
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
-    public fun comment<CoinType>(
+    public fun comment<CoinType, SoulType: key>(
+        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         parent_post: &mut Post,
         post_fees: &PostFees,
-        // user_registry: &UserRegistry,
+        soul: &SoulType,
         data: String,
         description: String,
         title: String,
@@ -65,10 +59,10 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): address {
-        // user_registry::assert_user_address_exists(
-        //     user_registry,
-        //     self
-        // );
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
         
         let (
             custom_payment,
@@ -118,14 +112,21 @@ module sage_post::post_actions {
         post_address
     }
 
-    public fun create(
+    public fun create<SoulType: key> (
+        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         posts: &mut Posts,
+        soul: &SoulType,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): (address, u64) {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+
         let timestamp = clock.timestamp_ms();
 
         let (post_address, _self) = post::create(
@@ -145,21 +146,22 @@ module sage_post::post_actions {
         (post_address, timestamp)
     }
 
-    public fun like<CoinType> (
+    public fun like<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
         post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
-        // user_registry: &UserRegistry,
+        soul: &SoulType,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let self = tx_context::sender(ctx);
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
 
-        // user_registry::assert_user_address_exists(
-        //     user_registry,
-        //     self
-        // );
+        let self = tx_context::sender(ctx);
 
         let (
             custom_payment,
@@ -172,7 +174,7 @@ module sage_post::post_actions {
 
         let likes = post::borrow_likes_mut(post);
 
-        post_likes::add(
+        likes::add(
             likes,
             self
         );
@@ -187,87 +189,6 @@ module sage_post::post_actions {
             ctx
         );
     }
-
-    // public fun post_from_user<CoinType> (
-    //     clock: &Clock,
-    //     posts: &mut Posts,
-    //     user_posts_registry: &mut UserPostsRegistry,
-    //     user_registry: &mut UserRegistry,
-    //     post_fees: &PostFees,
-    //     data: String,
-    //     description: String,
-    //     title: String,
-    //     user_key: String,
-    //     custom_payment: Coin<CoinType>,
-    //     sui_payment: Coin<SUI>,
-    //     ctx: &mut TxContext
-    // ): String {
-    //     let (
-    //         custom_payment,
-    //         sui_payment
-    //     ) = post_fees::assert_post_from_user_payment<CoinType>(
-    //         post_fees,
-    //         custom_payment,
-    //         sui_payment
-    //     );
-
-    //     fees::collect_payment<CoinType>(
-    //         custom_payment,
-    //         sui_payment
-    //     );
-
-    //     let self = tx_context::sender(ctx);
-
-    //     let self_exists = user_registry::has_address_record(
-    //         user_registry,
-    //         self
-    //     );
-
-    //     assert!(self_exists, EUserDoesNotExist);
-
-    //     let user_exists = user_registry::has_username_record(
-    //         user_registry,
-    //         user_key
-    //     );
-
-    //     assert!(user_exists, EUserDoesNotExist);
-
-    //     let timestamp = clock.timestamp_ms();
-
-    //     let (post, post_key) = post::create(
-    //         self,
-    //         data,
-    //         description,
-    //         title,
-    //         timestamp,
-    //         ctx
-    //     );
-
-    //     posts::add(
-    //         posts,
-    //         post_key,
-    //         post
-    //     );
-
-    //     user_posts::add(
-    //         user_posts_registry,
-    //         user_key,
-    //         post_key
-    //     );
-
-    //     event::emit(UserPostCreated {
-    //         created_at: timestamp,
-    //         created_by: self,
-    //         data,
-    //         description,
-    //         post_key,
-    //         title,
-    //         updated_at: timestamp,
-    //         user_key
-    //     });
-
-    //     post_key
-    // }
 
     // --------------- Friend Functions ---------------
 

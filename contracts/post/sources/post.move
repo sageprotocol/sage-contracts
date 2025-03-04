@@ -1,9 +1,9 @@
 module sage_post::post {
     use std::string::{String};
 
-    use sage_post::{
-        posts::{Self, Posts},
-        post_likes::{Self, Likes}
+    use sage_shared::{
+        likes::{Self, Likes},
+        posts::{Self, Posts}
     };
 
     // --------------- Constants ---------------
@@ -67,7 +67,7 @@ module sage_post::post {
     ): (address, address) {
         let self = tx_context::sender(ctx);
 
-        let likes = post_likes::create(ctx);
+        let likes = likes::create(ctx);
         let posts = posts::create(ctx);
 
         let post = Post {

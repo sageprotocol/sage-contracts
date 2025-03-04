@@ -10,23 +10,28 @@ module sage_channel::channel_actions {
 
     use sage_admin::{
         admin::{AdminCap},
+        authentication::{Self, AuthenticationConfig},
         fees::{Self}
     };
 
     use sage_channel::{
         channel::{Self, Channel},
         channel_fees::{Self, ChannelFees},
-        channel_membership::{Self},
-        channel_moderation::{Self},
         channel_registry::{Self, ChannelRegistry}
     };
 
     use sage_post::{
-        post_actions::{Self},
+        post_actions::{Self}
+    };
+
+    use sage_shared::{
+        membership::{Self},
+        moderation::{Self},
         posts::{Self}
     };
 
     use sage_user::{
+        user::{Self, User},
         user_registry::{Self, UserRegistry}
     };
 
@@ -38,12 +43,7 @@ module sage_channel::channel_actions {
 
     // --------------- Errors ---------------
 
-    const EAlreadyChannelModerator: u64 = 370;
-    const EChannelModeratorLength: u64 = 371;
-    const EChannelNameMismatch: u64 = 372;
-    const ENotChannelModerator: u64 = 373;
-    const ENotChannelOwner: u64 = 374;
-    const EUserDoesNotExist: u64 = 375;
+    const EChannelNameMismatch: u64 = 370;
 
     // --------------- Name Tag ---------------
 
@@ -64,6 +64,7 @@ module sage_channel::channel_actions {
         account_type: u8,
         channel_key: String,
         message: u8,
+        updated_at: u64,
         user: address
     }
 
@@ -71,6 +72,7 @@ module sage_channel::channel_actions {
         channel_key: String,
         message: u8,
         moderator_type: u8,
+        updated_at: u64,
         user: address
     }
 
@@ -101,6 +103,7 @@ module sage_channel::channel_actions {
     public fun add_moderator_as_admin (
         _: &AdminCap,
         channel: &mut Channel,
+        clock: &Clock,
         user_registry: &UserRegistry,
         user_key: String
     ) {
@@ -109,24 +112,26 @@ module sage_channel::channel_actions {
             user_key
         );
 
-        let mut channel_moderation = channel::borrow_moderators_mut(
+        let moderation = channel::borrow_moderators_mut(
             channel
         );
 
         let (
             message,
             moderator_type
-        ) = channel_moderation::make_moderator(
-            channel_moderation,
+        ) = moderation::make_moderator(
+            moderation,
             user_address
         );
 
         let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
             channel_key,
             message,
             moderator_type,
+            updated_at,
             user: user_address
         });
     }
@@ -134,20 +139,20 @@ module sage_channel::channel_actions {
     public fun add_moderator_as_owner<CoinType> (
         channel: &mut Channel,
         channel_fees: &ChannelFees,
-        user_registry: &UserRegistry,
-        user_key: String,
+        clock: &Clock,
+        user: &User,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
         let self = tx_context::sender(ctx);
 
-        let mut channel_moderation = channel::borrow_moderators_mut(
+        let moderation = channel::borrow_moderators_mut(
             channel
         );
 
-        channel_moderation::assert_is_owner(
-            channel_moderation,
+        moderation::assert_is_owner(
+            moderation,
             self
         );
 
@@ -160,25 +165,26 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let user_address = user_registry::get_owner_address_from_key(
-            user_registry,
-            user_key
+        let user_address = user::get_owner(
+            user
         );
 
         let (
             message,
             moderator_type
-        ) = channel_moderation::make_moderator(
-            channel_moderation,
+        ) = moderation::make_moderator(
+            moderation,
             user_address
         );
 
         let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
             channel_key,
             message,
             moderator_type,
+            updated_at,
             user: user_address
         });
 
@@ -188,24 +194,23 @@ module sage_channel::channel_actions {
         );
     }
 
-    public fun create<CoinType> (
+    public fun create<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         channel_fees: &ChannelFees,
         channel_registry: &mut ChannelRegistry,
-        user_registry: &UserRegistry,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         name: String,
+        soul: &SoulType,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext,
     ): address {
-        let self = tx_context::sender(ctx);
-
-        user_registry::assert_user_address_exists(
-            user_registry,
-            self
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
         );
 
         let (
@@ -218,30 +223,34 @@ module sage_channel::channel_actions {
         );
 
         let created_at = clock.timestamp_ms();
-        let created_by = tx_context::sender(ctx);
+        let self = tx_context::sender(ctx);
 
         let channel_key = string_helpers::to_lowercase(
             &name
         );
 
-        let (
-            members,
-            membership_message,
-            membership_type
-        ) = channel_membership::create(ctx);
+        let mut members = membership::create(ctx);
         let (
             moderators,
             moderation_message,
             moderation_type
-        ) = channel_moderation::create(ctx);
+        ) = moderation::create(ctx);
         let posts = posts::create(ctx);
+
+        let (
+            membership_message,
+            membership_type
+        ) = membership::wallet_join(
+            &mut members,
+            self
+        );
 
         let channel_address = channel::create(
             avatar_hash,
             banner_hash,
             description,
             created_at,
-            created_by,
+            self,
             members,
             moderators,
             name,
@@ -267,7 +276,7 @@ module sage_channel::channel_actions {
             channel_key,
             channel_name: name,
             created_at,
-            created_by,
+            created_by: self,
             description
         });
 
@@ -275,6 +284,7 @@ module sage_channel::channel_actions {
             account_type: membership_type,
             channel_key,
             message: membership_message,
+            updated_at: created_at,
             user: self
         });
 
@@ -282,26 +292,29 @@ module sage_channel::channel_actions {
             channel_key,
             message: moderation_message,
             moderator_type: moderation_type,
+            updated_at: created_at,
             user: self
         });
 
         channel_address
     }
 
-    public fun join<CoinType> (
+    public fun join<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
-        user_registry: &UserRegistry,
+        clock: &Clock,
+        soul: &SoulType,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let self = tx_context::sender(ctx);
-
-        user_registry::assert_user_address_exists(
-            user_registry,
-            self
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
         );
+
+        let self = tx_context::sender(ctx);
 
         let (
             custom_payment,
@@ -312,24 +325,26 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let mut channel_membership = channel::borrow_members_mut(
+        let membership = channel::borrow_members_mut(
             channel
         );
 
         let (
             message,
             account_type
-        ) = channel_membership::join(
-            channel_membership,
+        ) = membership::wallet_join(
+            membership,
             self
         );
 
         let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelMembershipUpdate {
             account_type,
             channel_key,
             message,
+            updated_at,
             user: self
         });
 
@@ -342,18 +357,11 @@ module sage_channel::channel_actions {
     public fun leave<CoinType> (
         channel: &mut Channel,
         channel_fees: &ChannelFees,
-        user_registry: &UserRegistry,
+        clock: &Clock,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let self = tx_context::sender(ctx);
-
-        user_registry::assert_user_address_exists(
-            user_registry,
-            self
-        );
-
         let (
             custom_payment,
             sui_payment
@@ -363,24 +371,28 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let mut channel_membership = channel::borrow_members_mut(
+        let self = tx_context::sender(ctx);
+
+        let membership = channel::borrow_members_mut(
             channel
         );
 
         let (
             message,
             account_type
-        ) = channel_membership::leave(
-            channel_membership,
+        ) = membership::wallet_leave(
+            membership,
             self
         );
 
         let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelMembershipUpdate {
             account_type,
             channel_key,
             message,
+            updated_at,
             user: self
         });
 
@@ -390,11 +402,12 @@ module sage_channel::channel_actions {
         );
     }
 
-    public fun post<CoinType> (
+    public fun post<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
-        user_registry: &UserRegistry,
+        soul: &SoulType,
         data: String,
         description: String,
         title: String,
@@ -404,15 +417,12 @@ module sage_channel::channel_actions {
     ): address {
         let self = tx_context::sender(ctx);
 
-        user_registry::assert_user_address_exists(
-            user_registry,
-            self
+        let membership = channel::borrow_members_mut(
+            channel
         );
 
-        let members = channel::borrow_members_mut(channel);
-
-        channel_membership::assert_is_member(
-            members,
+        membership::assert_is_member(
+            membership,
             self
         );
 
@@ -430,9 +440,11 @@ module sage_channel::channel_actions {
         let (
             post_address,
             timestamp
-        ) = post_actions::create(
+        ) = post_actions::create<SoulType>(
+            authentication_config,
             clock,
             posts,
+            soul,
             data,
             description,
             title,
@@ -463,6 +475,7 @@ module sage_channel::channel_actions {
     public fun remove_moderator_as_admin (
         _: &AdminCap,
         channel: &mut Channel,
+        clock: &Clock,
         user_registry: &UserRegistry,
         user_key: String
     ) {
@@ -471,24 +484,26 @@ module sage_channel::channel_actions {
             user_key
         );
 
-        let mut channel_moderation = channel::borrow_moderators_mut(
+        let moderation = channel::borrow_moderators_mut(
             channel
         );
 
         let (
             message,
             moderator_type
-        ) = channel_moderation::remove_moderator(
-            channel_moderation,
+        ) = moderation::remove_moderator(
+            moderation,
             user_address
         );
 
         let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
             channel_key,
             message,
             moderator_type,
+            updated_at,
             user: user_address
         });
     }
@@ -496,20 +511,20 @@ module sage_channel::channel_actions {
     public fun remove_moderator_as_owner<CoinType> (
         channel: &mut Channel,
         channel_fees: &ChannelFees,
-        user_registry: &UserRegistry,
-        user_key: String,
+        clock: &Clock,
+        user: &User,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
         let self = tx_context::sender(ctx);
 
-        let mut channel_moderation = channel::borrow_moderators_mut(
+        let moderation = channel::borrow_moderators_mut(
             channel
         );
 
-        channel_moderation::assert_is_owner(
-            channel_moderation,
+        moderation::assert_is_owner(
+            moderation,
             self
         );
 
@@ -522,25 +537,26 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let user_address = user_registry::get_owner_address_from_key(
-            user_registry,
-            user_key
+        let user_address = user::get_owner(
+            user
         );
 
         let (
             message,
             moderator_type
-        ) = channel_moderation::remove_moderator(
-            channel_moderation,
+        ) = moderation::remove_moderator(
+            moderation,
             user_address
         );
 
         let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
             channel_key,
             message,
             moderator_type,
+            updated_at,
             user: user_address
         });
 
@@ -602,10 +618,10 @@ module sage_channel::channel_actions {
     ) {
         let self = tx_context::sender(ctx);
 
-        let moderators = channel::borrow_moderators_mut(channel);
+        let moderation = channel::borrow_moderators_mut(channel);
 
-        channel_moderation::assert_is_moderator(
-            moderators,
+        moderation::assert_is_moderator(
+            moderation,
             self
         );
 
