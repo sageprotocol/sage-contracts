@@ -44,6 +44,18 @@ module sage_post::post {
         post.created_by
     }
 
+    public fun get_created_at(
+        post: &Post
+    ): u64 {
+        post.created_at
+    }
+
+    public fun get_updated_at(
+        post: &Post
+    ): u64 {
+        post.updated_at
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun borrow_likes_mut(

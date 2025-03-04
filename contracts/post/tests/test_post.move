@@ -19,6 +19,7 @@ module sage_post::test_post {
 
     const EAuthorMismatch: u64 = 0;
     const EPostMismatch: u64 = 1;
+    const ETimestampMismatch: u64 = 2;
 
     // --------------- Test Functions ---------------
 
@@ -27,13 +28,13 @@ module sage_post::test_post {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
+        let timestamp: u64 = 999;
+
         ts::next_tx(scenario, ADMIN);
         let (
             post_address,
             self
         ) = {
-            let timestamp: u64 = 999;
-
             let (post_address, self) = post::create(
                 utf8(b"data"),
                 utf8(b"description"),
@@ -58,6 +59,14 @@ module sage_post::test_post {
             let retrieved_address = post::get_address(&post);
 
             assert!(post_address == retrieved_address, EPostMismatch);
+
+            let retrieved_created_at = post::get_created_at(&post);
+
+            assert!(retrieved_created_at == timestamp, ETimestampMismatch);
+
+            let retrieved_updated_at = post::get_updated_at(&post);
+
+            assert!(retrieved_updated_at == timestamp, ETimestampMismatch);
 
             destroy(post);
         };
