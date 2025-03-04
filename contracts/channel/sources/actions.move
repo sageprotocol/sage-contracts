@@ -439,6 +439,7 @@ module sage_channel::channel_actions {
 
         let (
             post_address,
+            _self,
             timestamp
         ) = post_actions::create<SoulType>(
             authentication_config,

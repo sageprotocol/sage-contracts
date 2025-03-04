@@ -58,7 +58,7 @@ module sage_post::post_actions {
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
-    ): address {
+    ): (address, address, u64) {
         authentication::assert_authentication<SoulType>(
             authentication_config,
             soul
@@ -109,7 +109,7 @@ module sage_post::post_actions {
             updated_at: timestamp
         });
 
-        post_address
+        (post_address, self, timestamp)
     }
 
     public fun create<SoulType: key> (
@@ -121,7 +121,7 @@ module sage_post::post_actions {
         description: String,
         title: String,
         ctx: &mut TxContext
-    ): (address, u64) {
+    ): (address, address, u64) {
         authentication::assert_authentication<SoulType>(
             authentication_config,
             soul
@@ -129,7 +129,7 @@ module sage_post::post_actions {
 
         let timestamp = clock.timestamp_ms();
 
-        let (post_address, _self) = post::create(
+        let (post_address, self) = post::create(
             data,
             description,
             timestamp,
@@ -143,7 +143,7 @@ module sage_post::post_actions {
             post_address
         );
 
-        (post_address, timestamp)
+        (post_address, self, timestamp)
     }
 
     public fun like<CoinType, SoulType: key> (

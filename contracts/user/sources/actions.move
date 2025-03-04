@@ -387,7 +387,7 @@ module sage_user::user_actions {
         );
     }
 
-    public fun post_from_user<CoinType, SoulType: key> (
+    public fun post<CoinType, SoulType: key> (
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
         soul: &SoulType,
@@ -411,7 +411,11 @@ module sage_user::user_actions {
 
         let posts = user::borrow_posts_mut(user);
 
-        let (post_address, timestamp) = post_actions::create<SoulType>(
+        let (
+            post_address,
+            self,
+            timestamp
+        ) = post_actions::create<SoulType>(
             authentication_config,
             clock,
             posts,
