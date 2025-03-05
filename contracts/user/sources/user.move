@@ -24,13 +24,13 @@ module sage_user::user {
 
     // --------------- Name Tag ---------------
 
-    // TODO - store user key
     public struct User has key {
         id: UID,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
         description: String,
+        key: String,
         owner: address,
         members: Membership,
         name: String,
@@ -93,7 +93,7 @@ module sage_user::user {
     public fun get_key(
         user: &User
     ): String {
-        string_helpers::to_lowercase(&user.name)
+        user.key
     }
 
     public fun get_name(
@@ -131,12 +131,15 @@ module sage_user::user {
         assert_user_name(&name);
         assert_user_description(&description);
 
+        let key = string_helpers::to_lowercase(&name);
+
         let user = User {
             id: object::new(ctx),
             avatar_hash,
             banner_hash,
             created_at,
             description,
+            key,
             owner,
             members,
             name,
