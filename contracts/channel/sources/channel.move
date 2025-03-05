@@ -32,6 +32,7 @@ module sage_channel::channel {
         created_at: u64,
         created_by: address,
         description: String,
+        key: String,
         members: Membership,
         moderators: Moderation,
         name: String,
@@ -92,7 +93,7 @@ module sage_channel::channel {
     public fun get_key(
         channel: &Channel
     ): String {
-        string_helpers::to_lowercase(&channel.name)
+        channel.key
     }
 
     public fun get_name(
@@ -127,6 +128,7 @@ module sage_channel::channel {
         description: String,
         created_at: u64,
         created_by: address,
+        key: String,
         members: Membership,
         moderators: Moderation,
         name: String,
@@ -143,6 +145,7 @@ module sage_channel::channel {
             created_at,
             created_by,
             description,
+            key,
             members,
             moderators,
             name,

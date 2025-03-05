@@ -84,6 +84,7 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                channel_name,
                 members,
                 moderators,
                 channel_name,
@@ -116,6 +117,7 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                channel_name,
                 members,
                 moderators,
                 channel_name,
@@ -157,6 +159,7 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                channel_name,
                 members,
                 moderators,
                 channel_name,
@@ -198,6 +201,7 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                channel_name,
                 members,
                 moderators,
                 channel_name,
@@ -224,7 +228,7 @@ module sage_channel::test_channel {
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let channel_name = {
             let avatar_hash = utf8(b"avatar_hash");
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
@@ -239,12 +243,15 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                channel_name,
                 members,
                 moderators,
                 channel_name,
                 posts,
                 ts::ctx(scenario)
             );
+
+            channel_name
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -280,7 +287,7 @@ module sage_channel::test_channel {
             assert!(channel_description == new_channel_description, EChannelDescriptionMismatch);
 
             let channel_key = channel::get_key(&channel);
-            assert!(channel_key == utf8(b"new-name"), EChannelKeyMismatch);
+            assert!(channel_key == channel_name, EChannelKeyMismatch);
 
             let channel_name = channel::get_name(&channel);
             assert!(channel_name == new_channel_name, EChannelNameMismatch);
