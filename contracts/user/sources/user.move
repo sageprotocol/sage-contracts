@@ -24,6 +24,7 @@ module sage_user::user {
 
     // --------------- Name Tag ---------------
 
+    // TODO - store user key
     public struct User has key {
         id: UID,
         avatar_hash: String,

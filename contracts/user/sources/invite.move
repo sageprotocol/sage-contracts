@@ -109,7 +109,7 @@ module sage_user::user_invite {
     }
 
     public fun get_destructured_invite(
-        user_invite_registry: &mut UserInviteRegistry,
+        user_invite_registry: &UserInviteRegistry,
         invite_key: String
     ): (vector<u8>, address) {
         let invite = *user_invite_registry.registry.borrow(invite_key);

@@ -27,7 +27,11 @@ module sage_user::user_actions {
         soul::{Self},
         user::{Self, User},
         user_fees::{Self, UserFees},
-        user_invite::{Self, InviteConfig, UserInviteRegistry},
+        user_invite::{
+            Self,
+            InviteConfig,
+            UserInviteRegistry
+        },
         user_registry::{Self, UserRegistry}
     };
 
@@ -99,6 +103,7 @@ module sage_user::user_actions {
 
     // --------------- Public Functions ---------------
 
+    // TODO - invite code / key as Option type
     public fun create<CoinType> (
         clock: &Clock,
         invite_config: &InviteConfig,
@@ -399,7 +404,7 @@ module sage_user::user_actions {
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
-    ): address {
+    ): (address, u64) {
         let (
             custom_payment,
             sui_payment
@@ -413,7 +418,7 @@ module sage_user::user_actions {
 
         let (
             post_address,
-            self,
+            _self,
             timestamp
         ) = post_actions::create<SoulType>(
             authentication_config,
@@ -424,12 +429,6 @@ module sage_user::user_actions {
             description,
             title,
             ctx
-        );
-
-        posts::add(
-            posts,
-            timestamp,
-            post_address
         );
 
         fees::collect_payment<CoinType>(
@@ -451,7 +450,7 @@ module sage_user::user_actions {
             user_key
         });
 
-        post_address
+        (post_address, timestamp)
     }
 
     public fun update<CoinType> (
@@ -476,14 +475,9 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
 
-        let user_key = user_registry::get_key_from_owner_address(
+        let owned_user_key = user_registry::get_key_from_owner_address(
             user_registry,
             self
         );
@@ -492,7 +486,7 @@ module sage_user::user_actions {
             &name
         );
 
-        assert!(lowercase_user_name == user_key, EUserNameMismatch);
+        assert!(lowercase_user_name == owned_user_key, EUserNameMismatch);
 
         let updated_at = clock.timestamp_ms();
 
@@ -505,11 +499,16 @@ module sage_user::user_actions {
             updated_at
         );
 
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
         event::emit(UserUpdated {
             avatar_hash,
             banner_hash,
             owner: self,
-            user_key,
+            user_key: owned_user_key,
             user_name: name,
             description,
             updated_at
