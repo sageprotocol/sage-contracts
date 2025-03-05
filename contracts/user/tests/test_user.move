@@ -70,6 +70,7 @@ module sage_user::test_user {
         let banner_hash = utf8(b"banner-hash");
         let created_at: u64 = 999;
         let description = utf8(b"description");
+        let key = utf8(b"user-name");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -82,6 +83,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                key,
                 ADMIN,
                 membership,
                 name,
@@ -141,6 +143,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                name,
                 ADMIN,
                 membership,
                 name,
@@ -175,6 +178,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                name,
                 ADMIN,
                 membership,
                 name,
@@ -196,6 +200,7 @@ module sage_user::test_user {
         let banner_hash = utf8(b"banner-hash");
         let created_at: u64 = 999;
         let description = utf8(b"description");
+        let key = utf8(b"user-name");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -208,6 +213,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                key,
                 ADMIN,
                 membership,
                 name,
@@ -239,6 +245,7 @@ module sage_user::test_user {
         let created_at: u64 = 999;
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
+        let key = utf8(b"user-name");
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -250,6 +257,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                key,
                 ADMIN,
                 membership,
                 name,
@@ -292,6 +300,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                name,
                 ADMIN,
                 membership,
                 name,
@@ -365,6 +374,7 @@ module sage_user::test_user {
                 banner_hash,
                 created_at,
                 description,
+                name,
                 ADMIN,
                 membership,
                 name,

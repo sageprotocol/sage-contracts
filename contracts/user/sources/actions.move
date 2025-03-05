@@ -191,6 +191,7 @@ module sage_user::user_actions {
             banner_hash,
             created_at,
             description,
+            user_key,
             self,
             members,
             name,

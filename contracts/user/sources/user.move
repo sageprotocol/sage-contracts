@@ -121,6 +121,7 @@ module sage_user::user {
         banner_hash: String,
         created_at: u64,
         description: String,
+        key: String,
         owner: address,
         members: Membership,
         name: String,
@@ -130,8 +131,6 @@ module sage_user::user {
     ): address {
         assert_user_name(&name);
         assert_user_description(&description);
-
-        let key = string_helpers::to_lowercase(&name);
 
         let user = User {
             id: object::new(ctx),
