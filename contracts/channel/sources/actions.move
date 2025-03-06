@@ -199,11 +199,11 @@ module sage_channel::channel_actions {
         clock: &Clock,
         channel_fees: &ChannelFees,
         channel_registry: &mut ChannelRegistry,
+        soul: &SoulType,
         avatar_hash: String,
         banner_hash: String,
         description: String,
         name: String,
-        soul: &SoulType,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext,
@@ -251,6 +251,7 @@ module sage_channel::channel_actions {
             description,
             created_at,
             self,
+            channel_key,
             members,
             moderators,
             name,
@@ -414,7 +415,7 @@ module sage_channel::channel_actions {
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
-    ): address {
+    ): (address, u64) {
         let self = tx_context::sender(ctx);
 
         let membership = channel::borrow_members_mut(
@@ -470,7 +471,7 @@ module sage_channel::channel_actions {
             updated_at: timestamp
         });
 
-        post_address
+        (post_address, timestamp)
     }
 
     public fun remove_moderator_as_admin (
@@ -576,13 +577,10 @@ module sage_channel::channel_actions {
         description: String,
         name: String
     ) {
-        let lowercase_channel_name = string_helpers::to_lowercase(
-            &name
+        let channel_key = assert_name_sameness(
+            channel,
+            name
         );
-
-        let channel_key = channel::get_key(channel);
-
-        assert!(lowercase_channel_name == channel_key, EChannelNameMismatch);
         
         let updated_at = clock.timestamp_ms();
 
@@ -626,13 +624,10 @@ module sage_channel::channel_actions {
             self
         );
 
-        let lowercase_channel_name = string_helpers::to_lowercase(
-            &name
+        let channel_key = assert_name_sameness(
+            channel,
+            name
         );
-
-        let channel_key = channel::get_key(channel);
-
-        assert!(lowercase_channel_name == channel_key, EChannelNameMismatch);
 
         let (
             custom_payment,
@@ -672,6 +667,21 @@ module sage_channel::channel_actions {
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
+
+    fun assert_name_sameness(
+        channel: &Channel,
+        new_name: String
+    ): String {
+        let lowercase_channel_name = string_helpers::to_lowercase(
+            &new_name
+        );
+
+        let channel_key = channel::get_key(channel);
+
+        assert!(lowercase_channel_name == channel_key, EChannelNameMismatch);
+
+        channel_key
+    }
 
     // --------------- Test Functions ---------------
     
