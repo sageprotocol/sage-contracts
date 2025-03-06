@@ -36,6 +36,8 @@ module sage_channel::channel_fees {
         join_channel_fee_sui: u64,
         leave_channel_fee_custom: u64,
         leave_channel_fee_sui: u64,
+        post_to_channel_fee_custom: u64,
+        post_to_channel_fee_sui: u64,
         remove_channel_moderator_fee_custom: u64,
         remove_channel_moderator_fee_sui: u64,
         update_channel_fee_custom: u64,
@@ -59,6 +61,8 @@ module sage_channel::channel_fees {
         join_channel_fee_sui: u64,
         leave_channel_fee_custom: u64,
         leave_channel_fee_sui: u64,
+        post_to_channel_fee_custom: u64,
+        post_to_channel_fee_sui: u64,
         remove_channel_moderator_fee_custom: u64,
         remove_channel_moderator_fee_sui: u64,
         update_channel_fee_custom: u64,
@@ -80,6 +84,8 @@ module sage_channel::channel_fees {
             join_channel_fee_sui,
             leave_channel_fee_custom,
             leave_channel_fee_sui,
+            post_to_channel_fee_custom,
+            post_to_channel_fee_sui,
             remove_channel_moderator_fee_custom,
             remove_channel_moderator_fee_sui,
             update_channel_fee_custom,
@@ -107,6 +113,8 @@ module sage_channel::channel_fees {
         join_channel_fee_sui: u64,
         leave_channel_fee_custom: u64,
         leave_channel_fee_sui: u64,
+        post_to_channel_fee_custom: u64,
+        post_to_channel_fee_sui: u64,
         remove_channel_moderator_fee_custom: u64,
         remove_channel_moderator_fee_sui: u64,
         update_channel_fee_custom: u64,
@@ -123,6 +131,8 @@ module sage_channel::channel_fees {
         fees.join_channel_fee_sui = join_channel_fee_sui;
         fees.leave_channel_fee_custom = leave_channel_fee_custom;
         fees.leave_channel_fee_sui = leave_channel_fee_sui;
+        fees.post_to_channel_fee_custom = post_to_channel_fee_custom;
+        fees.post_to_channel_fee_sui = post_to_channel_fee_sui;
         fees.remove_channel_moderator_fee_custom = remove_channel_moderator_fee_custom;
         fees.remove_channel_moderator_fee_sui = remove_channel_moderator_fee_sui;
         fees.update_channel_fee_custom = update_channel_fee_custom;
@@ -191,6 +201,21 @@ module sage_channel::channel_fees {
         )
     }
 
+    public(package) fun assert_post_to_channel_payment<CoinType> (
+        fees: &ChannelFees,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>
+    ): (Coin<CoinType>, Coin<SUI>) {
+        assert_coin_type<CoinType>(fees);
+
+        assert_payment<CoinType>(
+            custom_payment,
+            sui_payment,
+            fees.post_to_channel_fee_custom,
+            fees.post_to_channel_fee_sui
+        )
+    }
+
     public(package) fun assert_remove_moderator_owner_payment<CoinType> (
         fees: &ChannelFees,
         custom_payment: Coin<CoinType>,
@@ -245,42 +270,4 @@ module sage_channel::channel_fees {
 
     // --------------- Test Functions ---------------
 
-    #[test_only]
-    public fun create_for_testing<CoinType> (
-        app: &mut App,
-        add_channel_moderator_fee_custom: u64,
-        add_channel_moderator_fee_sui: u64,
-        create_channel_fee_custom: u64,
-        create_channel_fee_sui: u64,
-        join_channel_fee_custom: u64,
-        join_channel_fee_sui: u64,
-        leave_channel_fee_custom: u64,
-        leave_channel_fee_sui: u64,
-        remove_channel_moderator_fee_custom: u64,
-        remove_channel_moderator_fee_sui: u64,
-        update_channel_fee_custom: u64,
-        update_channel_fee_sui: u64,
-        ctx: &mut TxContext
-    ): ChannelFees {
-        let app_address = app.get_address();
-        let custom_coin_type = type_name::get<CoinType>();
-
-        ChannelFees {
-            id: object::new(ctx),
-            add_channel_moderator_fee_custom,
-            add_channel_moderator_fee_sui,
-            app: app_address,
-            create_channel_fee_custom,
-            create_channel_fee_sui,
-            custom_coin_type,
-            join_channel_fee_custom,
-            join_channel_fee_sui,
-            leave_channel_fee_custom,
-            leave_channel_fee_sui,
-            remove_channel_moderator_fee_custom,
-            remove_channel_moderator_fee_sui,
-            update_channel_fee_custom,
-            update_channel_fee_sui
-        }
-    }
 }

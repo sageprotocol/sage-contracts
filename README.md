@@ -21,5 +21,6 @@ $ sui move test
 ### Deploy contract
 
 ```sh
-$ 
+$ cd contracts/<directory>
+$ sui client publish --gas-budget 100000000
 ```

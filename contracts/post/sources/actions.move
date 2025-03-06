@@ -9,106 +9,164 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
+        authentication::{Self, AuthenticationConfig},
         fees::{Self, Royalties}
     };
 
-    use sage_channel::{
-        channel_membership::{Self, ChannelMembershipRegistry},
-        channel_registry::{Self, ChannelRegistry}
-    };
-
     use sage_post::{
-        channel_posts::{Self, ChannelPostsRegistry},
-        post::{Self},
-        post_comments::{Self, PostCommentsRegistry},
-        post_fees::{Self, PostFees},
-        post_likes::{Self, PostLikesRegistry, UserPostLikesRegistry},
-        post_registry::{Self, PostRegistry},
-        user_posts::{Self, UserPostsRegistry}
+        post::{Self, Post},
+        post_fees::{Self, PostFees}
     };
 
-    use sage_user::{
-        user_registry::{Self, UserRegistry}
+    use sage_shared::{
+        likes::{Self},
+        posts::{Self, Posts}
     };
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const EChannelDoesNotExist: u64 = 370;
-    const EParentPostDoesNotExist: u64 = 371;
-    const EPostDoesNotExist: u64 = 372;
-    const EUserDoesNotExist: u64 = 373;
-    const EUserNotChannelMember: u64 = 374;
-
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
 
-    public struct ChannelPostCreated has copy, drop {
-        channel_key: String,
-        created_at: u64,
-        created_by: address,
-        data: String,
-        description: String,
-        post_key: String,
-        title: String,
-        updated_at: u64
-    }
-
     public struct CommentCreated has copy, drop {
+        id: address,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
-        parent_post_key: String,
-        post_key: String,
+        parent_post_id: address,
         title: String,
         updated_at: u64
     }
 
-    public struct UserPostCreated has copy, drop {
-        created_at: u64,
-        created_by: address,
-        data: String,
-        description: String,
-        post_key: String,
-        title: String,
-        updated_at: u64,
-        user_key: String
+    public struct PostLiked has copy, drop {
+        id: address,
+        user: address
     }
 
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
-    public fun like<CoinType> (
-        post_registry: &PostRegistry,
-        post_likes_registry: &mut PostLikesRegistry,
-        user_registry: &UserRegistry,
-        user_post_likes_registry: &mut UserPostLikesRegistry,
+    public fun comment<CoinType, SoulType: key>(
+        authentication_config: &AuthenticationConfig,
+        clock: &Clock,
+        parent_post: &mut Post,
+        post_fees: &PostFees,
+        soul: &SoulType,
+        data: String,
+        description: String,
+        title: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ): (address, address, u64) {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+        
+        let (
+            custom_payment,
+            sui_payment
+        ) = post_fees::assert_post_from_post_payment<CoinType>(
+            post_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        let posts = post::borrow_posts_mut(parent_post);
+
+        let (post_address, self) = post::create(
+            data,
+            description,
+            timestamp,
+            title,
+            ctx
+        );
+
+        posts::add(
+            posts,
+            timestamp,
+            post_address
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
+        let parent_post_address = post::get_address(parent_post);
+
+        event::emit(CommentCreated {
+            id: post_address,
+            created_at: timestamp,
+            created_by: self,
+            data,
+            description,
+            parent_post_id: parent_post_address,
+            title,
+            updated_at: timestamp
+        });
+
+        (post_address, self, timestamp)
+    }
+
+    public fun create<SoulType: key> (
+        authentication_config: &AuthenticationConfig,
+        clock: &Clock,
+        posts: &mut Posts,
+        soul: &SoulType,
+        data: String,
+        description: String,
+        title: String,
+        ctx: &mut TxContext
+    ): (address, address, u64) {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        let (post_address, self) = post::create(
+            data,
+            description,
+            timestamp,
+            title,
+            ctx
+        );
+
+        posts::add(
+            posts,
+            timestamp,
+            post_address
+        );
+
+        (post_address, self, timestamp)
+    }
+
+    public fun like<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
+        post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
-        post_key: String,
+        soul: &SoulType,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+
         let self = tx_context::sender(ctx);
-
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            self
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let has_record = post_registry::has_record(
-            post_registry,
-            post_key
-        );
-
-        assert!(has_record, EPostDoesNotExist);
 
         let (
             custom_payment,
@@ -119,9 +177,11 @@ module sage_post::post_actions {
             sui_payment
         );
 
-        let post = post_registry::borrow_post(
-            post_registry,
-            post_key
+        let likes = post::borrow_likes_mut(post);
+
+        likes::add(
+            likes,
+            self
         );
 
         let recipient = post::get_author(post);
@@ -134,273 +194,12 @@ module sage_post::post_actions {
             ctx
         );
 
-        let user = tx_context::sender(ctx);
+        let post_address = post::get_address(post);
 
-        post_likes::add(
-            post_likes_registry,
-            user_post_likes_registry,
-            post_key,
-            user
-        );
-    }
-
-    public fun post_from_channel<CoinType>(
-        clock: &Clock,
-        channel_registry: &ChannelRegistry,
-        channel_membership_registry: &mut ChannelMembershipRegistry,
-        channel_posts_registry: &mut ChannelPostsRegistry,
-        post_registry: &mut PostRegistry,
-        user_registry: &UserRegistry,
-        post_fees: &PostFees,
-        channel_key: String,
-        data: String,
-        description: String,
-        title: String,
-        custom_payment: Coin<CoinType>,
-        sui_payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ): String {
-        let (
-            custom_payment,
-            sui_payment
-        ) = post_fees::assert_post_from_channel_payment<CoinType>(
-            post_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let self = tx_context::sender(ctx);
-
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            self
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let has_record = channel_registry::has_record(
-            channel_registry,
-            channel_key
-        );
-
-        assert!(has_record, EChannelDoesNotExist);
-
-        let user = tx_context::sender(ctx);
-
-        let channel = channel_registry::borrow_channel(
-            channel_registry,
-            channel_key
-        );
-
-        let is_member = channel_membership::is_channel_member(
-            channel_membership_registry,
-            channel_key,
-            user
-        );
-
-        assert!(is_member, EUserNotChannelMember);
-
-        let timestamp = clock.timestamp_ms();
-
-        let (post, post_key) = post::create(
-            user,
-            data,
-            description,
-            title,
-            timestamp,
-            ctx
-        );
-
-        post_registry::add(
-            post_registry,
-            post_key,
-            post
-        );
-
-        channel_posts::add(
-            channel_posts_registry,
-            channel,
-            post_key
-        );
-
-        event::emit(ChannelPostCreated {
-            channel_key,
-            created_at: timestamp,
-            created_by: user,
-            data,
-            description,
-            post_key,
-            title,
-            updated_at: timestamp
+        event::emit(PostLiked {
+            id: post_address,
+            user: self
         });
-
-        post_key
-    }
-
-    public fun post_from_post<CoinType> (
-        clock: &Clock,
-        post_registry: &mut PostRegistry,
-        post_comments_registry: &mut PostCommentsRegistry,
-        user_registry: &mut UserRegistry,
-        post_fees: &PostFees,
-        parent_key: String,
-        data: String,
-        description: String,
-        title: String,
-        custom_payment: Coin<CoinType>,
-        sui_payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ): String {
-        let (
-            custom_payment,
-            sui_payment
-        ) = post_fees::assert_post_from_post_payment<CoinType>(
-            post_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let self = tx_context::sender(ctx);
-        let timestamp = clock.timestamp_ms();
-
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            self
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let has_record = post_registry::has_record(
-            post_registry,
-            parent_key
-        );
-
-        assert!(has_record, EParentPostDoesNotExist);
-
-        let (post, post_key) = post::create(
-            self,
-            data,
-            description,
-            title,
-            timestamp,
-            ctx
-        );
-
-        post_registry::add(
-            post_registry,
-            post_key,
-            post
-        );
-
-        post_comments::add(
-            post_comments_registry,
-            parent_key,
-            post_key
-        );
-
-        event::emit(CommentCreated {
-            created_at: timestamp,
-            created_by: self,
-            data,
-            description,
-            parent_post_key: parent_key,
-            post_key,
-            title,
-            updated_at: timestamp
-        });
-
-        post_key
-    }
-
-    public fun post_from_user<CoinType> (
-        clock: &Clock,
-        post_registry: &mut PostRegistry,
-        user_posts_registry: &mut UserPostsRegistry,
-        user_registry: &mut UserRegistry,
-        post_fees: &PostFees,
-        data: String,
-        description: String,
-        title: String,
-        user_key: String,
-        custom_payment: Coin<CoinType>,
-        sui_payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ): String {
-        let (
-            custom_payment,
-            sui_payment
-        ) = post_fees::assert_post_from_user_payment<CoinType>(
-            post_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let self = tx_context::sender(ctx);
-
-        let self_exists = user_registry::has_address_record(
-            user_registry,
-            self
-        );
-
-        assert!(self_exists, EUserDoesNotExist);
-
-        let user_exists = user_registry::has_username_record(
-            user_registry,
-            user_key
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let timestamp = clock.timestamp_ms();
-
-        let (post, post_key) = post::create(
-            self,
-            data,
-            description,
-            title,
-            timestamp,
-            ctx
-        );
-
-        post_registry::add(
-            post_registry,
-            post_key,
-            post
-        );
-
-        user_posts::add(
-            user_posts_registry,
-            user_key,
-            post_key
-        );
-
-        event::emit(UserPostCreated {
-            created_at: timestamp,
-            created_by: self,
-            data,
-            description,
-            post_key,
-            title,
-            updated_at: timestamp,
-            user_key
-        });
-
-        post_key
     }
 
     // --------------- Friend Functions ---------------

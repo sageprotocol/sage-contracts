@@ -2,15 +2,33 @@
 
 [move]
 version = 3
-manifest_digest = "6FBFA3E9A4BB969CB2C97135D09E78BC055285E606F94741675BCEE775EF41E6"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "63A126B8B57E56908FB7DDED9CD94D950287EC96E477FCEE22F433CE5018BDDC"
+deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
 dependencies = [
+  { id = "SageAdmin", name = "SageAdmin" },
   { id = "Sui", name = "Sui" },
 ]
 
 [[move.package]]
 id = "MoveStdlib"
 source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testnet", subdir = "crates/sui-framework/packages/move-stdlib" }
+
+[[move.package]]
+id = "SageAdmin"
+source = { local = "../admin" }
+
+dependencies = [
+  { id = "SageUtils", name = "SageUtils" },
+  { id = "Sui", name = "Sui" },
+]
+
+[[move.package]]
+id = "SageUtils"
+source = { local = "../utils" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
 
 [[move.package]]
 id = "Sui"
@@ -29,6 +47,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0xd626b3afff05e23c5948712871dc4dfbd359d31a65e6bf9d7750e6f77c395d69"
-latest-published-id = "0xd626b3afff05e23c5948712871dc4dfbd359d31a65e6bf9d7750e6f77c395d69"
+original-published-id = "0xd3339034ca6300c55cbfeebd28241050e2757bacdada0be21fc8caff34de8ef8"
+latest-published-id = "0xd3339034ca6300c55cbfeebd28241050e2757bacdada0be21fc8caff34de8ef8"
 published-version = "1"

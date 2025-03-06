@@ -1,5 +1,10 @@
 module sage_post::post {
-    use std::string::{String, utf8};
+    use std::string::{String};
+
+    use sage_shared::{
+        likes::{Self, Likes},
+        posts::{Self, Posts}
+    };
 
     // --------------- Constants ---------------
 
@@ -7,12 +12,14 @@ module sage_post::post {
 
     // --------------- Name Tag ---------------
 
-    public struct Post has copy, drop, store {
-        key: String,
+    public struct Post has key {
+        id: UID,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
+        likes: Likes,
+        posts: Posts,
         is_deleted: bool,
         is_edited: bool,
         title: String,
@@ -25,89 +32,78 @@ module sage_post::post {
 
     // --------------- Public Functions ---------------
 
-    public fun get_author(
-        post: Post
+    public fun get_address(
+        post: &Post
     ): address {
-        let Post {
-            created_by,
-            ..
-        } = post;
-
-        created_by
+        post.id.to_address()
     }
 
-    public fun get_key(
-        post: Post
-    ): String {
-        let Post {
-            key,
-            ..
-        } = post;
+    public fun get_author(
+        post: &Post
+    ): address {
+        post.created_by
+    }
 
-        key
+    public fun get_created_at(
+        post: &Post
+    ): u64 {
+        post.created_at
+    }
+
+    public fun get_updated_at(
+        post: &Post
+    ): u64 {
+        post.updated_at
     }
 
     // --------------- Friend Functions ---------------
 
+    public(package) fun borrow_likes_mut(
+        post: &mut Post
+    ): &mut Likes {
+        &mut post.likes
+    }
+
+    public(package) fun borrow_posts_mut(
+        post: &mut Post
+    ): &mut Posts {
+        &mut post.posts
+    }
+
     public(package) fun create(
-        user: address,
         data: String,
         description: String,
-        title: String,
         timestamp: u64,
+        title: String,
         ctx: &mut TxContext
-    ): (Post, String) {
-        let uid = object::new(ctx);
-        let id = uid.to_inner();
+    ): (address, address) {
+        let self = tx_context::sender(ctx);
 
-        let key = id_to_key(id);
+        let likes = likes::create(ctx);
+        let posts = posts::create(ctx);
 
         let post = Post {
-            key,
+            id: object::new(ctx),
             created_at: timestamp,
-            created_by: user,
+            created_by: self,
             data,
             description,
             is_deleted: false,
             is_edited: false,
+            likes,
+            posts,
             title,
             updated_at: timestamp
         };
 
-        object::delete(uid);
+        let post_address = post.id.to_address();
 
-        (post, key)
+        transfer::share_object(post);
+
+        (post_address, self)
     }
 
     // --------------- Internal Functions ---------------
-
-    fun id_to_key(
-        id: ID
-    ): String {
-        let bytes = id.to_bytes();
-
-        let len = bytes.length();
-        let mut index = 0;
-
-        let hex_chars = b"0123456789abcdef";
-        let mut hex_bytes = vector::empty<u8>();
-
-        while (index < len) {
-            let byte = &bytes[index];
-
-            let high_nibble = (*byte >> 4) & 0x0F;
-            let low_nibble = *byte & 0x0F;
-
-            vector::push_back(&mut hex_bytes, hex_chars[high_nibble as u64]);
-            vector::push_back(&mut hex_bytes, hex_chars[low_nibble as u64]);
-
-            index = index + 1;
-        };
-
-        let hex_string = utf8(hex_bytes);
-
-        hex_string
-    }
 
     // --------------- Test Functions ---------------
 }

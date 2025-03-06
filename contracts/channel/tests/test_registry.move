@@ -10,19 +10,17 @@ module sage_channel::test_channel_registry {
     use sage_admin::{admin::{Self}};
 
     use sage_channel::{
-        channel::{Self},
-        channel_registry::{Self, ChannelRegistry, EChannelRecordDoesNotExist}
+        channel_registry::{Self, ChannelRegistry}
     };
 
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const CHANNEL_ADDRESS: address = @0xBABE;
 
     // --------------- Errors ---------------
 
-    const EChannelMismatch: u64 = 0;
-    const EChannelExistsMismatch: u64 = 1;
-    const EChannelNameMismatch: u64 = 2;
+    const ERecordMismatch: u64 = 0;
 
     // --------------- Test Functions ---------------
 
@@ -49,313 +47,110 @@ module sage_channel::test_channel_registry {
     fun test_init() {
         let (
             mut scenario_val,
-            channel_registry_val
+            channel_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            destroy(channel_registry_val);
+            destroy(channel_registry);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    fun get_channel_lower() {
+    fun test_add() {
         let (
             mut scenario_val,
-            mut channel_registry_val
+            mut channel_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let channel_registry = &mut channel_registry_val;
-
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
-
-            channel_registry::add(
-                channel_registry,
-                channel_name,
-                channel
-            );
-
-            let retrieved_channel = channel_registry::borrow_channel(
-                channel_registry,
-                channel_name
-            );
-
-            assert!(retrieved_channel == channel, EChannelMismatch);
-
-            destroy(channel_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun get_channel_upper() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_registry = &mut channel_registry_val;
-
             let channel_key = utf8(b"channel-name");
-            let channel_name = utf8(b"CHANNEL-NAME");
-
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_key,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
 
             channel_registry::add(
-                channel_registry,
+                &mut channel_registry,
                 channel_key,
-                channel
+                CHANNEL_ADDRESS
             );
 
-            let retrieved_channel = channel_registry::borrow_channel(
-                channel_registry,
+            destroy(channel_registry);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_borrow() {
+        let (
+            mut scenario_val,
+            mut channel_registry
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_key = utf8(b"channel-name");
+
+            channel_registry::add(
+                &mut channel_registry,
+                channel_key,
+                CHANNEL_ADDRESS
+            );
+
+            let retrieved_address = channel_registry::borrow_channel_address(
+                &channel_registry,
                 channel_key
             );
 
-            assert!(retrieved_channel == channel, EChannelMismatch);
+            assert!(retrieved_address == CHANNEL_ADDRESS, ERecordMismatch);
 
-            destroy(channel_registry_val);
+            destroy(channel_registry);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    fun has_record_lower() {
+    fun test_has_record() {
         let (
             mut scenario_val,
-            mut channel_registry_val
+            mut channel_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let channel_registry = &mut channel_registry_val;
-
-            let channel_name = utf8(b"channel-name");
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_name,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
+            let channel_key = utf8(b"channel-name");
 
             channel_registry::add(
-                channel_registry,
-                channel_name,
-                channel
+                &mut channel_registry,
+                channel_key,
+                CHANNEL_ADDRESS
             );
 
             let has_record = channel_registry::has_record(
-                channel_registry,
-                channel_name
+                &channel_registry,
+                channel_key
             );
 
-            assert!(has_record, EChannelExistsMismatch);
-
-            destroy(channel_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun has_record_upper() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_registry = &mut channel_registry_val;
-
-            let channel_key = utf8(b"channel-name");
-            let channel_name = utf8(b"CHANNEL-NAME");
-
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_key,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
-
-            channel_registry::add(
-                channel_registry,
-                channel_key,
-                channel
-            );
+            assert!(has_record, ERecordMismatch);
 
             let has_record = channel_registry::has_record(
-                channel_registry,
-                channel_key
+                &channel_registry,
+                utf8(b"random-name")
             );
 
-            assert!(has_record, EChannelExistsMismatch);
+            assert!(!has_record, ERecordMismatch);
 
-            destroy(channel_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun replace() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_registry = &mut channel_registry_val;
-
-            let channel_key = utf8(b"channel-name");
-            let channel_name = utf8(b"CHANNEL-NAME");
-
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_key,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
-
-            channel_registry::add(
-                channel_registry,
-                channel_key,
-                channel
-            );
-
-            let new_channel_name = utf8(b"NEW-CHANNEL");
-
-            let channel = channel::create(
-                channel_key,
-                new_channel_name,
-                utf8(b"new_avatar_hash"),
-                utf8(b"new_banner_hash"),
-                utf8(b"new_description"),
-                created_at,
-                ADMIN
-            );
-
-            channel_registry::replace(
-                channel_registry,
-                channel_key,
-                channel
-            );
-
-            let has_record = channel_registry::has_record(
-                channel_registry,
-                channel_key
-            );
-
-            assert!(has_record, EChannelExistsMismatch);
-
-            let channel = channel_registry::borrow_channel(
-                channel_registry,
-                channel_key
-            );
-
-            let retrieved_name = channel::get_name(channel);
-
-            assert!(new_channel_name == retrieved_name, EChannelNameMismatch);
-
-            destroy(channel_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EChannelRecordDoesNotExist)]
-    fun replace_fail() {
-        let (
-            mut scenario_val,
-            mut channel_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let channel_registry = &mut channel_registry_val;
-
-            let channel_key = utf8(b"channel-name");
-            let channel_name = utf8(b"CHANNEL-NAME");
-
-            let created_at: u64 = 999;
-
-            let channel = channel::create(
-                channel_key,
-                channel_name,
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
-                utf8(b"description"),
-                created_at,
-                ADMIN
-            );
-
-            channel_registry::replace(
-                channel_registry,
-                channel_key,
-                channel
-            );
-
-            destroy(channel_registry_val);
+            destroy(channel_registry);
         };
 
         ts::end(scenario_val);

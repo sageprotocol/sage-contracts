@@ -10,14 +10,28 @@ module sage_user::user_actions {
 
     use sage_admin::{
         admin::{InviteCap},
+        authentication::{Self, AuthenticationConfig},
         fees::{Self}
     };
 
+    use sage_post::{
+        post_actions::{Self}
+    };
+
+    use sage_shared::{
+        membership::{Self},
+        posts::{Self}
+    };
+
     use sage_user::{
+        soul::{Self},
         user::{Self, User},
         user_fees::{Self, UserFees},
-        user_invite::{Self, InviteConfig, UserInviteRegistry},
-        user_membership::{Self, UserMembershipRegistry},
+        user_invite::{
+            Self,
+            InviteConfig,
+            UserInviteRegistry
+        },
         user_registry::{Self, UserRegistry}
     };
 
@@ -29,13 +43,10 @@ module sage_user::user_actions {
 
     // --------------- Errors ---------------
 
-    const EInviteNotAllowed: u64 = 370;
-    const EInviteNotFound: u64 = 371;
-    const ENoInvite: u64 = 372;
-    const ENotInvited: u64 = 373;
-    const ENoSelfJoin: u64 = 374;
-    const EUserDoesNotExist: u64 = 375;
-    const EUserNameMismatch: u64 = 376;
+    const ENoInvite: u64 = 370;
+    const ENotInvited: u64 = 371;
+    const ENoSelfJoin: u64 = 372;
+    const EUserNameMismatch: u64 = 373;
 
     // --------------- Name Tag ---------------
 
@@ -47,17 +58,58 @@ module sage_user::user_actions {
         user: address
     }
 
+    public struct UserCreated has copy, drop {
+        avatar_hash: String,
+        banner_hash: String,
+        created_at: u64,
+        description: String,
+        owner: address,
+        invited_by: Option<address>,
+        soul: address,
+        user_key: String,
+        user_name: String
+    }
+
+    public struct UserMembershipUpdate has copy, drop {
+        account_type: u8,
+        followed_user: address,
+        message: u8,
+        updated_at: u64,
+        user: address
+    }
+
+    public struct UserPostCreated has copy, drop {
+        id: address,
+        created_at: u64,
+        created_by: address,
+        data: String,
+        description: String,
+        title: String,
+        updated_at: u64,
+        user_key: String
+    }
+
+    public struct UserUpdated has copy, drop {
+        avatar_hash: String,
+        banner_hash: String,
+        description: String,
+        owner: address,
+        updated_at: u64,
+        user_key: String,
+        user_name: String
+    }
+
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
+    // TODO - invite code / key as Option type
     public fun create<CoinType> (
         clock: &Clock,
+        invite_config: &InviteConfig,
         user_registry: &mut UserRegistry,
         user_invite_registry: &mut UserInviteRegistry,
-        user_membership_registry: &mut UserMembershipRegistry,
         user_fees: &UserFees,
-        invite_config: &InviteConfig,
         invite_code: String,
         invite_key: String,
         avatar_hash: String,
@@ -77,11 +129,6 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let is_invite_included = invite_key.length() > 0;
 
         let is_invite_required = user_invite::is_invite_required(
@@ -94,12 +141,10 @@ module sage_user::user_actions {
         );
 
         let invited_by = if (is_invite_included) {
-            let has_record = user_invite::has_record(
+            user_invite::assert_invite_exists(
                 user_invite_registry,
                 invite_key
             );
-
-            assert!(has_record, EInviteNotFound);
 
             let (hash, user) = user_invite::get_destructured_invite(
                 user_invite_registry,
@@ -134,21 +179,24 @@ module sage_user::user_actions {
             &name
         );
 
+        let members = membership::create(ctx);
+        let posts = posts::create(ctx);
+        let soul_address = soul::create(
+            user_key,
+            ctx
+        );
+
         let user_address = user::create(
             avatar_hash,
             banner_hash,
             created_at,
             description,
-            invited_by,
-            self,
-            name,
             user_key,
-            ctx
-        );
-
-        user_membership::create(
-            user_membership_registry,
-            user_address,
+            self,
+            members,
+            name,
+            posts,
+            soul_address,
             ctx
         );
 
@@ -159,13 +207,32 @@ module sage_user::user_actions {
             user_address
         );
 
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+
+        event::emit(UserCreated {
+            avatar_hash,
+            banner_hash,
+            created_at,
+            description,
+            invited_by,
+            owner: self,
+            soul: soul_address,
+            user_key,
+            user_name: name
+        });
+
         user_address
     }
 
-    public fun create_invite<CoinType> (
-        user_invite_registry: &mut UserInviteRegistry,
+    public fun create_invite<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
         invite_config: &InviteConfig,
         user_fees: &UserFees,
+        user_invite_registry: &mut UserInviteRegistry,
+        soul: &SoulType,
         invite_code: String,
         invite_hash: vector<u8>,
         invite_key: String,
@@ -173,6 +240,13 @@ module sage_user::user_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+
+        user_invite::assert_invite_not_required(invite_config);
+
         let (
             custom_payment,
             sui_payment
@@ -182,17 +256,6 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
-        let is_invite_required = user_invite::is_invite_required(
-            invite_config
-        );
-
-        assert!(!is_invite_required, EInviteNotAllowed);
-
         let self = tx_context::sender(ctx);
 
         user_invite::create_invite(
@@ -200,6 +263,11 @@ module sage_user::user_actions {
             invite_hash,
             invite_key,
             self
+        );
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
 
         event::emit(InviteCreated {
@@ -224,15 +292,21 @@ module sage_user::user_actions {
         );
     }
 
-    public fun join<CoinType> (
-        user_registry: &UserRegistry,
-        user_membership_registry: &mut UserMembershipRegistry,
+    public fun join<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
+        clock: &Clock,
+        soul: &SoulType,
+        user: &mut User,
         user_fees: &UserFees,
-        username: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+
         let (
             custom_payment,
             sui_payment
@@ -242,58 +316,41 @@ module sage_user::user_actions {
             sui_payment
         );
 
+        let self = tx_context::sender(ctx);
+        let user_address = user::get_owner(user);
+
+        assert!(self != user_address, ENoSelfJoin);
+
+        let membership = user::borrow_members_mut(user);
+
+        let (
+            membership_message,
+            membership_type
+        ) = membership::wallet_join(
+            membership,
+            self
+        );
+
+        let updated_at = clock.timestamp_ms();
+
+        event::emit(UserMembershipUpdate {
+            account_type: membership_type,
+            followed_user: user_address,
+            message: membership_message,
+            updated_at,
+            user: self
+        });
+
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
-
-        let self = tx_context::sender(ctx);
-
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            self
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let self_key = user_registry::get_user_key_from_owner(
-            user_registry,
-            self
-        );
-
-        let user_key = string_helpers::to_lowercase(
-            &username
-        );
-
-        assert!(self_key != user_key, ENoSelfJoin);
-
-        let user_address = user_registry::get_user_address_from_key(
-            user_registry,
-            user_key
-        );
-
-        let user_membership = user_membership::borrow_membership_mut(
-            user_membership_registry,
-            user_address
-        );
-
-        let owner_address = user_registry::get_owner_address_from_key(
-            user_registry,
-            user_key
-        );
-
-        user_membership::join(
-            user_membership,
-            owner_address,
-            self
-        );
     }
 
     public fun leave<CoinType> (
-        user_registry: &UserRegistry,
-        user_membership_registry: &mut UserMembershipRegistry,
+        clock: &Clock,
+        user: &mut User,
         user_fees: &UserFees,
-        username: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -307,51 +364,101 @@ module sage_user::user_actions {
             sui_payment
         );
 
+        let self = tx_context::sender(ctx);
+        let user_address = user::get_owner(user);
+
+        let membership = user::borrow_members_mut(user);
+
+        let (
+            membership_message,
+            membership_type
+        ) = membership::wallet_leave(
+            membership,
+            self
+        );
+
+        let updated_at = clock.timestamp_ms();
+
+        event::emit(UserMembershipUpdate {
+            account_type: membership_type,
+            followed_user: user_address,
+            message: membership_message,
+            updated_at,
+            user: self
+        });
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+    }
+
+    public fun post<CoinType, SoulType: key> (
+        authentication_config: &AuthenticationConfig,
+        clock: &Clock,
+        soul: &SoulType,
+        user: &mut User,
+        user_fees: &UserFees,
+        data: String,
+        description: String,
+        title: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ): (address, u64) {
+        let (
+            custom_payment,
+            sui_payment
+        ) = user_fees::assert_post_from_user_payment<CoinType>(
+            user_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        let posts = user::borrow_posts_mut(user);
+
+        let (
+            post_address,
+            _self,
+            timestamp
+        ) = post_actions::create<SoulType>(
+            authentication_config,
+            clock,
+            posts,
+            soul,
+            data,
+            description,
+            title,
+            ctx
+        );
+
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
 
         let self = tx_context::sender(ctx);
+        let user_key = user::get_key(user);
 
-        let user_exists = user_registry::has_address_record(
-            user_registry,
-            self
-        );
-
-        assert!(user_exists, EUserDoesNotExist);
-
-        let user_key = string_helpers::to_lowercase(
-            &username
-        );
-
-        let user_address = user_registry::get_user_address_from_key(
-            user_registry,
+        event::emit(UserPostCreated {
+            id: post_address,
+            created_at: timestamp,
+            created_by: self,
+            data,
+            description,
+            title,
+            updated_at: timestamp,
             user_key
-        );
+        });
 
-        let user_membership = user_membership::borrow_membership_mut(
-            user_membership_registry,
-            user_address
-        );
-
-        let owner_address = user_registry::get_owner_address_from_key(
-            user_registry,
-            user_key
-        );
-
-        user_membership::leave(
-            user_membership,
-            owner_address,
-            self
-        );
+        (post_address, timestamp)
     }
 
     public fun update<CoinType> (
         clock: &Clock,
         user_registry: &UserRegistry,
         user_fees: &UserFees,
-        user: User,
+        user: &mut User,
         avatar_hash: String,
         banner_hash: String,
         description: String,
@@ -369,14 +476,9 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-
         let self = tx_context::sender(ctx);
 
-        let user_key = user_registry::get_user_key_from_owner(
+        let owned_user_key = user_registry::get_key_from_owner_address(
             user_registry,
             self
         );
@@ -385,17 +487,12 @@ module sage_user::user_actions {
             &name
         );
 
-        assert!(lowercase_user_name == user_key, EUserNameMismatch);
+        assert!(lowercase_user_name == owned_user_key, EUserNameMismatch);
 
         let updated_at = clock.timestamp_ms();
 
-        let user_request = user::create_user_request(
-            user
-        );
-
-        let user_request = user::update(
-            user_key,
-            user_request,
+        user::update(
+            user,
             avatar_hash,
             banner_hash,
             description,
@@ -403,10 +500,20 @@ module sage_user::user_actions {
             updated_at
         );
 
-        user::destroy_user_request(
-            user_request,
-            self
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
         );
+
+        event::emit(UserUpdated {
+            avatar_hash,
+            banner_hash,
+            owner: self,
+            user_key: owned_user_key,
+            user_name: name,
+            description,
+            updated_at
+        });
     }
 
     // --------------- Friend Functions ---------------

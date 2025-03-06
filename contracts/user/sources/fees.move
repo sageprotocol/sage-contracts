@@ -36,6 +36,8 @@ module sage_user::user_fees {
         join_user_fee_sui: u64,
         leave_user_fee_custom: u64,
         leave_user_fee_sui: u64,
+        post_to_user_fee_custom: u64,
+        post_to_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64
     }
@@ -57,6 +59,8 @@ module sage_user::user_fees {
         join_user_fee_sui: u64,
         leave_user_fee_custom: u64,
         leave_user_fee_sui: u64,
+        post_to_user_fee_custom: u64,
+        post_to_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64,
         ctx: &mut TxContext
@@ -76,6 +80,8 @@ module sage_user::user_fees {
             join_user_fee_sui,
             leave_user_fee_custom,
             leave_user_fee_sui,
+            post_to_user_fee_custom,
+            post_to_user_fee_sui,
             update_user_fee_custom,
             update_user_fee_sui
         };
@@ -101,6 +107,8 @@ module sage_user::user_fees {
         join_user_fee_sui: u64,
         leave_user_fee_custom: u64,
         leave_user_fee_sui: u64,
+        post_to_user_fee_custom: u64,
+        post_to_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64
     ) {
@@ -115,6 +123,8 @@ module sage_user::user_fees {
         fees.join_user_fee_sui = join_user_fee_sui;
         fees.leave_user_fee_custom = leave_user_fee_custom;
         fees.leave_user_fee_sui = leave_user_fee_sui;
+        fees.post_to_user_fee_custom = post_to_user_fee_custom;
+        fees.post_to_user_fee_sui = post_to_user_fee_sui;
         fees.update_user_fee_custom = update_user_fee_custom;
         fees.update_user_fee_sui = update_user_fee_sui;
     }
@@ -181,6 +191,21 @@ module sage_user::user_fees {
         )
     }
 
+    public(package) fun assert_post_from_user_payment<CoinType> (
+        fees: &UserFees,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>
+    ): (Coin<CoinType>, Coin<SUI>) {
+        assert_coin_type<CoinType>(fees);
+
+        assert_payment<CoinType>(
+            custom_payment,
+            sui_payment,
+            fees.post_to_user_fee_custom,
+            fees.post_to_user_fee_sui
+        )
+    }
+
     public(package) fun assert_update_user_payment<CoinType> (
         fees: &UserFees,
         custom_payment: Coin<CoinType>,
@@ -219,39 +244,4 @@ module sage_user::user_fees {
     }
 
     // --------------- Test Functions ---------------
-
-    #[test_only]
-    public fun create_for_testing<CoinType> (
-        app: &mut App,
-        create_invite_fee_custom: u64,
-        create_invite_fee_sui: u64,
-        create_user_fee_custom: u64,
-        create_user_fee_sui: u64,
-        join_user_fee_custom: u64,
-        join_user_fee_sui: u64,
-        leave_user_fee_custom: u64,
-        leave_user_fee_sui: u64,
-        update_user_fee_custom: u64,
-        update_user_fee_sui: u64,
-        ctx: &mut TxContext
-    ): UserFees {
-        let app_address = app.get_address();
-        let custom_coin_type = type_name::get<CoinType>();
-
-        UserFees {
-            id: object::new(ctx),
-            app: app_address,
-            custom_coin_type,
-            create_invite_fee_custom,
-            create_invite_fee_sui,
-            create_user_fee_custom,
-            create_user_fee_sui,
-            join_user_fee_custom,
-            join_user_fee_sui,
-            leave_user_fee_custom,
-            leave_user_fee_sui,
-            update_user_fee_custom,
-            update_user_fee_sui
-        }
-    }
 }

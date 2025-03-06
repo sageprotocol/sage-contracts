@@ -10,19 +10,22 @@ module sage_user::test_user_registry {
     use sage_admin::{admin::{Self}};
 
     use sage_user::{
-        user::{Self},
-        user_registry::{Self, UserRegistry}
+        user_registry::{
+            Self,
+            UserRegistry,
+            EAddressRecordDoesNotExist,
+            EUsernameRecordDoesNotExist
+        }
     };
 
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const USER: address = @0xBABE;
 
     // --------------- Errors ---------------
 
-    const EAddressExistsMismatch: u64 = 0;
-    const EUserMismatch: u64 = 1;
-    const EUsernameExistsMismatch: u64 = 2;
+    const EUserMismatch: u64 = 0;
 
     // --------------- Test Functions ---------------
 
@@ -63,7 +66,7 @@ module sage_user::test_user_registry {
     }
 
     #[test]
-    fun test_user_registry_get_user_lower() {
+    fun test_user_registry_add() {
         let (
             mut scenario_val,
             mut user_registry_val
@@ -76,26 +79,12 @@ module sage_user::test_user_registry {
             let user_registry = &mut user_registry_val;
 
             let name = utf8(b"user-name");
-            let created_at: u64 = 999;
-            let invited_by = option::none<address>();
-
-            let user_address = user::create(
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                invited_by,
-                ADMIN,
-                name,
-                name,
-                ts::ctx(scenario)
-            );
 
             user_registry::add(
                 user_registry,
                 name,
                 ADMIN,
-                user_address
+                USER
             );
 
             let owner_address = user_registry::get_owner_address_from_key(
@@ -110,191 +99,35 @@ module sage_user::test_user_registry {
                 name
             );
 
-            assert!(user_obj_address == user_address, EUserMismatch);
+            assert!(user_obj_address == USER, EUserMismatch);
 
-            let user_key = user_registry::get_user_key_from_owner(
+            let user_key = user_registry::get_key_from_owner_address(
                 user_registry,
                 ADMIN
             );
 
             assert!(user_key == name, EUserMismatch);
 
-            let user_key = user_registry::get_user_key_from_user(
+            let user_key = user_registry::get_key_from_user_address(
                 user_registry,
-                user_address
+                USER
             );
 
             assert!(user_key == name, EUserMismatch);
 
-            destroy(user_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_user_registry_get_user_upper() {
-        let (
-            mut scenario_val,
-            mut user_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let user_registry = &mut user_registry_val;
-
-            let created_at: u64 = 999;
-
-            let user_key = utf8(b"all-caps");
-            let user_name = utf8(b"ALL-CAPS");
-            let invited_by = option::none<address>();
-
-            let user_address = user::create(
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                invited_by,
-                ADMIN,
-                user_name,
-                user_key,
-                ts::ctx(scenario)
-            );
-
-            user_registry::add(
-                user_registry,
-                user_key,
-                ADMIN,
-                user_address
-            );
-
-            let owner_address = user_registry::get_owner_address_from_key(
-                user_registry,
-                user_key
-            );
-
-            assert!(owner_address == ADMIN, EUserMismatch);
-
-            let user_obj_address = user_registry::get_user_address_from_key(
-                user_registry,
-                user_key
-            );
-
-            assert!(user_obj_address == user_address, EUserMismatch);
-
-            let key = user_registry::get_user_key_from_owner(
+            let has_address = user_registry::has_address_record(
                 user_registry,
                 ADMIN
             );
 
-            assert!(key == user_key, EUserMismatch);
+            assert!(has_address, EUserMismatch);
 
-            let key = user_registry::get_user_key_from_user(
-                user_registry,
-                user_address
-            );
-
-            assert!(key == user_key, EUserMismatch);
-
-            destroy(user_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_user_registry_has_address_record() {
-        let (
-            mut scenario_val,
-            mut user_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let user_registry = &mut user_registry_val;
-
-            let name = utf8(b"user-name");
-            let created_at: u64 = 999;
-            let invited_by = option::none<address>();
-
-            let user_address = user::create(
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                invited_by,
-                ADMIN,
-                name,
-                name,
-                ts::ctx(scenario)
-            );
-
-            user_registry::add(
-                user_registry,
-                name,
-                ADMIN,
-                user_address
-            );
-
-            let has_address_record = user_registry::has_address_record(
-                user_registry,
-                ADMIN
-            );
-
-            assert!(has_address_record, EAddressExistsMismatch);
-
-            destroy(user_registry_val);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_user_registry_has_username_record_lower() {
-        let (
-            mut scenario_val,
-            mut user_registry_val
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let user_registry = &mut user_registry_val;
-
-            let name = utf8(b"user-name");
-            let created_at: u64 = 999;
-            let invited_by = option::none<address>();
-
-            let user_address = user::create(
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                invited_by,
-                ADMIN,
-                name,
-                name,
-                ts::ctx(scenario)
-            );
-
-            user_registry::add(
-                user_registry,
-                name,
-                ADMIN,
-                user_address
-            );
-
-            let has_username_record = user_registry::has_username_record(
+            let has_username = user_registry::has_username_record(
                 user_registry,
                 name
             );
 
-            assert!(has_username_record, EUsernameExistsMismatch);
+            assert!(has_username, EUserMismatch);
 
             destroy(user_registry_val);
         };
@@ -303,7 +136,7 @@ module sage_user::test_user_registry {
     }
 
     #[test]
-    fun test_user_registry_has_username_record_upper() {
+    fun test_user_registry_assert_pass() {
         let (
             mut scenario_val,
             mut user_registry_val
@@ -315,37 +148,74 @@ module sage_user::test_user_registry {
         {
             let user_registry = &mut user_registry_val;
 
-            let created_at: u64 = 999;
-            let invited_by = option::none<address>();
-
-            let user_key = utf8(b"all-caps");
-            let user_name = utf8(b"ALL-CAPS");
-
-            let user_address = user::create(
-                utf8(b"avatar-hash"),
-                utf8(b"banner-hash"),
-                created_at,
-                utf8(b"description"),
-                invited_by,
-                ADMIN,
-                user_name,
-                user_key,
-                ts::ctx(scenario)
-            );
+            let name = utf8(b"user-name");
 
             user_registry::add(
                 user_registry,
-                user_key,
+                name,
                 ADMIN,
-                user_address
+                USER
             );
 
-            let has_username_record = user_registry::has_username_record(
+            user_registry::assert_user_address_exists(
                 user_registry,
-                user_name
+                ADMIN
             );
 
-            assert!(has_username_record, EUsernameExistsMismatch);
+            user_registry::assert_user_name_exists(
+                user_registry,
+                name
+            );
+
+            destroy(user_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EAddressRecordDoesNotExist)]
+    fun test_user_registry_assert_address_fail() {
+        let (
+            mut scenario_val,
+            user_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_registry = &user_registry_val;
+
+            user_registry::assert_user_address_exists(
+                user_registry,
+                ADMIN
+            );
+
+            destroy(user_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EUsernameRecordDoesNotExist)]
+    fun test_user_registry_assert_name_fail() {
+        let (
+            mut scenario_val,
+            user_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let user_registry = &user_registry_val;
+
+            user_registry::assert_user_name_exists(
+                user_registry,
+                utf8(b"user-name")
+            );
 
             destroy(user_registry_val);
         };

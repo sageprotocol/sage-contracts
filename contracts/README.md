@@ -4,19 +4,20 @@
 
 The order which the contracts are published is important, and errors will be encountered if the proper order is not taken.
 
-1. Immutable
-2. Utils
-3. Admin
-4. Notification
+1. Utils
+2. Admin
+3. Shared
+4. Post
 5. User
 6. Channel
-7. Post
 
 This is due to dependencies between the packages:
 
-- "Post" depends on Admin, Immutable, Channel, and User.
-- "Channel" depends on Admin, Immutable, User, Utils.
-- "User" depends on Admin, Immutable, and Utils.
+- "Admin" depends on Utils.
+- "Shared" depends on Admin and Utils.
+- "Post" depends on Admin, Shared, and Utils.
+- "User" depends on Admin, Post, Shared, and Utils.
+- "Channel" depends on Admin, Post, User, Shared, and Utils.
 
 After each dependent contract is published or upgraded it is important to update the "published-at" and relevant address declaration in all files that depend on the package.
 
@@ -32,4 +33,10 @@ The very first user needs to be created without an invitation. Afterwards set to
 
 ```sh
 $ sui client call --package <USER_PKG_ID> --module actions --function set_invite_config --args <INVITE_CAP_ID> <INVITE_CONFIG_ID> true
+```
+
+The first user will create a SageSoul, and this type needs to be set in the authentication config in order to authenticate protected functions.
+
+```sh
+$ sui client call --package <ADMIN_PKG_ID> --module authentication --function update_soul --type-args <SOUL_TYPE_ID> --args <ADMIN_CAP_ID> <AUTH_CONFIG_ID>
 ```

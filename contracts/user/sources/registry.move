@@ -2,11 +2,8 @@ module sage_user::user_registry {
     use std::string::{String};
 
     use sui::{
-        package::{claim_and_keep}
-    };
-    
-    use sage_immutable::{
-        immutable_table::{Self, ImmutableTable}
+        package::{claim_and_keep},
+        table::{Self, Table}
     };
 
     use sage_utils::{
@@ -17,8 +14,8 @@ module sage_user::user_registry {
 
     // --------------- Errors ---------------
 
-    const EAddressRecordExists: u64 = 370;
-    const EUsernameRecordExists: u64 = 371;
+    const EAddressRecordDoesNotExist: u64 = 370;
+    const EUsernameRecordDoesNotExist: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -26,10 +23,10 @@ module sage_user::user_registry {
     // user: user key <-> user object
     public struct UserRegistry has key, store {
         id: UID,
-        address_registry: ImmutableTable<address, String>,
-        address_reverse_registry: ImmutableTable<String, address>,
-        user_registry: ImmutableTable<String, address>,
-        user_reverse_registry: ImmutableTable<address, String>
+        address_registry: Table<address, String>,
+        address_reverse_registry: Table<String, address>,
+        user_registry: Table<String, address>,
+        user_reverse_registry: Table<address, String>
     }
 
     public struct USER_REGISTRY has drop {}
@@ -46,16 +43,40 @@ module sage_user::user_registry {
 
         let user_registry = UserRegistry {
             id: object::new(ctx),
-            address_registry: immutable_table::new(ctx),
-            address_reverse_registry: immutable_table::new(ctx),
-            user_registry: immutable_table::new(ctx),
-            user_reverse_registry: immutable_table::new(ctx)
+            address_registry: table::new(ctx),
+            address_reverse_registry: table::new(ctx),
+            user_registry: table::new(ctx),
+            user_reverse_registry: table::new(ctx)
         };
 
         transfer::share_object(user_registry);
     }
 
     // --------------- Public Functions ---------------
+
+    public fun assert_user_address_exists(
+        user_registry: &UserRegistry,
+        wallet_address: address
+    ) {
+        let is_user = has_address_record(
+            user_registry,
+            wallet_address
+        );
+
+        assert!(is_user, EAddressRecordDoesNotExist);
+    }
+
+    public fun assert_user_name_exists(
+        user_registry: &UserRegistry,
+        username: String
+    ) {
+        let is_user = has_username_record(
+            user_registry,
+            username
+        );
+
+        assert!(is_user, EUsernameRecordDoesNotExist);
+    }
 
     public fun get_owner_address_from_key (
         user_registry: &UserRegistry,
@@ -72,26 +93,26 @@ module sage_user::user_registry {
     }
 
     // from wallet/kiosk
-    public fun get_user_key_from_owner (
+    public fun get_key_from_owner_address (
         user_registry: &UserRegistry,
-        address: address
+        user_address: address
     ): String {
-        *user_registry.address_registry.borrow(address)
+        *user_registry.address_registry.borrow(user_address)
     }
 
     // from user object
-    public fun get_user_key_from_user (
+    public fun get_key_from_user_address (
         user_registry: &UserRegistry,
-        address: address
+        user_address: address
     ): String {
-        *user_registry.user_reverse_registry.borrow(address)
+        *user_registry.user_reverse_registry.borrow(user_address)
     }
 
     public fun has_address_record (
         user_registry: &UserRegistry,
-        address: address
+        wallet_address: address
     ): bool {
-        user_registry.address_registry.contains(address)
+        user_registry.address_registry.contains(wallet_address)
     }
 
     public fun has_username_record (
@@ -113,14 +134,6 @@ module sage_user::user_registry {
         self_address: address,
         user_address: address
     ) {
-        let address_record_exists = user_registry.has_address_record(self_address);
-
-        assert!(!address_record_exists, EAddressRecordExists);
-
-        let username_record_exists = user_registry.has_username_record(user_key);
-
-        assert!(!username_record_exists, EUsernameRecordExists);
-
         user_registry.address_registry.add(self_address, user_key);
         user_registry.user_registry.add(user_key, user_address);
 

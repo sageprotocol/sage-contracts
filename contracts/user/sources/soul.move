@@ -1,18 +1,15 @@
-module sage_notification::notification {
+module sage_user::soul {
     use std::string::{String};
 
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
-    const ENegativeReward: u64 = 370;
-
     // --------------- Name Tag ---------------
 
-    public struct Notification has copy, drop, store {
-        created_at: u64,
-        message: String,
-        reward_amount: u64
+    public struct SageSoul has key {
+        id: UID,
+        name: String
     }
 
     // --------------- Events ---------------
@@ -21,22 +18,29 @@ module sage_notification::notification {
 
     // --------------- Public Functions ---------------
 
+    public fun get_name(
+        soul: &SageSoul
+    ): String {
+        soul.name
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
-        created_at: u64,
-        message: String,
-        reward_amount: u64
-    ): Notification {
-        assert!(reward_amount > 0, ENegativeReward);
-
-        let notification = Notification {
-            created_at,
-            message,
-            reward_amount
+        name: String,
+        ctx: &mut TxContext
+    ): address {
+        let soul = SageSoul {
+            id: object::new(ctx),
+            name
         };
 
-        notification
+        let self = tx_context::sender(ctx);
+        let soul_address = soul.id.to_address();
+
+        transfer::transfer(soul, self);
+
+        soul_address
     }
 
     // --------------- Internal Functions ---------------

@@ -14,12 +14,13 @@ module sage_post::test_post_fees {
             Self,
             FeeCap
         },
-        apps::{Self, App}
+        apps::{Self}
     };
 
     use sage_post::{
         post_fees::{
             Self,
+            PostFees,
             EIncorrectCoinType,
             EIncorrectCustomPayment,
             EIncorrectSuiPayment
@@ -35,12 +36,8 @@ module sage_post::test_post_fees {
 
     const LIKE_POST_CUSTOM_FEE: u64 = 1;
     const LIKE_POST_SUI_FEE: u64 = 2;
-    const POST_FROM_CHANNEL_CUSTOM_FEE: u64 = 3;
-    const POST_FROM_CHANNEL_SUI_FEE: u64 = 4;
-    const POST_FROM_POST_CUSTOM_FEE: u64 = 5;
-    const POST_FROM_POST_SUI_FEE: u64 = 6;
-    const POST_FROM_USER_CUSTOM_FEE: u64 = 7;
-    const POST_FROM_USER_SUI_FEE: u64 = 8;
+    const POST_FROM_POST_CUSTOM_FEE: u64 = 3;
+    const POST_FROM_POST_SUI_FEE: u64 = 4;
     const INCORRECT_FEE: u64 = 100;
 
     // --------------- Errors ---------------
@@ -49,15 +46,18 @@ module sage_post::test_post_fees {
 
     #[test_only]
     fun destroy_for_testing(
-        app: App
+        fee_cap: FeeCap,
+        post_fees: PostFees
     ) {
-        destroy(app);
+        ts::return_to_address(ADMIN, fee_cap);
+        destroy(post_fees)
     }
 
     #[test_only]
-    fun setup_for_testing(): (
+    fun setup_for_testing<CoinType>(): (
         Scenario,
-        App,
+        FeeCap,
+        PostFees
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -67,18 +67,40 @@ module sage_post::test_post_fees {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let app = {
-            let app = apps::create_for_testing(
+        let fee_cap = {
+            let mut app = apps::create_for_testing(
                 utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
-            app
+            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
+
+            post_fees::create<CoinType>(
+                &fee_cap,
+                &mut app,
+                LIKE_POST_CUSTOM_FEE,
+                LIKE_POST_SUI_FEE,
+                POST_FROM_POST_CUSTOM_FEE,
+                POST_FROM_POST_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            destroy(app);
+
+            fee_cap
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let post_fees = {
+            let post_fees = ts::take_shared<PostFees>(scenario);
+
+            post_fees
         };
 
         (
             scenario_val,
-            app
+            fee_cap,
+            post_fees
         )
     }
 
@@ -86,15 +108,17 @@ module sage_post::test_post_fees {
     fun test_init() {
         let (
             mut scenario_val,
-            app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
         };
 
@@ -105,28 +129,14 @@ module sage_post::test_post_fees {
     fun test_create() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 LIKE_POST_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -137,24 +147,6 @@ module sage_post::test_post_fees {
             );
 
             let (custom_payment, sui_payment) = post_fees::assert_like_post_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            burn_for_testing(custom_payment);
-            burn_for_testing(sui_payment);
-
-            let custom_payment = mint_for_testing<SUI>(
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                POST_FROM_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_channel_payment<SUI>(
                 &post_fees,
                 custom_payment,
                 sui_payment
@@ -181,31 +173,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            let custom_payment = mint_for_testing<SUI>(
-                POST_FROM_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_user_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            burn_for_testing(custom_payment);
-            burn_for_testing(sui_payment);
-
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);
@@ -213,31 +184,17 @@ module sage_post::test_post_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_create_invite_custom_fail() {
+    fun test_like_post_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -256,13 +213,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);
@@ -270,31 +224,17 @@ module sage_post::test_post_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_create_invite_sui_fail() {
+    fun test_like_post_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 LIKE_POST_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -313,13 +253,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);
@@ -327,145 +264,17 @@ module sage_post::test_post_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_create_user_custom_fail() {
+    fun test_post_from_post_custom_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let custom_payment = mint_for_testing<SUI>(
-                INCORRECT_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                POST_FROM_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_channel_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            burn_for_testing(custom_payment);
-            burn_for_testing(sui_payment);
-
-            ts::return_to_sender(scenario, fee_cap);
-
-            destroy_for_testing(
-                app
-            );
-
-            destroy(post_fees);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_create_user_sui_fail() {
-        let (
-            mut scenario_val,
-            mut app
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let custom_payment = mint_for_testing<SUI>(
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                INCORRECT_FEE,
-                ts::ctx(scenario)
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_channel_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            burn_for_testing(custom_payment);
-            burn_for_testing(sui_payment);
-
-            ts::return_to_sender(scenario, fee_cap);
-
-            destroy_for_testing(
-                app
-            );
-
-            destroy(post_fees);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_join_user_custom_fail() {
-        let (
-            mut scenario_val,
-            mut app
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -484,13 +293,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);
@@ -498,31 +304,17 @@ module sage_post::test_post_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_join_user_sui_fail() {
+    fun test_post_from_post_sui_fail() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 POST_FROM_POST_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -541,127 +333,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_leave_user_custom_fail() {
-        let (
-            mut scenario_val,
-            mut app
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let custom_payment = mint_for_testing<SUI>(
-                INCORRECT_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_user_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            burn_for_testing(custom_payment);
-            burn_for_testing(sui_payment);
-
-            ts::return_to_sender(scenario, fee_cap);
-
-            destroy_for_testing(
-                app
-            );
-
-            destroy(post_fees);
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_leave_user_sui_fail() {
-        let (
-            mut scenario_val,
-            mut app
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let custom_payment = mint_for_testing<SUI>(
-                POST_FROM_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                INCORRECT_FEE,
-                ts::ctx(scenario)
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_user_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            burn_for_testing(custom_payment);
-            burn_for_testing(sui_payment);
-
-            ts::return_to_sender(scenario, fee_cap);
-
-            destroy_for_testing(
-                app
-            );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);
@@ -672,28 +347,14 @@ module sage_post::test_post_fees {
     fun test_fee_coin_type() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            post_fees
+        ) = setup_for_testing<FAKE_FEE_COIN>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let post_fees = post_fees::create_for_testing<FAKE_FEE_COIN>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             let custom_payment = mint_for_testing<SUI>(
                 LIKE_POST_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -712,13 +373,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);
@@ -728,35 +386,17 @@ module sage_post::test_post_fees {
     fun test_update() {
         let (
             mut scenario_val,
-            mut app
-        ) = setup_for_testing();
+            fee_cap,
+            mut post_fees
+        ) = setup_for_testing<SUI>();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let fee_cap = ts::take_from_sender<FeeCap>(scenario);
-
-            let mut post_fees = post_fees::create_for_testing<SUI>(
-                &mut app,
-                LIKE_POST_CUSTOM_FEE,
-                LIKE_POST_SUI_FEE,
-                POST_FROM_CHANNEL_CUSTOM_FEE,
-                POST_FROM_CHANNEL_SUI_FEE,
-                POST_FROM_POST_CUSTOM_FEE,
-                POST_FROM_POST_SUI_FEE,
-                POST_FROM_USER_CUSTOM_FEE,
-                POST_FROM_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
             post_fees::update<SUI>(
                 &fee_cap,
                 &mut post_fees,
-                INCORRECT_FEE,
-                INCORRECT_FEE,
-                INCORRECT_FEE,
-                INCORRECT_FEE,
                 INCORRECT_FEE,
                 INCORRECT_FEE,
                 INCORRECT_FEE,
@@ -778,19 +418,7 @@ module sage_post::test_post_fees {
                 sui_payment
             );
 
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_channel_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
             let (custom_payment, sui_payment) = post_fees::assert_post_from_post_payment<SUI>(
-                &post_fees,
-                custom_payment,
-                sui_payment
-            );
-
-            let (custom_payment, sui_payment) = post_fees::assert_post_from_user_payment<SUI>(
                 &post_fees,
                 custom_payment,
                 sui_payment
@@ -799,13 +427,10 @@ module sage_post::test_post_fees {
             burn_for_testing(custom_payment);
             burn_for_testing(sui_payment);
 
-            ts::return_to_sender(scenario, fee_cap);
-
             destroy_for_testing(
-                app
+                fee_cap,
+                post_fees
             );
-
-            destroy(post_fees);
         };
 
         ts::end(scenario_val);

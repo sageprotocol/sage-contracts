@@ -1,23 +1,20 @@
 [package]
-name = "SagePost"
+name = "SageShared"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0x3a4f7c9f7027c17efbe4b8d01b21ed9baa5337b1b17ff74a91f379f7da695a55"
+published-at = "0xd3339034ca6300c55cbfeebd28241050e2757bacdada0be21fc8caff34de8ef8"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 SageAdmin = { local = "../admin" }
-SageShared = { local = "../shared" }
 
 [addresses]
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
 sage_admin = "0x64d3db638d0bfe650dbf708e4eec6cac043846f05c85d740e002033ae10b40f6"
-sage_post = "0x3a4f7c9f7027c17efbe4b8d01b21ed9baa5337b1b17ff74a91f379f7da695a55"
 sage_shared = "0xd3339034ca6300c55cbfeebd28241050e2757bacdada0be21fc8caff34de8ef8"
 
 # sage_admin = "0x0"
-# sage_post = "0x0"
 # sage_shared = "0x0"
