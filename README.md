@@ -20,6 +20,8 @@ $ sui move test
 
 ### Deploy contract
 
+- SWAP WALLET TO SAGE ADMIN
+
 ```sh
 $ cd contracts/<directory>
 $ sui client publish --gas-budget 100000000

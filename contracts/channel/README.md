@@ -5,3 +5,4 @@
 [UpgradeCap](https://testnet.suivision.xyz/object/0x7b2f94afd35ed1acf7dcfdb8b740399de1e7614f861220c564e25c9fe45bf853) - 0x7b2f94afd35ed1acf7dcfdb8b740399de1e7614f861220c564e25c9fe45bf853
 
 [ChannelRegistry](https://testnet.suivision.xyz/object/0xe63bca7358315d7c12219f0a4d24eaea70ad5939a5f63e27c9111d2f566eff81) - 0xe63bca7358315d7c12219f0a4d24eaea70ad5939a5f63e27c9111d2f566eff81
+[ChannelFees](https://testnet.suivision.xyz/object/0x8a6954ed05dab8f7828d03305fd57a91363eb7714c5c10d5202cbe5b27ce227c) - 0x8a6954ed05dab8f7828d03305fd57a91363eb7714c5c10d5202cbe5b27ce227c
