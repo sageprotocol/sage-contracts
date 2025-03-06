@@ -6,7 +6,6 @@ The order which the contracts are published is important, and errors will be enc
 
 1. Utils
 2. Admin
-3. Notification
 4. Post
 5. User
 6. Channel
@@ -31,4 +30,10 @@ The very first user needs to be created without an invitation. Afterwards set to
 
 ```sh
 $ sui client call --package <USER_PKG_ID> --module actions --function set_invite_config --args <INVITE_CAP_ID> <INVITE_CONFIG_ID> true
+```
+
+The first user will create a SageSoul, and this type needs to be set in the authentication config in order to authenticate protected functions.
+
+```sh
+$ sui client call --package <ADMIN_PKG_ID> --module authentication --function update_soul --type-args <SOUL_TYPE_ID> --args <ADMIN_CAP_ID> <AUTH_CONFIG_ID>
 ```
