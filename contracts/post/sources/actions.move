@@ -42,6 +42,11 @@ module sage_post::post_actions {
         updated_at: u64
     }
 
+    public struct PostLiked has copy, drop {
+        id: address,
+        user: address
+    }
+
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
@@ -188,6 +193,13 @@ module sage_post::post_actions {
             recipient,
             ctx
         );
+
+        let post_address = post::get_address(post);
+
+        event::emit(PostLiked {
+            id: post_address,
+            user: self
+        });
     }
 
     // --------------- Friend Functions ---------------

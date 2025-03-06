@@ -19,11 +19,6 @@ module sage_shared::likes {
 
     // --------------- Events ---------------
 
-    // public struct PostLiked has copy, drop {
-    //     post_key: String,
-    //     user: address
-    // }
-
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
