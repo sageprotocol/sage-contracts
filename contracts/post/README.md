@@ -3,3 +3,5 @@
 [Package](https://testnet.suivision.xyz/package/0x3a4f7c9f7027c17efbe4b8d01b21ed9baa5337b1b17ff74a91f379f7da695a55) - 0x3a4f7c9f7027c17efbe4b8d01b21ed9baa5337b1b17ff74a91f379f7da695a55
 
 [UpgradeCap](https://testnet.suivision.xyz/object/0xca2e5da02fd23e569c6c87c44616aea574efe3c73077ba1aba93a3fbf556d88b) - 0xca2e5da02fd23e569c6c87c44616aea574efe3c73077ba1aba93a3fbf556d88b
+
+[PostFees](https://testnet.suivision.xyz/object/0xb3e49e3b7d3417e88f562fd8d37de0ab65e6205c2da5ff9a8382292e3b12cc96) - 0xb3e49e3b7d3417e88f562fd8d37de0ab65e6205c2da5ff9a8382292e3b12cc96
