@@ -6,15 +6,18 @@ The order which the contracts are published is important, and errors will be enc
 
 1. Utils
 2. Admin
+3. Shared
 4. Post
 5. User
 6. Channel
 
 This is due to dependencies between the packages:
 
-- "Post" depends on Admin and Utils.
-- "User" depends on Admin, Post, and Utils.
-- "Channel" depends on Admin, Post, User, Utils.
+- "Admin" depends on Utils.
+- "Shared" depends on Admin and Utils.
+- "Post" depends on Admin, Shared, and Utils.
+- "User" depends on Admin, Post, Shared, and Utils.
+- "Channel" depends on Admin, Post, User, Shared, and Utils.
 
 After each dependent contract is published or upgraded it is important to update the "published-at" and relevant address declaration in all files that depend on the package.
 
