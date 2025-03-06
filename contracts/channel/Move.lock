@@ -2,12 +2,13 @@
 
 [move]
 version = 3
-manifest_digest = "149AC6A2FB9C080940BCD0BFBAF510A55C264E6EF4651D37F8FFE8469F09E644"
-deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
+manifest_digest = "7BBCD3FEFFFB05A69AEBFEE78E34DB9574582172D1DF4323D2DABB0580EB0C52"
+deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
 dependencies = [
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "SagePost", name = "SagePost" },
   { id = "SageShared", name = "SageShared" },
+  { id = "SageUser", name = "SageUser" },
   { id = "SageUtils", name = "SageUtils" },
   { id = "Sui", name = "Sui" },
 ]
@@ -45,6 +46,18 @@ dependencies = [
 ]
 
 [[move.package]]
+id = "SageUser"
+source = { local = "../user" }
+
+dependencies = [
+  { id = "SageAdmin", name = "SageAdmin" },
+  { id = "SagePost", name = "SagePost" },
+  { id = "SageShared", name = "SageShared" },
+  { id = "SageUtils", name = "SageUtils" },
+  { id = "Sui", name = "Sui" },
+]
+
+[[move.package]]
 id = "SageUtils"
 source = { local = "../utils" }
 
@@ -69,6 +82,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x3c0ad21f4b6738b99d363ff887a420dd3607b669b54b5012ddaccd286dd46656"
-latest-published-id = "0x3c0ad21f4b6738b99d363ff887a420dd3607b669b54b5012ddaccd286dd46656"
+original-published-id = "0x5851a8d41c02ae3080b8732151bcfcdc2f1c072a941d7d5d5bda188de1e524b0"
+latest-published-id = "0x5851a8d41c02ae3080b8732151bcfcdc2f1c072a941d7d5d5bda188de1e524b0"
 published-version = "1"

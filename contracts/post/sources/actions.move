@@ -15,12 +15,12 @@ module sage_post::post_actions {
 
     use sage_post::{
         post::{Self, Post},
-        posts::{Self, Posts},
         post_fees::{Self, PostFees}
     };
 
     use sage_shared::{
-        likes::{Self}
+        likes::{Self},
+        posts::{Self, Posts}
     };
 
     // --------------- Constants ---------------

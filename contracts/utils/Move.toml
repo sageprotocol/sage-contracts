@@ -2,7 +2,7 @@
 name = "SageUtils"
 edition = "2024.beta"
 version = "0.0.1"
-# published-at = "0x9b73e9902685d9d893a9cbef9852827090a0eb62fabaf10fa970c4669d868623"
+published-at = "0xd626b3afff05e23c5948712871dc4dfbd359d31a65e6bf9d7750e6f77c395d69"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
@@ -10,6 +10,6 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 [addresses]
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 
-# sage_utils = "0x9b73e9902685d9d893a9cbef9852827090a0eb62fabaf10fa970c4669d868623"
+sage_utils = "0xd626b3afff05e23c5948712871dc4dfbd359d31a65e6bf9d7750e6f77c395d69"
 
-sage_utils = "0x0"
+# sage_utils = "0x0"

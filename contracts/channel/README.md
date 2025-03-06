@@ -1,5 +1,7 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/0xcc37cb5974c7a8adddb923f6a1ef205f67de8f88afe64d3c9ef2624b09d7b211) - 0xcc37cb5974c7a8adddb923f6a1ef205f67de8f88afe64d3c9ef2624b09d7b211
+[Package](https://testnet.suivision.xyz/package/0x5851a8d41c02ae3080b8732151bcfcdc2f1c072a941d7d5d5bda188de1e524b0) - 0x5851a8d41c02ae3080b8732151bcfcdc2f1c072a941d7d5d5bda188de1e524b0
 
-[UpgradeCap](https://testnet.suivision.xyz/object/0x2d3db51c9e6e4b0362368dd88ee57fb1531b9539afefe45761859fbd8da0bf60) - 0x2d3db51c9e6e4b0362368dd88ee57fb1531b9539afefe45761859fbd8da0bf60
+[UpgradeCap](https://testnet.suivision.xyz/object/0x7b2f94afd35ed1acf7dcfdb8b740399de1e7614f861220c564e25c9fe45bf853) - 0x7b2f94afd35ed1acf7dcfdb8b740399de1e7614f861220c564e25c9fe45bf853
+
+[ChannelRegistry](https://testnet.suivision.xyz/object/0xe63bca7358315d7c12219f0a4d24eaea70ad5939a5f63e27c9111d2f566eff81) - 0xe63bca7358315d7c12219f0a4d24eaea70ad5939a5f63e27c9111d2f566eff81
