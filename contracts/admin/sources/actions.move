@@ -1,6 +1,8 @@
 module sage_admin::admin_actions {
     use std::string::{String};
 
+    use sui::{event};
+
     use sage_admin::{
         admin::{FeeCap},
         apps::{Self, App, AppRegistry},
@@ -15,11 +17,14 @@ module sage_admin::admin_actions {
 
     // --------------- Errors ---------------
 
-    const EAppRecordExists: u64 = 370;
-
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
+
+    public struct AppCreated has copy, drop {
+        id: address,
+        name: String
+    }
 
     // --------------- Constructor ---------------
 
@@ -34,15 +39,18 @@ module sage_admin::admin_actions {
             &app_name
         );
 
-        let record_exists = app_registry.has_record(app_key);
-
-        assert!(!record_exists, EAppRecordExists);
-
-        apps::create(
+        let app = apps::create(
             app_registry,
             app_key,
             ctx
-        )
+        );
+
+        event::emit(AppCreated {
+            id: app,
+            name: app_key
+        });
+
+        app
     }
 
     public fun create_royalties<CoinType> (
