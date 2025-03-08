@@ -812,6 +812,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -909,6 +910,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, InvalidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -990,6 +992,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -1070,6 +1073,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
