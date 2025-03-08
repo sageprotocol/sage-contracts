@@ -38,12 +38,12 @@ module sage_post::post_actions {
         data: String,
         description: String,
         parent_post_id: address,
-        title: String,
-        updated_at: u64
+        title: String
     }
 
     public struct PostLiked has copy, drop {
         id: address,
+        updated_at: u64,
         user: address
     }
 
@@ -110,8 +110,7 @@ module sage_post::post_actions {
             data,
             description,
             parent_post_id: parent_post_address,
-            title,
-            updated_at: timestamp
+            title
         });
 
         (post_address, self, timestamp)
@@ -153,6 +152,7 @@ module sage_post::post_actions {
 
     public fun like<CoinType, SoulType: key> (
         authentication_config: &AuthenticationConfig,
+        clock: &Clock,
         post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
@@ -196,8 +196,11 @@ module sage_post::post_actions {
 
         let post_address = post::get_address(post);
 
+        let timestamp = clock.timestamp_ms();
+
         event::emit(PostLiked {
             id: post_address,
+            updated_at: timestamp,
             user: self
         });
     }
