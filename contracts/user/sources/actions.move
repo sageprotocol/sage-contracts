@@ -64,8 +64,8 @@ module sage_user::user_actions {
         banner_hash: String,
         created_at: u64,
         description: String,
-        owner: address,
         invited_by: Option<address>,
+        owner: address,
         soul: address,
         user_key: String,
         user_name: String
