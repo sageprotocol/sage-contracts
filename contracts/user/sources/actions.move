@@ -447,7 +447,6 @@ module sage_user::user_actions {
             data,
             description,
             title,
-            updated_at: timestamp,
             user_key
         });
 
