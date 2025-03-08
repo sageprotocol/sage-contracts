@@ -34,7 +34,7 @@ Create an app object:
 - SWAP WALLET TO SAGE ADMIN
 
 ```sh
-$ sui client call --package <ADMIN_PKG_ID> --module admin_actions --function create_app --args <APP_REGISTRY_ID> sage
+$ sui client call --package <ADMIN_PKG_ID> --module admin_actions --function create_app_as_admin --args <ADMIN_CAP_ID> <APP_REGISTRY_ID> sage
 ```
 
 Create a royalties object:
