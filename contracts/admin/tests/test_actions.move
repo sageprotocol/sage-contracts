@@ -103,9 +103,9 @@ module sage_admin::test_actions {
 
             let _app_address = admin_actions::create_app<ValidAuthSoul>(
                 &mut app_registry,
-                utf8(b"sage"),
                 &authentication_config,
                 &soul,
+                utf8(b"sage"),
                 ts::ctx(scenario)
             );
 

@@ -33,9 +33,9 @@ module sage_admin::admin_actions {
 
     public fun create_app<SoulType: key> (
         app_registry: &mut AppRegistry,
-        app_name: String,
         authentication_config: &AuthenticationConfig,
         soul: &SoulType,
+        app_name: String,
         ctx: &mut TxContext
     ): address {
         authentication::assert_authentication<SoulType>(
