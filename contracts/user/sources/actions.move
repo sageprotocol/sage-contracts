@@ -59,6 +59,7 @@ module sage_user::user_actions {
     }
 
     public struct UserCreated has copy, drop {
+        id: address,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
@@ -213,6 +214,7 @@ module sage_user::user_actions {
         );
 
         event::emit(UserCreated {
+            id: user_address,
             avatar_hash,
             banner_hash,
             created_at,
