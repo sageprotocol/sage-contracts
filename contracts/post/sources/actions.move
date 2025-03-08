@@ -9,6 +9,7 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
+        apps::{Self, App},
         authentication::{Self, AuthenticationConfig},
         fees::{Self, Royalties}
     };
@@ -33,6 +34,7 @@ module sage_post::post_actions {
 
     public struct CommentCreated has copy, drop {
         id: address,
+        app: String,
         created_at: u64,
         created_by: address,
         data: String,
@@ -52,6 +54,7 @@ module sage_post::post_actions {
     // --------------- Public Functions ---------------
 
     public fun comment<CoinType, SoulType: key>(
+        app: &App,
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
         parent_post: &mut Post,
@@ -101,10 +104,12 @@ module sage_post::post_actions {
             sui_payment
         );
 
+        let app_name = apps::get_name(app);
         let parent_post_address = post::get_address(parent_post);
 
         event::emit(CommentCreated {
             id: post_address,
+            app: app_name,
             created_at: timestamp,
             created_by: self,
             data,

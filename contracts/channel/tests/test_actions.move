@@ -2573,6 +2573,7 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -2702,6 +2703,7 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, InvalidAuthSoul>(
+                &app,
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -2807,6 +2809,7 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -2910,6 +2913,7 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -3013,6 +3017,7 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &mut channel,
                 &channel_fees,

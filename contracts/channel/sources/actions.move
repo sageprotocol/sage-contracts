@@ -10,6 +10,7 @@ module sage_channel::channel_actions {
 
     use sage_admin::{
         admin::{AdminCap},
+        apps::{Self, App},
         authentication::{Self, AuthenticationConfig},
         fees::{Self}
     };
@@ -78,6 +79,7 @@ module sage_channel::channel_actions {
 
     public struct ChannelPostCreated has copy, drop {
         id: address,
+        app: String,
         channel_key: String,
         created_at: u64,
         created_by: address,
@@ -403,6 +405,7 @@ module sage_channel::channel_actions {
     }
 
     public fun post<CoinType, SoulType: key> (
+        app: &App,
         authentication_config: &AuthenticationConfig,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
@@ -457,10 +460,12 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
+        let app_name = apps::get_name(app);
         let channel_key = channel::get_key(channel);
 
         event::emit(ChannelPostCreated {
             id: post_address,
+            app: app_name,
             channel_key,
             created_at: timestamp,
             created_by: self,

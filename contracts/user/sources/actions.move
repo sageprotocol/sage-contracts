@@ -10,6 +10,7 @@ module sage_user::user_actions {
 
     use sage_admin::{
         admin::{InviteCap},
+        apps::{Self, App},
         authentication::{Self, AuthenticationConfig},
         fees::{Self}
     };
@@ -81,6 +82,7 @@ module sage_user::user_actions {
 
     public struct UserPostCreated has copy, drop {
         id: address,
+        app: String,
         created_at: u64,
         created_by: address,
         data: String,
@@ -394,6 +396,7 @@ module sage_user::user_actions {
     }
 
     public fun post<CoinType, SoulType: key> (
+        app: &App,
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
         soul: &SoulType,
@@ -437,11 +440,13 @@ module sage_user::user_actions {
             sui_payment
         );
 
+        let app_name = apps::get_name(app);
         let self = tx_context::sender(ctx);
         let user_key = user::get_key(user);
 
         event::emit(UserPostCreated {
             id: post_address,
+            app: app_name,
             created_at: timestamp,
             created_by: self,
             data,
