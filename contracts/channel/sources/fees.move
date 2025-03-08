@@ -6,6 +6,7 @@ module sage_channel::channel_fees {
 
     use sui::{
         coin::{Coin},
+        event,
         sui::{SUI}
     };
 
@@ -45,6 +46,45 @@ module sage_channel::channel_fees {
     }
 
     // --------------- Events ---------------
+
+    public struct ChannelFeesCreated has copy, drop {
+        id: address,
+        add_channel_moderator_fee_custom: u64,
+        add_channel_moderator_fee_sui: u64,
+        app: address,
+        create_channel_fee_custom: u64,
+        create_channel_fee_sui: u64,
+        custom_coin_type: TypeName,
+        join_channel_fee_custom: u64,
+        join_channel_fee_sui: u64,
+        leave_channel_fee_custom: u64,
+        leave_channel_fee_sui: u64,
+        post_to_channel_fee_custom: u64,
+        post_to_channel_fee_sui: u64,
+        remove_channel_moderator_fee_custom: u64,
+        remove_channel_moderator_fee_sui: u64,
+        update_channel_fee_custom: u64,
+        update_channel_fee_sui: u64
+    }
+
+    public struct ChannelFeesUpdated has copy, drop {
+        id: address,
+        add_channel_moderator_fee_custom: u64,
+        add_channel_moderator_fee_sui: u64,
+        create_channel_fee_custom: u64,
+        create_channel_fee_sui: u64,
+        custom_coin_type: TypeName,
+        join_channel_fee_custom: u64,
+        join_channel_fee_sui: u64,
+        leave_channel_fee_custom: u64,
+        leave_channel_fee_sui: u64,
+        post_to_channel_fee_custom: u64,
+        post_to_channel_fee_sui: u64,
+        remove_channel_moderator_fee_custom: u64,
+        remove_channel_moderator_fee_sui: u64,
+        update_channel_fee_custom: u64,
+        update_channel_fee_sui: u64
+    }
 
     // --------------- Constructor ---------------
 
@@ -92,12 +132,34 @@ module sage_channel::channel_fees {
             update_channel_fee_sui
         };
 
+        let fees_address = fees.id.to_address();
+
         apps::add_fee_config(
             fee_cap,
             app,
             utf8(b"channel"),
-            fees.id.to_address()
+            fees_address
         );
+
+        event::emit(ChannelFeesCreated {
+            id: fees_address,
+            add_channel_moderator_fee_custom,
+            add_channel_moderator_fee_sui,
+            app: app_address,
+            create_channel_fee_custom,
+            create_channel_fee_sui,
+            custom_coin_type,
+            join_channel_fee_custom,
+            join_channel_fee_sui,
+            leave_channel_fee_custom,
+            leave_channel_fee_sui,
+            post_to_channel_fee_custom,
+            post_to_channel_fee_sui,
+            remove_channel_moderator_fee_custom,
+            remove_channel_moderator_fee_sui,
+            update_channel_fee_custom,
+            update_channel_fee_sui
+        });
 
         transfer::share_object(fees);
     }
@@ -137,6 +199,25 @@ module sage_channel::channel_fees {
         fees.remove_channel_moderator_fee_sui = remove_channel_moderator_fee_sui;
         fees.update_channel_fee_custom = update_channel_fee_custom;
         fees.update_channel_fee_sui = update_channel_fee_sui;
+
+        event::emit(ChannelFeesUpdated {
+            id: fees.id.to_address(),
+            add_channel_moderator_fee_custom,
+            add_channel_moderator_fee_sui,
+            create_channel_fee_custom,
+            create_channel_fee_sui,
+            custom_coin_type,
+            join_channel_fee_custom,
+            join_channel_fee_sui,
+            leave_channel_fee_custom,
+            leave_channel_fee_sui,
+            post_to_channel_fee_custom,
+            post_to_channel_fee_sui,
+            remove_channel_moderator_fee_custom,
+            remove_channel_moderator_fee_sui,
+            update_channel_fee_custom,
+            update_channel_fee_sui
+        });
     }
 
     // --------------- Friend Functions ---------------

@@ -6,6 +6,7 @@ module sage_post::post_fees {
 
     use sui::{
         coin::{Coin},
+        event,
         sui::{SUI}
     };
 
@@ -36,6 +37,25 @@ module sage_post::post_fees {
 
     // --------------- Events ---------------
 
+    public struct PostFeesCreated has copy, drop {
+        id: address,
+        app: address,
+        custom_coin_type: TypeName,
+        like_post_fee_custom: u64,
+        like_post_fee_sui: u64,
+        post_from_post_fee_custom: u64,
+        post_from_post_fee_sui: u64
+    }
+
+    public struct PostFeesUpdated has copy, drop {
+        id: address,
+        custom_coin_type: TypeName,
+        like_post_fee_custom: u64,
+        like_post_fee_sui: u64,
+        post_from_post_fee_custom: u64,
+        post_from_post_fee_sui: u64
+    }
+
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
@@ -62,12 +82,24 @@ module sage_post::post_fees {
             post_from_post_fee_sui
         };
 
+        let fees_address = fees.id.to_address();
+
         apps::add_fee_config(
             fee_cap,
             app,
             utf8(b"post"),
-            fees.id.to_address()
+            fees_address
         );
+
+        event::emit(PostFeesCreated {
+            id: fees_address,
+            app: app_address,
+            custom_coin_type,
+            like_post_fee_custom,
+            like_post_fee_sui,
+            post_from_post_fee_custom,
+            post_from_post_fee_sui
+        });
 
         transfer::share_object(fees);
     }
@@ -87,6 +119,15 @@ module sage_post::post_fees {
         fees.like_post_fee_sui = like_post_fee_sui;
         fees.post_from_post_fee_custom = post_from_post_fee_custom;
         fees.post_from_post_fee_sui = post_from_post_fee_sui;
+
+        event::emit(PostFeesUpdated {
+            id: fees.id.to_address(),
+            custom_coin_type,
+            like_post_fee_custom,
+            like_post_fee_sui,
+            post_from_post_fee_custom,
+            post_from_post_fee_sui
+        });
     }
 
     // --------------- Friend Functions ---------------

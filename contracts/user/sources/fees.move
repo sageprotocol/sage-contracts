@@ -6,6 +6,7 @@ module sage_user::user_fees {
 
     use sui::{
         coin::{Coin},
+        event,
         sui::{SUI}
     };
 
@@ -43,6 +44,41 @@ module sage_user::user_fees {
     }
 
     // --------------- Events ---------------
+
+    public struct UserFeesCreated has copy, drop {
+        id: address,
+        app: address,
+        custom_coin_type: TypeName,
+        create_invite_fee_custom: u64,
+        create_invite_fee_sui: u64,
+        create_user_fee_custom: u64,
+        create_user_fee_sui: u64,
+        join_user_fee_custom: u64,
+        join_user_fee_sui: u64,
+        leave_user_fee_custom: u64,
+        leave_user_fee_sui: u64,
+        post_to_user_fee_custom: u64,
+        post_to_user_fee_sui: u64,
+        update_user_fee_custom: u64,
+        update_user_fee_sui: u64
+    }
+
+    public struct UserFeesUpdated has copy, drop {
+        id: address,
+        custom_coin_type: TypeName,
+        create_invite_fee_custom: u64,
+        create_invite_fee_sui: u64,
+        create_user_fee_custom: u64,
+        create_user_fee_sui: u64,
+        join_user_fee_custom: u64,
+        join_user_fee_sui: u64,
+        leave_user_fee_custom: u64,
+        leave_user_fee_sui: u64,
+        post_to_user_fee_custom: u64,
+        post_to_user_fee_sui: u64,
+        update_user_fee_custom: u64,
+        update_user_fee_sui: u64
+    }
 
     // --------------- Constructor ---------------
 
@@ -86,12 +122,32 @@ module sage_user::user_fees {
             update_user_fee_sui
         };
 
+        let fees_address = fees.id.to_address();
+
         apps::add_fee_config(
             fee_cap,
             app,
             utf8(b"user"),
-            fees.id.to_address()
+            fees_address
         );
+
+        event::emit(UserFeesCreated {
+            id: fees_address,
+            app: app_address,
+            custom_coin_type,
+            create_invite_fee_custom,
+            create_invite_fee_sui,
+            create_user_fee_custom,
+            create_user_fee_sui,
+            join_user_fee_custom,
+            join_user_fee_sui,
+            leave_user_fee_custom,
+            leave_user_fee_sui,
+            post_to_user_fee_custom,
+            post_to_user_fee_sui,
+            update_user_fee_custom,
+            update_user_fee_sui
+        });
 
         transfer::share_object(fees);
     }
@@ -127,6 +183,23 @@ module sage_user::user_fees {
         fees.post_to_user_fee_sui = post_to_user_fee_sui;
         fees.update_user_fee_custom = update_user_fee_custom;
         fees.update_user_fee_sui = update_user_fee_sui;
+
+        event::emit(UserFeesUpdated {
+            id: fees.id.to_address(),
+            custom_coin_type,
+            create_invite_fee_custom,
+            create_invite_fee_sui,
+            create_user_fee_custom,
+            create_user_fee_sui,
+            join_user_fee_custom,
+            join_user_fee_sui,
+            leave_user_fee_custom,
+            leave_user_fee_sui,
+            post_to_user_fee_custom,
+            post_to_user_fee_sui,
+            update_user_fee_custom,
+            update_user_fee_sui
+        });
     }
 
     // --------------- Friend Functions ---------------
