@@ -93,7 +93,6 @@ module sage_user::user_actions {
         avatar_hash: String,
         banner_hash: String,
         description: String,
-        owner: address,
         updated_at: u64,
         user_key: String,
         user_name: String
@@ -509,7 +508,6 @@ module sage_user::user_actions {
         event::emit(UserUpdated {
             avatar_hash,
             banner_hash,
-            owner: self,
             user_key: owned_user_key,
             user_name: name,
             description,
