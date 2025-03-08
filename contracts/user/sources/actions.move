@@ -86,7 +86,6 @@ module sage_user::user_actions {
         data: String,
         description: String,
         title: String,
-        updated_at: u64,
         user_key: String
     }
 
