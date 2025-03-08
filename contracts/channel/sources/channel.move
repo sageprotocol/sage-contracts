@@ -14,7 +14,7 @@ module sage_channel::channel {
     // --------------- Constants ---------------
 
     const CHANNEL_NAME_MIN_LENGTH: u64 = 3;
-    const CHANNEL_NAME_MAX_LENGTH: u64 = 20;
+    const CHANNEL_NAME_MAX_LENGTH: u64 = 21;
 
     const DESCRIPTION_MAX_LENGTH: u64 = 370;
 
