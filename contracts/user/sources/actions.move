@@ -10,6 +10,7 @@ module sage_user::user_actions {
 
     use sage_admin::{
         admin::{InviteCap},
+        apps::{Self, App},
         authentication::{Self, AuthenticationConfig},
         fees::{Self}
     };
@@ -59,12 +60,13 @@ module sage_user::user_actions {
     }
 
     public struct UserCreated has copy, drop {
+        id: address,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
         description: String,
-        owner: address,
         invited_by: Option<address>,
+        owner: address,
         soul: address,
         user_key: String,
         user_name: String
@@ -80,12 +82,12 @@ module sage_user::user_actions {
 
     public struct UserPostCreated has copy, drop {
         id: address,
+        app: String,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
         title: String,
-        updated_at: u64,
         user_key: String
     }
 
@@ -93,7 +95,6 @@ module sage_user::user_actions {
         avatar_hash: String,
         banner_hash: String,
         description: String,
-        owner: address,
         updated_at: u64,
         user_key: String,
         user_name: String
@@ -213,6 +214,7 @@ module sage_user::user_actions {
         );
 
         event::emit(UserCreated {
+            id: user_address,
             avatar_hash,
             banner_hash,
             created_at,
@@ -394,6 +396,7 @@ module sage_user::user_actions {
     }
 
     public fun post<CoinType, SoulType: key> (
+        app: &App,
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
         soul: &SoulType,
@@ -437,17 +440,18 @@ module sage_user::user_actions {
             sui_payment
         );
 
+        let app_name = apps::get_name(app);
         let self = tx_context::sender(ctx);
         let user_key = user::get_key(user);
 
         event::emit(UserPostCreated {
             id: post_address,
+            app: app_name,
             created_at: timestamp,
             created_by: self,
             data,
             description,
             title,
-            updated_at: timestamp,
             user_key
         });
 
@@ -508,7 +512,6 @@ module sage_user::user_actions {
         event::emit(UserUpdated {
             avatar_hash,
             banner_hash,
-            owner: self,
             user_key: owned_user_key,
             user_name: name,
             description,

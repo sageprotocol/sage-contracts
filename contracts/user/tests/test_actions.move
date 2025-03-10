@@ -1917,6 +1917,7 @@ module sage_user::test_user_actions {
                 _post_address,
                 timestamp
             ) = user_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &soul,
@@ -2038,6 +2039,7 @@ module sage_user::test_user_actions {
                 _post_address,
                 _timestamp
             ) = user_actions::post<SUI, InvalidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &invalid_soul,
@@ -2143,6 +2145,7 @@ module sage_user::test_user_actions {
                 _post_address,
                 _timestamp
             ) = user_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &soul,
@@ -2247,6 +2250,7 @@ module sage_user::test_user_actions {
                 _post_address,
                 _timestamp
             ) = user_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &soul,

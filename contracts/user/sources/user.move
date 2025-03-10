@@ -15,7 +15,7 @@ module sage_user::user {
     const DESCRIPTION_MAX_LENGTH: u64 = 370;
 
     const USERNAME_MIN_LENGTH: u64 = 3;
-    const USERNAME_MAX_LENGTH: u64 = 15;
+    const USERNAME_MAX_LENGTH: u64 = 20;
 
     // --------------- Errors ---------------
 

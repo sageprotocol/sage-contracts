@@ -10,6 +10,7 @@ module sage_channel::channel_actions {
 
     use sage_admin::{
         admin::{AdminCap},
+        apps::{Self, App},
         authentication::{Self, AuthenticationConfig},
         fees::{Self}
     };
@@ -78,13 +79,13 @@ module sage_channel::channel_actions {
 
     public struct ChannelPostCreated has copy, drop {
         id: address,
+        app: String,
         channel_key: String,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
-        title: String,
-        updated_at: u64
+        title: String
     }
 
     public struct ChannelUpdated has copy, drop {
@@ -196,9 +197,9 @@ module sage_channel::channel_actions {
 
     public fun create<CoinType, SoulType: key> (
         authentication_config: &AuthenticationConfig,
-        clock: &Clock,
         channel_fees: &ChannelFees,
         channel_registry: &mut ChannelRegistry,
+        clock: &Clock,
         soul: &SoulType,
         avatar_hash: String,
         banner_hash: String,
@@ -404,10 +405,11 @@ module sage_channel::channel_actions {
     }
 
     public fun post<CoinType, SoulType: key> (
+        app: &App,
         authentication_config: &AuthenticationConfig,
-        clock: &Clock,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
+        clock: &Clock,
         soul: &SoulType,
         data: String,
         description: String,
@@ -458,17 +460,18 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
+        let app_name = apps::get_name(app);
         let channel_key = channel::get_key(channel);
 
         event::emit(ChannelPostCreated {
             id: post_address,
+            app: app_name,
             channel_key,
             created_at: timestamp,
             created_by: self,
             data,
             description,
-            title,
-            updated_at: timestamp
+            title
         });
 
         (post_address, timestamp)
@@ -568,10 +571,10 @@ module sage_channel::channel_actions {
         );
     }
 
-    public fun update_channel_as_admin (
+    public fun update_as_admin (
         _: &AdminCap,
-        clock: &Clock,
         channel: &mut Channel,
+        clock: &Clock,
         avatar_hash: String,
         banner_hash: String,
         description: String,
@@ -603,10 +606,10 @@ module sage_channel::channel_actions {
         });
     }
 
-    public fun update_channel_as_owner<CoinType> (
-        clock: &Clock,
+    public fun update_as_owner<CoinType> (
         channel: &mut Channel,
         channel_fees: &ChannelFees,
+        clock: &Clock,
         avatar_hash: String,
         banner_hash: String,
         description: String,

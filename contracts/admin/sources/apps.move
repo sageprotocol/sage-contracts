@@ -70,6 +70,12 @@ module sage_admin::apps {
         app.id.to_address()
     }
 
+    public fun get_name(
+        app: &App
+    ): String {
+        app.name
+    }
+
     public fun has_record(
         app_registry: &AppRegistry,
         app_key: String

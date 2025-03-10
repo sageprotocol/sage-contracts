@@ -9,6 +9,7 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
+        apps::{Self, App},
         authentication::{Self, AuthenticationConfig},
         fees::{Self, Royalties}
     };
@@ -33,17 +34,18 @@ module sage_post::post_actions {
 
     public struct CommentCreated has copy, drop {
         id: address,
+        app: String,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
         parent_post_id: address,
-        title: String,
-        updated_at: u64
+        title: String
     }
 
     public struct PostLiked has copy, drop {
         id: address,
+        updated_at: u64,
         user: address
     }
 
@@ -52,6 +54,7 @@ module sage_post::post_actions {
     // --------------- Public Functions ---------------
 
     public fun comment<CoinType, SoulType: key>(
+        app: &App,
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
         parent_post: &mut Post,
@@ -101,17 +104,18 @@ module sage_post::post_actions {
             sui_payment
         );
 
+        let app_name = apps::get_name(app);
         let parent_post_address = post::get_address(parent_post);
 
         event::emit(CommentCreated {
             id: post_address,
+            app: app_name,
             created_at: timestamp,
             created_by: self,
             data,
             description,
             parent_post_id: parent_post_address,
-            title,
-            updated_at: timestamp
+            title
         });
 
         (post_address, self, timestamp)
@@ -153,6 +157,7 @@ module sage_post::post_actions {
 
     public fun like<CoinType, SoulType: key> (
         authentication_config: &AuthenticationConfig,
+        clock: &Clock,
         post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
@@ -196,8 +201,11 @@ module sage_post::post_actions {
 
         let post_address = post::get_address(post);
 
+        let timestamp = clock.timestamp_ms();
+
         event::emit(PostLiked {
             id: post_address,
+            updated_at: timestamp,
             user: self
         });
     }

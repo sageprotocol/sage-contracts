@@ -419,6 +419,7 @@ module sage_post::test_post_actions {
                 self,
                 timestamp
             ) = post_actions::comment<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &mut parent_post,
@@ -545,6 +546,7 @@ module sage_post::test_post_actions {
                 _self,
                 _timestamp
             ) = post_actions::comment<SUI, InvalidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &mut parent_post,
@@ -638,6 +640,7 @@ module sage_post::test_post_actions {
                 _self,
                 _timestamp
             ) = post_actions::comment<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &mut parent_post,
@@ -729,6 +732,7 @@ module sage_post::test_post_actions {
                 _self,
                 _timestamp
             ) = post_actions::comment<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
                 &clock,
                 &mut parent_post,
@@ -812,6 +816,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -909,6 +914,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, InvalidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -990,6 +996,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -1070,6 +1077,7 @@ module sage_post::test_post_actions {
 
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
+                &clock,
                 &mut post,
                 &post_fees,
                 &royalties,

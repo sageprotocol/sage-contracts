@@ -34,7 +34,7 @@ Create an app object:
 - SWAP WALLET TO SAGE ADMIN
 
 ```sh
-$ sui client call --package <ADMIN_PKG_ID> --module admin_actions --function create_app --args <APP_REGISTRY_ID> sage
+$ sui client call --package <ADMIN_PKG_ID> --module admin_actions --function create_app_as_admin --args <ADMIN_CAP_ID> <APP_REGISTRY_ID> sage
 ```
 
 Create a royalties object:
@@ -61,6 +61,7 @@ Create a user fees object:
 $ sui client call --package <USER_PKG_ID> --module user_fees --function create --type-args 0x2::sui::SUI --args <FEE_CAP_ID> <APP_ID> 0 0 0 0 0 0 0 0 0 0 0 0
 ```
 
+- SWAP WALLET TO MATRIXRICK
 The next operation will require two zero SUI payments to complete. List out SUI balances:
 
 ```sh
@@ -75,7 +76,6 @@ $ sui client split-coin --coin-id <ZERO_BALANCE_SUI_COIN_ID> --amounts 0 --gas-b
 
 The very first user needs to be created without an invitation.
 
-- SWAP WALLET TO MATRIXRICK
 - Review the newly created user, go to their soul object, and copy the soul type.
 
 ```sh

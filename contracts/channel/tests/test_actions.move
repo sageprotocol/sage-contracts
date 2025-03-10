@@ -368,9 +368,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -515,9 +515,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, InvalidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &invalid_soul,
                 avatar_hash,
                 banner_hash,
@@ -584,9 +584,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -651,9 +651,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -717,9 +717,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -864,9 +864,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -964,9 +964,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1058,9 +1058,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1152,9 +1152,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1264,9 +1264,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1406,9 +1406,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1571,9 +1571,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1759,9 +1759,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -1883,9 +1883,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2007,9 +2007,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2131,9 +2131,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2283,9 +2283,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2426,9 +2426,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2539,9 +2539,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2573,10 +2573,11 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
-                &clock,
                 &mut channel,
                 &channel_fees,
+                &clock,
                 &soul,
                 data,
                 description,
@@ -2664,9 +2665,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2702,10 +2703,11 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, InvalidAuthSoul>(
+                &app,
                 &authentication_config,
-                &clock,
                 &mut channel,
                 &channel_fees,
+                &clock,
                 &invalid_soul,
                 data,
                 description,
@@ -2773,9 +2775,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2807,10 +2809,11 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
-                &clock,
                 &mut channel,
                 &channel_fees,
+                &clock,
                 &soul,
                 data,
                 description,
@@ -2876,9 +2879,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -2910,10 +2913,11 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
-                &clock,
                 &mut channel,
                 &channel_fees,
+                &clock,
                 &soul,
                 data,
                 description,
@@ -2979,9 +2983,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3013,10 +3017,11 @@ module sage_channel::test_channel_actions {
                 _post_address,
                 _timestamp
             ) = channel_actions::post<SUI, ValidAuthSoul>(
+                &app,
                 &authentication_config,
-                &clock,
                 &mut channel,
                 &channel_fees,
+                &clock,
                 &soul,
                 data,
                 description,
@@ -3083,9 +3088,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3108,10 +3113,10 @@ module sage_channel::test_channel_actions {
 
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            channel_actions::update_channel_as_admin(
+            channel_actions::update_as_admin(
                 &admin_cap,
-                &clock,
                 &mut channel,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,
@@ -3200,9 +3205,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3225,10 +3230,10 @@ module sage_channel::test_channel_actions {
 
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            channel_actions::update_channel_as_admin(
+            channel_actions::update_as_admin(
                 &admin_cap,
-                &clock,
                 &mut channel,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,
@@ -3293,9 +3298,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3325,10 +3330,10 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::update_channel_as_owner<SUI>(
-                &clock,
+            channel_actions::update_as_owner<SUI>(
                 &mut channel,
                 &channel_fees,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,
@@ -3419,9 +3424,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3451,10 +3456,10 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::update_channel_as_owner<SUI>(
-                &clock,
+            channel_actions::update_as_owner<SUI>(
                 &mut channel,
                 &channel_fees,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,
@@ -3520,9 +3525,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3552,10 +3557,10 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::update_channel_as_owner<SUI>(
-                &clock,
+            channel_actions::update_as_owner<SUI>(
                 &mut channel,
                 &channel_fees,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,
@@ -3621,9 +3626,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3653,10 +3658,10 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::update_channel_as_owner<SUI>(
-                &clock,
+            channel_actions::update_as_owner<SUI>(
                 &mut channel,
                 &channel_fees,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,
@@ -3722,9 +3727,9 @@ module sage_channel::test_channel_actions {
 
             let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
                 &authentication_config,
-                &clock,
                 &channel_fees,
                 &mut channel_registry,
+                &clock,
                 &soul,
                 avatar_hash,
                 banner_hash,
@@ -3754,10 +3759,10 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::update_channel_as_owner<SUI>(
-                &clock,
+            channel_actions::update_as_owner<SUI>(
                 &mut channel,
                 &channel_fees,
+                &clock,
                 new_avatar,
                 new_banner,
                 new_description,

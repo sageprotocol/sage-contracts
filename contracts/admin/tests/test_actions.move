@@ -13,10 +13,16 @@ module sage_admin::test_actions {
     use sage_admin::{
         admin::{
             Self,
-            FeeCap,
+            AdminCap,
+            FeeCap
         },
-        admin_actions::{Self, EAppRecordExists},
+        admin_actions::{Self},
         apps::{Self, AppRegistry},
+        authentication::{
+            Self,
+            AuthenticationConfig,
+            ValidAuthSoul
+        },
         fees::{Royalties}
     };
 
@@ -42,6 +48,7 @@ module sage_admin::test_actions {
         {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
+            authentication::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -76,54 +83,65 @@ module sage_admin::test_actions {
     fun create_app() {
         let (
             mut scenario_val,
-            mut app_registry_val
+            mut app_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let app_registry = &mut app_registry_val;
-
         ts::next_tx(scenario, ADMIN);
         {
-            let _app_address = admin_actions::create_app(
-                app_registry,
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let mut authentication_config = ts::take_shared<AuthenticationConfig>(scenario);
+
+            authentication::update_soul<ValidAuthSoul>(
+                &admin_cap,
+                &mut authentication_config
+            );
+
+            let soul = authentication::create_valid_auth_soul(ts::ctx(scenario));
+
+            let _app_address = admin_actions::create_app<ValidAuthSoul>(
+                &mut app_registry,
+                &authentication_config,
+                &soul,
                 utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
-            destroy(app_registry_val);
+            ts::return_to_sender(scenario, admin_cap);
+            ts::return_shared(authentication_config);
+
+            destroy(app_registry);
+            destroy(soul);
         };
 
         ts::end(scenario_val);
     }
 
     #[test]
-    #[expected_failure(abort_code = EAppRecordExists)]
-    fun create_app_fail() {
+    fun create_app_as_admin() {
         let (
             mut scenario_val,
-            mut app_registry_val
+            mut app_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let app_registry = &mut app_registry_val;
-
         ts::next_tx(scenario, ADMIN);
         {
-            let _app_address = admin_actions::create_app(
-                app_registry,
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let _app_address = admin_actions::create_app_as_admin(
+                &admin_cap,
+                &mut app_registry,
                 utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
-            let _app_address = admin_actions::create_app(
-                app_registry,
-                utf8(b"SAGE"),
-                ts::ctx(scenario)
-            );
+            ts::return_to_sender(scenario, admin_cap);
 
-            destroy(app_registry_val);
+            destroy(app_registry);
         };
 
         ts::end(scenario_val);

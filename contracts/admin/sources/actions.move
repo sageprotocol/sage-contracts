@@ -1,9 +1,12 @@
 module sage_admin::admin_actions {
     use std::string::{String};
 
+    use sui::{event};
+
     use sage_admin::{
-        admin::{FeeCap},
+        admin::{AdminCap, FeeCap},
         apps::{Self, App, AppRegistry},
+        authentication::{Self, AuthenticationConfig},
         fees::{Self, Royalties}
     };
 
@@ -15,32 +18,47 @@ module sage_admin::admin_actions {
 
     // --------------- Errors ---------------
 
-    const EAppRecordExists: u64 = 370;
-
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
+
+    public struct AppCreated has copy, drop {
+        id: address,
+        name: String
+    }
 
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
 
-    public fun create_app(
+    public fun create_app<SoulType: key> (
+        app_registry: &mut AppRegistry,
+        authentication_config: &AuthenticationConfig,
+        soul: &SoulType,
+        app_name: String,
+        ctx: &mut TxContext
+    ): address {
+        authentication::assert_authentication<SoulType>(
+            authentication_config,
+            soul
+        );
+
+        create_app_internal(
+            app_registry,
+            app_name,
+            ctx
+        )
+    }
+
+    public fun create_app_as_admin(
+        _: &AdminCap,
         app_registry: &mut AppRegistry,
         app_name: String,
         ctx: &mut TxContext
     ): address {
-        let app_key = string_helpers::to_lowercase(
-            &app_name
-        );
-
-        let record_exists = app_registry.has_record(app_key);
-
-        assert!(!record_exists, EAppRecordExists);
-
-        apps::create(
+        create_app_internal(
             app_registry,
-            app_key,
+            app_name,
             ctx
         )
     }
@@ -85,6 +103,29 @@ module sage_admin::admin_actions {
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
+
+    fun create_app_internal(
+        app_registry: &mut AppRegistry,
+        app_name: String,
+        ctx: &mut TxContext
+    ): address {
+        let app_key = string_helpers::to_lowercase(
+            &app_name
+        );
+
+        let app = apps::create(
+            app_registry,
+            app_key,
+            ctx
+        );
+
+        event::emit(AppCreated {
+            id: app,
+            name: app_key
+        });
+
+        app
+    }
 
     // --------------- Test Functions ---------------
     
