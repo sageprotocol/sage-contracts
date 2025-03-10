@@ -2,7 +2,7 @@
 name = "SageShared"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0xd3339034ca6300c55cbfeebd28241050e2757bacdada0be21fc8caff34de8ef8"
+published-at = "0x1d2243fe726abaf068c2ac8620e1a760b6b6925a13fd71ffab45939922f228f2"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
@@ -13,8 +13,8 @@ SageAdmin = { local = "../admin" }
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
-sage_admin = "0x64d3db638d0bfe650dbf708e4eec6cac043846f05c85d740e002033ae10b40f6"
-sage_shared = "0xd3339034ca6300c55cbfeebd28241050e2757bacdada0be21fc8caff34de8ef8"
+sage_admin = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
+sage_shared = "0x1d2243fe726abaf068c2ac8620e1a760b6b6925a13fd71ffab45939922f228f2"
 
 # sage_admin = "0x0"
 # sage_shared = "0x0"

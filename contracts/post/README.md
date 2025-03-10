@@ -1,7 +1,7 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/0x3a4f7c9f7027c17efbe4b8d01b21ed9baa5337b1b17ff74a91f379f7da695a55) - 0x3a4f7c9f7027c17efbe4b8d01b21ed9baa5337b1b17ff74a91f379f7da695a55
+[Package](https://testnet.suivision.xyz/package/0x96266bc39a31ca5aeb0e888fdae433d96700027c1db0be875a6dd8b8be7c4a3d) - 0x96266bc39a31ca5aeb0e888fdae433d96700027c1db0be875a6dd8b8be7c4a3d
 
-[UpgradeCap](https://testnet.suivision.xyz/object/0xca2e5da02fd23e569c6c87c44616aea574efe3c73077ba1aba93a3fbf556d88b) - 0xca2e5da02fd23e569c6c87c44616aea574efe3c73077ba1aba93a3fbf556d88b
+[UpgradeCap](https://testnet.suivision.xyz/object/0x2d57870c27ff1c45acf2a399609280080d0637302b03fa691176cffb30249a5b) - 0x2d57870c27ff1c45acf2a399609280080d0637302b03fa691176cffb30249a5b
 
-[PostFees](https://testnet.suivision.xyz/object/0xb3e49e3b7d3417e88f562fd8d37de0ab65e6205c2da5ff9a8382292e3b12cc96) - 0xb3e49e3b7d3417e88f562fd8d37de0ab65e6205c2da5ff9a8382292e3b12cc96
+[PostFees](https://testnet.suivision.xyz/object/0xc4e211d5746ff4b0949630c7f409a1f8738529a0981e193314868ef2aa0aefd5) - 0xc4e211d5746ff4b0949630c7f409a1f8738529a0981e193314868ef2aa0aefd5
