@@ -5,8 +5,6 @@ version = "0.0.1"
 published-at = "0x1027bae7a9ca2c2afe4e5936921b9f313d9366959130e93bf66c8536a1011686"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
-
 SageAdmin = { local = "../admin" }
 SagePost = { local = "../post" }
 SageShared = { local = "../shared" }

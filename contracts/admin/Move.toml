@@ -5,8 +5,6 @@ version = "0.0.1"
 published-at = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
-
 SageUtils = { local = "../utils" }
 
 [addresses]
