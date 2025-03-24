@@ -19,37 +19,51 @@ module sage_user::test_user_invite {
 
     // --------------- Errors ---------------
 
-    const EConfigMismatch: u64 = 370;
-    // const EInvalidHashLength: u64 = 371;
-    const EInviteInvalid: u64 = 372;
-    const EInviteRecord: u64 = 373;
+    const EConfigMismatch: u64 = 0;
+    const EInvalidHashLength: u64 = 1;
+    const EInvalidHexCharacter: u64 = 2;
+    const EInviteInvalid: u64 = 3;
+    const EInviteRecord: u64 = 4;
 
     // --------------- Test Functions ---------------
 
-    // #[test_only]
-    // fun create_hash_array(
-    //     hash: vector<u8>
-    // ): vector<u8> {
-    //     assert!(hash.length() == 64, EInvalidHashLength);
+    #[test_only]
+    public fun create_hash_array(
+        hash: vector<u8>
+    ): vector<u8> {
+        assert!(hash.length() == 64, EInvalidHashLength);
 
-    //     let mut index = 0;
-    //     let mut bytes = vector::empty<u8>();
+        let mut index = 0;
+        let mut bytes = vector::empty<u8>();
 
-    //     while (index < hash.length()) {
-    //         let first = hash[index] << 4 & 0xF0;
-    //         let second = hash[index + 1] & 0x0F;
+        while (index < hash.length()) {
+            let first = convert_hex_char(hash[index]);
+            let second = convert_hex_char(hash[index + 1]);
 
-    //         let val = first | second;
+            let val = (first << 4) | second;
 
-    //         bytes.push_back(val);
+            bytes.push_back(val);
 
-    //         index = index + 2;
-    //     };
+            index = index + 2;
+        };
 
-    //     assert!(bytes.length() == 32, EInvalidHashLength);
+        assert!(bytes.length() == 32, EInvalidHashLength);
 
-    //     bytes
-    // }
+        bytes
+    }
+
+    #[test_only]
+    fun convert_hex_char(character: u8): u8 {
+        if (character >= 0x30 && character <= 0x39) {  // '0' to '9'
+            character - 0x30
+        } else if (character >= 0x61 && character <= 0x66) {  // 'a' to 'f'
+            character - 0x61 + 10
+        } else if (character >= 0x41 && character <= 0x46) {  // 'A' to 'F'
+            character - 0x41 + 10
+        } else {
+            abort(EInvalidHexCharacter)
+        }
+    }
 
     #[test_only]
     fun destroy_for_testing(
@@ -213,44 +227,9 @@ module sage_user::test_user_invite {
         {
             // test known cases of sha3 computed in javascript
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
-            // );
-
-            invite_hash.push_back(0xa7);
-            invite_hash.push_back(0xff);
-            invite_hash.push_back(0xc6);
-            invite_hash.push_back(0xf8);
-            invite_hash.push_back(0xbf);
-            invite_hash.push_back(0x1e);
-            invite_hash.push_back(0xd7);
-            invite_hash.push_back(0x66);
-            invite_hash.push_back(0x51);
-            invite_hash.push_back(0xc1);
-            invite_hash.push_back(0x47);
-            invite_hash.push_back(0x56);
-            invite_hash.push_back(0xa0);
-            invite_hash.push_back(0x61);
-            invite_hash.push_back(0xd6);
-            invite_hash.push_back(0x62);
-            invite_hash.push_back(0xf5);
-            invite_hash.push_back(0x80);
-            invite_hash.push_back(0xff);
-            invite_hash.push_back(0x4d);
-            invite_hash.push_back(0xe4);
-            invite_hash.push_back(0x3b);
-            invite_hash.push_back(0x49);
-            invite_hash.push_back(0xfa);
-            invite_hash.push_back(0x82);
-            invite_hash.push_back(0xd8);
-            invite_hash.push_back(0x0a);
-            invite_hash.push_back(0x4b);
-            invite_hash.push_back(0x80);
-            invite_hash.push_back(0xf8);
-            invite_hash.push_back(0x43);
-            invite_hash.push_back(0x4a);
+            let invite_hash = create_hash_array(
+                b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+            );
 
             let is_invite_valid = user_invite::is_invite_valid(
                 utf8(b""),
@@ -260,44 +239,9 @@ module sage_user::test_user_invite {
 
             assert!(is_invite_valid, EInviteInvalid);
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"1c76e98fcac0e60aa45ceb9dd68cb8f8c6e9beb6baee207bee9902aa01e88fc7"
-            // );
-
-            invite_hash.push_back(0x1c);
-            invite_hash.push_back(0x76);
-            invite_hash.push_back(0xe9);
-            invite_hash.push_back(0x8f);
-            invite_hash.push_back(0xca);
-            invite_hash.push_back(0xc0);
-            invite_hash.push_back(0xe6);
-            invite_hash.push_back(0x0a);
-            invite_hash.push_back(0xa4);
-            invite_hash.push_back(0x5c);
-            invite_hash.push_back(0xeb);
-            invite_hash.push_back(0x9d);
-            invite_hash.push_back(0xd6);
-            invite_hash.push_back(0x8c);
-            invite_hash.push_back(0xb8);
-            invite_hash.push_back(0xf8);
-            invite_hash.push_back(0xc6);
-            invite_hash.push_back(0xe9);
-            invite_hash.push_back(0xbe);
-            invite_hash.push_back(0xb6);
-            invite_hash.push_back(0xba);
-            invite_hash.push_back(0xee);
-            invite_hash.push_back(0x20);
-            invite_hash.push_back(0x7b);
-            invite_hash.push_back(0xee);
-            invite_hash.push_back(0x99);
-            invite_hash.push_back(0x02);
-            invite_hash.push_back(0xaa);
-            invite_hash.push_back(0x01);
-            invite_hash.push_back(0xe8);
-            invite_hash.push_back(0x8f);
-            invite_hash.push_back(0xc7);
+            let invite_hash = create_hash_array(
+                b"1c76e98fcac0e60aa45ceb9dd68cb8f8c6e9beb6baee207bee9902aa01e88fc7"
+            );
 
             let is_invite_valid = user_invite::is_invite_valid(
                 utf8(b"code"),
@@ -307,44 +251,9 @@ module sage_user::test_user_invite {
 
             assert!(is_invite_valid, EInviteInvalid);
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"20c635d10270fdb360e84bf63e519d5e76df7c57c8ff01a96bc523ee66cd0b2e"
-            // );
-
-            invite_hash.push_back(0x20);
-            invite_hash.push_back(0xc6);
-            invite_hash.push_back(0x35);
-            invite_hash.push_back(0xd1);
-            invite_hash.push_back(0x02);
-            invite_hash.push_back(0x70);
-            invite_hash.push_back(0xfd);
-            invite_hash.push_back(0xb3);
-            invite_hash.push_back(0x60);
-            invite_hash.push_back(0xe8);
-            invite_hash.push_back(0x4b);
-            invite_hash.push_back(0xf6);
-            invite_hash.push_back(0x3e);
-            invite_hash.push_back(0x51);
-            invite_hash.push_back(0x9d);
-            invite_hash.push_back(0x5e);
-            invite_hash.push_back(0x76);
-            invite_hash.push_back(0xdf);
-            invite_hash.push_back(0x7c);
-            invite_hash.push_back(0x57);
-            invite_hash.push_back(0xc8);
-            invite_hash.push_back(0xff);
-            invite_hash.push_back(0x01);
-            invite_hash.push_back(0xa9);
-            invite_hash.push_back(0x6b);
-            invite_hash.push_back(0xc5);
-            invite_hash.push_back(0x23);
-            invite_hash.push_back(0xee);
-            invite_hash.push_back(0x66);
-            invite_hash.push_back(0xcd);
-            invite_hash.push_back(0x0b);
-            invite_hash.push_back(0x2e);
+            let invite_hash = create_hash_array(
+                b"20c635d10270fdb360e84bf63e519d5e76df7c57c8ff01a96bc523ee66cd0b2e"
+            );
 
             let is_invite_valid = user_invite::is_invite_valid(
                 utf8(b""),
@@ -354,44 +263,9 @@ module sage_user::test_user_invite {
 
             assert!(is_invite_valid, EInviteInvalid);
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
-            // );
-
-            invite_hash.push_back(0xd4);
-            invite_hash.push_back(0x9b);
-            invite_hash.push_back(0x04);
-            invite_hash.push_back(0x7a);
-            invite_hash.push_back(0xac);
-            invite_hash.push_back(0xa5);
-            invite_hash.push_back(0xfd);
-            invite_hash.push_back(0x3e);
-            invite_hash.push_back(0x37);
-            invite_hash.push_back(0xea);
-            invite_hash.push_back(0x3b);
-            invite_hash.push_back(0xe6);
-            invite_hash.push_back(0x31);
-            invite_hash.push_back(0x1e);
-            invite_hash.push_back(0x68);
-            invite_hash.push_back(0xfc);
-            invite_hash.push_back(0x91);
-            invite_hash.push_back(0x8e);
-            invite_hash.push_back(0x7e);
-            invite_hash.push_back(0x16);
-            invite_hash.push_back(0xbd);
-            invite_hash.push_back(0x31);
-            invite_hash.push_back(0xbf);
-            invite_hash.push_back(0xcd);
-            invite_hash.push_back(0x24);
-            invite_hash.push_back(0xc4);
-            invite_hash.push_back(0x4b);
-            invite_hash.push_back(0xa5);
-            invite_hash.push_back(0xc9);
-            invite_hash.push_back(0x38);
-            invite_hash.push_back(0xe9);
-            invite_hash.push_back(0x4a);
+            let invite_hash = create_hash_array(
+                b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
+            );
 
             let is_invite_valid = user_invite::is_invite_valid(
                 utf8(b"code"),
