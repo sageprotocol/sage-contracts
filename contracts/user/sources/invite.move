@@ -183,18 +183,11 @@ module sage_user::user_invite {
         user_invite_registry: &mut UserInviteRegistry,
         invite_hash: vector<u8>,
         invite_key: String,
-        user: address
+        wallet_address: address
     ) {
-        let has_record = has_record(
-            user_invite_registry,
-            invite_key
-        );
-
-        assert!(!has_record, EInviteExists);
-
         let invite = Invite {
             hash: invite_hash,
-            user
+            user: wallet_address
         };
 
         user_invite_registry.registry.add(invite_key, invite);
