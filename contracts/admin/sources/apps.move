@@ -24,7 +24,7 @@ module sage_admin::apps {
         name: String
     }
 
-    public struct AppRegistry has key, store {
+    public struct AppRegistry has key {
         id: UID,
         registry: Table<String, address>
     }

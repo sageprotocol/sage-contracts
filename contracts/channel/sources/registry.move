@@ -12,7 +12,7 @@ module sage_channel::channel_registry {
 
     // --------------- Name Tag ---------------
 
-    public struct ChannelRegistry has key, store {
+    public struct ChannelRegistry has key {
         id: UID,
         registry: Table<String, address>
     }

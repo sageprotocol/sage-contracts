@@ -30,12 +30,12 @@ module sage_user::user_invite {
         user: address
     }
 
-    public struct InviteConfig has key, store {
+    public struct InviteConfig has key {
         id: UID,
         required: bool
     }
 
-    public struct UserInviteRegistry has key, store {
+    public struct UserInviteRegistry has key {
         id: UID,
         registry: Table<String, Invite>
     }
