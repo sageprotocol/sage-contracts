@@ -7,9 +7,13 @@ module sage_user::test_user_invite {
         test_utils::{destroy}
     };
 
-    use sage_admin::{admin::{Self, InviteCap}};
+    use sage_admin::{
+        admin::{Self, InviteCap}
+    };
 
-    use sage_user::{user_invite::{Self, InviteConfig, UserInviteRegistry}};
+    use sage_user::{
+        user_invite::{Self, InviteConfig, UserInviteRegistry}
+    };
 
     // --------------- Constants ---------------
 
