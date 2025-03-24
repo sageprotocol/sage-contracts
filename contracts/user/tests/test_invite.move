@@ -12,7 +12,14 @@ module sage_user::test_user_invite {
     };
 
     use sage_user::{
-        user_invite::{Self, InviteConfig, UserInviteRegistry}
+        user_invite::{
+            Self,
+            InviteConfig,
+            UserInviteRegistry,
+            EInviteDoesNotExist,
+            EInviteInvalid,
+            EInviteNotAllowed
+        }
     };
 
     // --------------- Constants ---------------
@@ -26,8 +33,8 @@ module sage_user::test_user_invite {
     const EConfigMismatch: u64 = 0;
     const EInvalidHashLength: u64 = 1;
     const EInvalidHexCharacter: u64 = 2;
-    const EInviteInvalid: u64 = 3;
-    const EInviteRecord: u64 = 4;
+    const EInviteRecord: u64 = 3;
+    const ETestInviteInvalid: u64 = 4;
 
     // --------------- Test Functions ---------------
 
@@ -231,53 +238,247 @@ module sage_user::test_user_invite {
         {
             // test known cases of sha3 computed in javascript
 
+            let invite_code = utf8(b"");
+            let invite_key = utf8(b"");
             let invite_hash = create_hash_array(
                 b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
             );
 
             let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b""),
-                utf8(b""),
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            assert!(is_invite_valid, ETestInviteInvalid);
 
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            let invite_code = utf8(b"code");
+            let invite_key = utf8(b"");
             let invite_hash = create_hash_array(
                 b"1c76e98fcac0e60aa45ceb9dd68cb8f8c6e9beb6baee207bee9902aa01e88fc7"
             );
 
             let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b"code"),
-                utf8(b""),
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            assert!(is_invite_valid, ETestInviteInvalid);
 
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            let invite_code = utf8(b"");
+            let invite_key = utf8(b"key");
             let invite_hash = create_hash_array(
                 b"20c635d10270fdb360e84bf63e519d5e76df7c57c8ff01a96bc523ee66cd0b2e"
             );
 
             let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b""),
-                utf8(b"key"),
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            assert!(is_invite_valid, ETestInviteInvalid);
 
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            let invite_code = utf8(b"code");
+            let invite_key = utf8(b"key");
             let invite_hash = create_hash_array(
                 b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
             );
 
             let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b"code"),
-                utf8(b"key"),
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            assert!(is_invite_valid, ETestInviteInvalid);
+
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_assert_not_required_pass() {
+        let (
+            mut scenario_val,
+            user_invite_registry_val,
+            invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_not_required(&invite_config_val);
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_assert_exists_pass() {
+        let (
+            mut scenario_val,
+            mut user_invite_registry_val,
+            invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let invite_key = utf8(b"key");
+        let invite_hash = create_hash_array(
+            b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
+        );
+
+        ts::next_tx(scenario, SERVER);
+        {
+            user_invite::create_invite(
+                &mut user_invite_registry_val,
+                invite_hash,
+                invite_key,
+                OTHER
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_exists(
+                &user_invite_registry_val,
+                invite_key
+            );
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteDoesNotExist)]
+    fun test_user_invite_assert_exists_fail() {
+        let (
+            mut scenario_val,
+            user_invite_registry_val,
+            invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let invite_key = utf8(b"key");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_exists(
+                &user_invite_registry_val,
+                invite_key
+            );
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteNotAllowed)]
+    fun test_user_invite_assert_not_required_fail() {
+        let (
+            mut scenario_val,
+            user_invite_registry_val,
+            mut invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config_val,
+                true
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_not_required(&invite_config_val);
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteInvalid)]
+    fun test_user_invite_assert_validity_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let invite_code = utf8(b"");
+            let invite_key = utf8(b"key");
+            let invite_hash = create_hash_array(
+                b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+            );
+
+            let is_invite_valid = user_invite::is_invite_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            assert!(!is_invite_valid, ETestInviteInvalid);
+
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
         };
 
         ts::end(scenario_val);

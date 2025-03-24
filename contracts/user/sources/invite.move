@@ -18,9 +18,9 @@ module sage_user::user_invite {
 
     // --------------- Errors ---------------
 
-    const EInviteNotAllowed: u64 = 370;
-    const EInviteDoesNotExist: u64 = 371;
-    const EInviteInvalid: u64 = 372;
+    const EInviteDoesNotExist: u64 = 370;
+    const EInviteInvalid: u64 = 371;
+    const EInviteNotAllowed: u64 = 372;
 
     // --------------- Name Tag ---------------
 
