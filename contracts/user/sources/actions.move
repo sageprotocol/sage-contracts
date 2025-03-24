@@ -44,10 +44,9 @@ module sage_user::user_actions {
 
     // --------------- Errors ---------------
 
-    const ENoInvite: u64 = 370;
-    const ENotInvited: u64 = 371;
-    const ENoSelfJoin: u64 = 372;
-    const EUserNameMismatch: u64 = 373;
+    const EInviteRequired: u64 = 370;
+    const ENoSelfJoin: u64 = 371;
+    const EUserNameMismatch: u64 = 372;
 
     // --------------- Name Tag ---------------
 
@@ -111,8 +110,8 @@ module sage_user::user_actions {
         user_registry: &mut UserRegistry,
         user_invite_registry: &mut UserInviteRegistry,
         user_fees: &UserFees,
-        invite_code: String,
-        invite_key: String,
+        invite_code_option: Option<String>,
+        invite_key_option: Option<String>,
         avatar_hash: String,
         banner_hash: String,
         description: String,
@@ -130,46 +129,43 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let is_invite_included = invite_key.length() > 0;
+        let is_invite_included = option::is_some(&invite_code_option) && option::is_some(&invite_key_option);
 
         let is_invite_required = user_invite::is_invite_required(
             invite_config
         );
 
         assert!(
-            !is_invite_required || (is_invite_required && is_invite_included),
-            ENoInvite
+            !is_invite_required || is_invite_included,
+            EInviteRequired
         );
 
         let invited_by = if (is_invite_included) {
+            let invite_code = option::destroy_some(invite_code_option);
+            let invite_key = option::destroy_some(invite_key_option);
+
             user_invite::assert_invite_exists(
                 user_invite_registry,
                 invite_key
             );
 
-            let (hash, user) = user_invite::get_destructured_invite(
+            let (hash, user_address) = user_invite::get_destructured_invite(
                 user_invite_registry,
                 invite_key
             );
 
-            let is_invite_valid = if (!is_invite_required) {
-                true
-            } else {
-                user_invite::is_invite_valid(
-                    invite_code,
-                    invite_key,
-                    hash
-                )
-            };
-
-            assert!(is_invite_valid, ENotInvited);
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                hash
+            );
 
             user_invite::delete_invite(
                 user_invite_registry,
                 invite_key
             );
 
-            option::some(user)
+            option::some(user_address)
         } else {
             option::none()
         };

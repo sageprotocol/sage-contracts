@@ -33,9 +33,11 @@ module sage_user::test_user_actions {
     };
 
     use sage_user::{
+        test_user_invite::{Self},
         user::{Self, User},
         user_actions::{
             Self,
+            EInviteRequired,
             ENoSelfJoin,
             EUserNameMismatch
         },
@@ -49,9 +51,11 @@ module sage_user::test_user_actions {
             Self,
             InviteConfig,
             UserInviteRegistry,
+            EInviteDoesNotExist,
+            EInviteInvalid,
             EInviteNotAllowed
         },
-        user_registry::{Self, UserRegistry},
+        user_registry::{Self, UserRegistry}
     };
 
     // --------------- Constants ---------------
@@ -265,9 +269,8 @@ module sage_user::test_user_actions {
         ts::end(scenario_val);
     }
 
-    // TODO - go through invite branches
     #[test]
-    fun test_user_actions_create() {
+    fun test_user_actions_create_no_invite() {
         let (
             mut scenario_val,
             app,
@@ -285,8 +288,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -306,8 +307,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -372,6 +373,349 @@ module sage_user::test_user_actions {
     }
 
     #[test]
+    fun test_user_actions_create_with_invite() {
+        let (
+            mut scenario_val,
+            app,
+            authentication_config,
+            clock,
+            invite_config,
+            soul,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar_hash = utf8(b"avatar_hash");
+        let banner_hash = utf8(b"banner_hash");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        let invite_code = utf8(b"code");
+        let invite_key = utf8(b"key");
+        let invite_hash = test_user_invite::create_hash_array(
+            b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
+        );
+
+        ts::next_tx(scenario, SERVER);
+        {
+            user_invite::create_invite(
+                &mut user_invite_registry,
+                invite_hash,
+                invite_key,
+                SERVER
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::some(invite_code),
+                option::some(invite_key),
+                avatar_hash,
+                banner_hash,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let has_member = user_registry::has_address_record(
+                &user_registry,
+                ADMIN
+            );
+
+            assert!(has_member, EHasMember);
+
+            let has_member = user_registry::has_username_record(
+                &user_registry,
+                name
+            );
+
+            assert!(has_member, EHasMember);
+
+            let user = ts::take_shared<User>(scenario);
+
+            let retrieved_avatar = user::get_avatar(&user);
+            assert!(retrieved_avatar == avatar_hash, EUserAvatarMismatch);
+
+            let retrieved_banner = user::get_banner(&user);
+            assert!(retrieved_banner == banner_hash, EUserBannerMismatch);
+
+            let retrieved_description = user::get_description(&user);
+            assert!(retrieved_description == description, EUserDescriptionMismatch);
+
+            let retrieved_owner = user::get_owner(&user);
+            assert!(retrieved_owner == ADMIN, EUserOwnerMismatch);
+
+            let retrieved_key = user::get_key(&user);
+            assert!(retrieved_key == utf8(b"user-name"), EUserKeyMismatch);
+
+            let retrieved_name = user::get_name(&user);
+            assert!(retrieved_name == name, ETestUserNameMismatch);
+
+            ts::return_shared(user);
+
+            destroy_for_testing(
+                app,
+                authentication_config,
+                clock,
+                invite_config,
+                soul,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteRequired)]
+    fun test_user_actions_create_invite_required_not_included() {
+        let (
+            mut scenario_val,
+            app,
+            authentication_config,
+            clock,
+            mut invite_config,
+            soul,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar_hash = utf8(b"avatar_hash");
+        let banner_hash = utf8(b"banner_hash");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config,
+                true
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar_hash,
+                banner_hash,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy_for_testing(
+                app,
+                authentication_config,
+                clock,
+                invite_config,
+                soul,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteDoesNotExist)]
+    fun test_user_actions_create_invite_dne() {
+        let (
+            mut scenario_val,
+            app,
+            authentication_config,
+            clock,
+            invite_config,
+            soul,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar_hash = utf8(b"avatar_hash");
+        let banner_hash = utf8(b"banner_hash");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::some(utf8(b"code")),
+                option::some(utf8(b"key")),
+                avatar_hash,
+                banner_hash,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy_for_testing(
+                app,
+                authentication_config,
+                clock,
+                invite_config,
+                soul,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteInvalid)]
+    fun test_user_actions_create_invite_invalid() {
+        let (
+            mut scenario_val,
+            app,
+            authentication_config,
+            clock,
+            invite_config,
+            soul,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar_hash = utf8(b"avatar_hash");
+        let banner_hash = utf8(b"banner_hash");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        let invite_code = utf8(b"");
+        let invite_key = utf8(b"key");
+        let invite_hash = test_user_invite::create_hash_array(
+            b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
+        );
+
+        ts::next_tx(scenario, SERVER);
+        {
+            user_invite::create_invite(
+                &mut user_invite_registry,
+                invite_hash,
+                invite_key,
+                SERVER
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _user_address = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::some(invite_code),
+                option::some(invite_key),
+                avatar_hash,
+                banner_hash,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy_for_testing(
+                app,
+                authentication_config,
+                clock,
+                invite_config,
+                soul,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
     fun test_user_actions_create_incorrect_custom_payment() {
         let (
@@ -391,8 +735,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -412,8 +754,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -458,8 +800,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -479,8 +819,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -931,9 +1271,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -957,8 +1294,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -990,8 +1327,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1103,9 +1440,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -1129,8 +1463,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1162,8 +1496,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1232,9 +1566,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -1258,8 +1589,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1291,8 +1622,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1356,9 +1687,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -1382,8 +1710,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1415,8 +1743,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1480,9 +1808,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -1507,8 +1832,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1577,9 +1902,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -1603,8 +1925,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1636,8 +1958,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1719,9 +2041,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
-
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
@@ -1745,8 +2064,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1778,8 +2097,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1863,8 +2182,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1884,8 +2201,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1981,8 +2298,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2002,8 +2317,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2091,8 +2406,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2112,8 +2425,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2196,8 +2509,6 @@ module sage_user::test_user_actions {
         let avatar_hash = utf8(b"avatar_hash");
         let banner_hash = utf8(b"banner_hash");
         let description = utf8(b"description");
-        let invite_code = utf8(b"");
-        let invite_key = utf8(b"");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2217,8 +2528,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2317,9 +2628,6 @@ module sage_user::test_user_actions {
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
-            let invite_code = utf8(b"");
-            let invite_key = utf8(b"");
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2335,8 +2643,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2453,9 +2761,6 @@ module sage_user::test_user_actions {
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
-            let invite_code = utf8(b"");
-            let invite_key = utf8(b"");
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2471,8 +2776,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2574,9 +2879,6 @@ module sage_user::test_user_actions {
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
-            let invite_code = utf8(b"");
-            let invite_key = utf8(b"");
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2592,8 +2894,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2695,9 +2997,6 @@ module sage_user::test_user_actions {
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
-            let invite_code = utf8(b"");
-            let invite_key = utf8(b"");
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2713,8 +3012,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2816,9 +3115,6 @@ module sage_user::test_user_actions {
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
-            let invite_code = utf8(b"");
-            let invite_key = utf8(b"");
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2834,8 +3130,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2853,9 +3149,6 @@ module sage_user::test_user_actions {
             let description = utf8(b"description");
             let name = utf8(b"other-name");
 
-            let invite_code = utf8(b"");
-            let invite_key = utf8(b"");
-
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2871,8 +3164,8 @@ module sage_user::test_user_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                invite_code,
-                invite_key,
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
