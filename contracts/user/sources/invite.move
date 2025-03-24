@@ -104,7 +104,7 @@ module sage_user::user_invite {
             invite_hash
         );
 
-        assert!(!is_invite_valid, EInviteInvalid);
+        assert!(is_invite_valid, EInviteInvalid);
     }
 
     public fun get_destructured_invite(
