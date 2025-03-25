@@ -404,17 +404,17 @@ module sage_channel::test_channel_actions {
             let retrieved_name = channel::get_name(&channel);
             assert!(retrieved_name == name, ETestChannelNameMismatch);
 
-            let membership = channel::borrow_members_mut(&mut channel);
+            let follows = channel::borrow_follows_mut(&mut channel);
 
             let is_member = membership::is_member(
-                membership,
+                follows,
                 ADMIN
             );
 
             assert!(is_member, ETestIsNotMember);
 
             let length = membership::get_length(
-                membership
+                follows
             );
 
             assert!(length == 1, EMemberLengthMismatch);
@@ -755,17 +755,17 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let membership = channel::borrow_members_mut(&mut channel);
+            let follows = channel::borrow_follows_mut(&mut channel);
 
             let is_member = membership::is_member(
-                membership,
+                follows,
                 SERVER
             );
 
             assert!(is_member, ETestIsNotMember);
 
             let length = membership::get_length(
-                membership
+                follows
             );
 
             assert!(length == 2, EMemberLengthMismatch);
@@ -793,17 +793,17 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let membership = channel::borrow_members_mut(&mut channel);
+            let follows = channel::borrow_follows_mut(&mut channel);
 
             let is_member = membership::is_member(
-                membership,
+                follows,
                 SERVER
             );
 
             assert!(!is_member, EIsMember);
 
             let length = membership::get_length(
-                membership
+                follows
             );
 
             assert!(length == 1, EMemberLengthMismatch);
@@ -1381,8 +1381,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1546,8 +1546,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1734,8 +1734,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1858,8 +1858,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -1982,8 +1982,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2106,8 +2106,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2258,8 +2258,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,
@@ -2401,8 +2401,8 @@ module sage_channel::test_channel_actions {
                 &mut user_registry,
                 &mut user_invite_registry,
                 &user_fees,
-                utf8(b""),
-                utf8(b""),
+                option::none(),
+                option::none(),
                 avatar_hash,
                 banner_hash,
                 description,

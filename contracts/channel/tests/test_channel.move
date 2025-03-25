@@ -74,7 +74,7 @@ module sage_channel::test_channel {
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
-            let members = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
 
@@ -84,8 +84,8 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                follows,
                 channel_name,
-                members,
                 moderators,
                 channel_name,
                 posts,
@@ -97,7 +97,7 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun channel_borrow_members() {
+    fun channel_borrow_follows() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -107,7 +107,7 @@ module sage_channel::test_channel {
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
-            let members = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
 
@@ -117,8 +117,8 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                follows,
                 channel_name,
-                members,
                 moderators,
                 channel_name,
                 posts,
@@ -130,7 +130,7 @@ module sage_channel::test_channel {
         {
             let mut channel= ts::take_shared<Channel>(scenario);
 
-            let _members = channel::borrow_members_mut(&mut channel);
+            let _follows = channel::borrow_follows_mut(&mut channel);
 
             destroy(channel);
         };
@@ -149,7 +149,7 @@ module sage_channel::test_channel {
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
-            let members = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
 
@@ -159,8 +159,8 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                follows,
                 channel_name,
-                members,
                 moderators,
                 channel_name,
                 posts,
@@ -191,7 +191,7 @@ module sage_channel::test_channel {
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
-            let members = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
 
@@ -201,8 +201,8 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                follows,
                 channel_name,
-                members,
                 moderators,
                 channel_name,
                 posts,
@@ -233,7 +233,7 @@ module sage_channel::test_channel {
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
-            let members = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
 
@@ -243,8 +243,8 @@ module sage_channel::test_channel {
                 utf8(b"description"),
                 created_at,
                 ADMIN,
+                follows,
                 channel_name,
-                members,
                 moderators,
                 channel_name,
                 posts,

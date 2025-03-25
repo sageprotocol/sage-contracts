@@ -32,8 +32,8 @@ module sage_channel::channel {
         created_at: u64,
         created_by: address,
         description: String,
+        follows: Membership,
         key: String,
-        members: Membership,
         moderators: Moderation,
         name: String,
         posts: Posts,
@@ -104,10 +104,10 @@ module sage_channel::channel {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun borrow_members_mut(
+    public(package) fun borrow_follows_mut(
         channel: &mut Channel
     ): &mut Membership {
-        &mut channel.members
+        &mut channel.follows
     }
 
     public(package) fun borrow_moderators_mut(
@@ -128,8 +128,8 @@ module sage_channel::channel {
         description: String,
         created_at: u64,
         created_by: address,
+        follows: Membership,
         key: String,
-        members: Membership,
         moderators: Moderation,
         name: String,
         posts: Posts,
@@ -145,8 +145,8 @@ module sage_channel::channel {
             created_at,
             created_by,
             description,
+            follows,
             key,
-            members,
             moderators,
             name,
             posts,

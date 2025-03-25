@@ -61,7 +61,7 @@ module sage_channel::channel_actions {
         description: String
     }
 
-    public struct ChannelMembershipUpdate has copy, drop {
+    public struct ChannelFollowsUpdate has copy, drop {
         account_type: u8,
         channel_key: String,
         message: u8,
@@ -230,7 +230,7 @@ module sage_channel::channel_actions {
             &name
         );
 
-        let mut members = membership::create(ctx);
+        let mut follows = membership::create(ctx);
         let (
             moderators,
             moderation_message,
@@ -242,7 +242,7 @@ module sage_channel::channel_actions {
             membership_message,
             membership_type
         ) = membership::wallet_join(
-            &mut members,
+            &mut follows,
             self
         );
 
@@ -252,8 +252,8 @@ module sage_channel::channel_actions {
             description,
             created_at,
             self,
+            follows,
             channel_key,
-            members,
             moderators,
             name,
             posts,
@@ -282,7 +282,7 @@ module sage_channel::channel_actions {
             description
         });
 
-        event::emit(ChannelMembershipUpdate {
+        event::emit(ChannelFollowsUpdate {
             account_type: membership_type,
             channel_key,
             message: membership_message,
@@ -327,7 +327,7 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let membership = channel::borrow_members_mut(
+        let membership = channel::borrow_follows_mut(
             channel
         );
 
@@ -342,7 +342,7 @@ module sage_channel::channel_actions {
         let channel_key = channel::get_key(channel);
         let updated_at = clock.timestamp_ms();
 
-        event::emit(ChannelMembershipUpdate {
+        event::emit(ChannelFollowsUpdate {
             account_type,
             channel_key,
             message,
@@ -375,7 +375,7 @@ module sage_channel::channel_actions {
 
         let self = tx_context::sender(ctx);
 
-        let membership = channel::borrow_members_mut(
+        let membership = channel::borrow_follows_mut(
             channel
         );
 
@@ -390,7 +390,7 @@ module sage_channel::channel_actions {
         let channel_key = channel::get_key(channel);
         let updated_at = clock.timestamp_ms();
 
-        event::emit(ChannelMembershipUpdate {
+        event::emit(ChannelFollowsUpdate {
             account_type,
             channel_key,
             message,
@@ -420,12 +420,12 @@ module sage_channel::channel_actions {
     ): (address, u64) {
         let self = tx_context::sender(ctx);
 
-        let membership = channel::borrow_members_mut(
+        let follows = channel::borrow_follows_mut(
             channel
         );
 
         membership::assert_is_member(
-            membership,
+            follows,
             self
         );
 
