@@ -75,20 +75,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 key,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };
@@ -135,20 +139,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 name,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };
@@ -170,20 +178,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 name,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };
@@ -192,7 +204,7 @@ module sage_user::test_user {
     }
 
     #[test]
-    fun test_user_borrow_members() {
+    fun test_user_borrow_follows() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
@@ -205,20 +217,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 key,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };
@@ -227,7 +243,7 @@ module sage_user::test_user {
         {
             let mut user = ts::take_shared<User>(scenario);
 
-            let _members = user::borrow_members_mut(&mut user);
+            let _follows = user::borrow_follows_mut(&mut user);
 
             ts::return_shared(user);
         };
@@ -249,20 +265,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 key,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };
@@ -292,20 +312,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 name,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };
@@ -366,20 +390,24 @@ module sage_user::test_user {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let membership = membership::create(ts::ctx(scenario));
+            let channel_following = membership::create(ts::ctx(scenario));
+            let follows = membership::create(ts::ctx(scenario));
             let posts = posts::create(ts::ctx(scenario));
+            let user_following = membership::create(ts::ctx(scenario));
 
             let _user_address = user::create(
                 avatar_hash,
                 banner_hash,
+                channel_following,
                 created_at,
                 description,
+                follows,
                 name,
                 ADMIN,
-                membership,
                 name,
                 posts,
                 SOUL,
+                user_following,
                 ts::ctx(scenario)
             );
         };

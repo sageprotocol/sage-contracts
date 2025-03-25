@@ -28,15 +28,17 @@ module sage_user::user {
         id: UID,
         avatar_hash: String,
         banner_hash: String,
+        channel_following: Membership,
         created_at: u64,
         description: String,
+        follows: Membership,
         key: String,
         owner: address,
-        members: Membership,
         name: String,
         posts: Posts,
         soul: address,
         total_earnings: u64,
+        user_following: Membership,
         updated_at: u64
     }
 
@@ -104,10 +106,16 @@ module sage_user::user {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun borrow_members_mut(
+    public(package) fun borrow_channel_following_mut(
         user: &mut User
     ): &mut Membership {
-        &mut user.members
+        &mut user.channel_following
+    }
+
+    public(package) fun borrow_follows_mut(
+        user: &mut User
+    ): &mut Membership {
+        &mut user.follows
     }
 
     public(package) fun borrow_posts_mut(
@@ -116,17 +124,25 @@ module sage_user::user {
         &mut user.posts
     }
 
+    public(package) fun borrow_user_following_mut(
+        user: &mut User
+    ): &mut Membership {
+        &mut user.user_following
+    }
+
     public(package) fun create(
         avatar_hash: String,
         banner_hash: String,
+        channel_following: Membership,
         created_at: u64,
         description: String,
+        follows: Membership,
         key: String,
         owner: address,
-        members: Membership,
         name: String,
         posts: Posts,
         soul: address,
+        user_following: Membership,
         ctx: &mut TxContext
     ): address {
         assert_user_name(&name);
@@ -136,15 +152,17 @@ module sage_user::user {
             id: object::new(ctx),
             avatar_hash,
             banner_hash,
+            channel_following,
             created_at,
             description,
+            follows,
             key,
             owner,
-            members,
             name,
             posts,
             soul,
             total_earnings: 0,
+            user_following,
             updated_at: created_at
         };
 

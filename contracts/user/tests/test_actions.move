@@ -1256,7 +1256,7 @@ module sage_user::test_user_actions {
     }
 
     #[test]
-    fun test_user_actions_membership() {
+    fun test_user_actions_follows() {
         let (
             mut scenario_val,
             app,
@@ -1358,17 +1358,17 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let membership = user::borrow_members_mut(&mut other_user);
+            let follows = user::borrow_follows_mut(&mut other_user);
 
             let is_member = membership::is_member(
-                membership,
+                follows,
                 ADMIN
             );
 
             assert!(is_member, EUserNotMember);
 
             let member_length = membership::get_length(
-                membership
+                follows
             );
 
             assert!(member_length == 1, EUserMembershipCountMismatch);
@@ -1391,7 +1391,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let membership = user::borrow_members_mut(&mut other_user);
+            let membership = user::borrow_follows_mut(&mut other_user);
 
             let is_member = membership::is_member(
                 membership,

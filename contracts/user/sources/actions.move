@@ -103,7 +103,6 @@ module sage_user::user_actions {
 
     // --------------- Public Functions ---------------
 
-    // TODO - invite code / key as Option type
     public fun create<CoinType> (
         clock: &Clock,
         invite_config: &InviteConfig,
@@ -176,24 +175,28 @@ module sage_user::user_actions {
             &name
         );
 
-        let members = membership::create(ctx);
+        let channel_following = membership::create(ctx);
+        let follows = membership::create(ctx);
         let posts = posts::create(ctx);
         let soul_address = soul::create(
             user_key,
             ctx
         );
+        let user_following = membership::create(ctx);
 
         let user_address = user::create(
             avatar_hash,
             banner_hash,
+            channel_following,
             created_at,
             description,
+            follows,
             user_key,
             self,
-            members,
             name,
             posts,
             soul_address,
+            user_following,
             ctx
         );
 
@@ -319,13 +322,13 @@ module sage_user::user_actions {
 
         assert!(self != user_address, ENoSelfJoin);
 
-        let membership = user::borrow_members_mut(user);
+        let follows = user::borrow_follows_mut(user);
 
         let (
             membership_message,
             membership_type
         ) = membership::wallet_join(
-            membership,
+            follows,
             self
         );
 
@@ -365,13 +368,13 @@ module sage_user::user_actions {
         let self = tx_context::sender(ctx);
         let user_address = user::get_owner(user);
 
-        let membership = user::borrow_members_mut(user);
+        let follows = user::borrow_follows_mut(user);
 
         let (
             membership_message,
             membership_type
         ) = membership::wallet_leave(
-            membership,
+            follows,
             self
         );
 
