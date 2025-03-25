@@ -1347,7 +1347,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &soul,
@@ -1382,7 +1382,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::leave<SUI>(
+            user_actions::unfollow<SUI>(
                 &clock,
                 &mut other_user,
                 &user_fees,
@@ -1425,7 +1425,7 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_user_actions_join_auth_fail() {
+    fun test_user_actions_follow_auth_fail() {
         let (
             mut scenario_val,
             app,
@@ -1520,7 +1520,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, InvalidAuthSoul>(
+            user_actions::follow<SUI, InvalidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &invalid_soul,
@@ -1551,7 +1551,7 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_user_actions_join_incorrect_custom_payment() {
+    fun test_user_actions_follow_incorrect_custom_payment() {
         let (
             mut scenario_val,
             app,
@@ -1642,7 +1642,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &soul,
@@ -1672,7 +1672,7 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_user_actions_join_incorrect_sui_payment() {
+    fun test_user_actions_follow_incorrect_sui_payment() {
         let (
             mut scenario_val,
             app,
@@ -1763,7 +1763,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &soul,
@@ -1793,7 +1793,7 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = ENoSelfJoin)]
-    fun test_user_actions_join_no_self() {
+    fun test_user_actions_follow_no_self() {
         let (
             mut scenario_val,
             app,
@@ -1857,7 +1857,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &soul,
@@ -1887,7 +1887,7 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_user_actions_leave_incorrect_custom_payment() {
+    fun test_user_actions_unfollow_incorrect_custom_payment() {
         let (
             mut scenario_val,
             app,
@@ -1978,7 +1978,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &soul,
@@ -1998,7 +1998,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::leave<SUI>(
+            user_actions::unfollow<SUI>(
                 &clock,
                 &mut other_user,
                 &user_fees,
@@ -2026,7 +2026,7 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_user_actions_leave_incorrect_sui_payment() {
+    fun test_user_actions_unfollow_incorrect_sui_payment() {
         let (
             mut scenario_val,
             app,
@@ -2117,7 +2117,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::join<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
                 &soul,
@@ -2137,7 +2137,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::leave<SUI>(
+            user_actions::unfollow<SUI>(
                 &clock,
                 &mut other_user,
                 &user_fees,

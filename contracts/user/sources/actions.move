@@ -293,7 +293,7 @@ module sage_user::user_actions {
         );
     }
 
-    public fun join<CoinType, SoulType: key> (
+    public fun follow<CoinType, SoulType: key> (
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
         soul: &SoulType,
@@ -348,7 +348,7 @@ module sage_user::user_actions {
         );
     }
 
-    public fun leave<CoinType> (
+    public fun unfollow<CoinType> (
         clock: &Clock,
         user: &mut User,
         user_fees: &UserFees,
