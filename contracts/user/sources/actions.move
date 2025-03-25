@@ -71,7 +71,7 @@ module sage_user::user_actions {
         user_name: String
     }
 
-    public struct UserMembershipUpdate has copy, drop {
+    public struct UserFollowsUpdate has copy, drop {
         account_type: u8,
         followed_user: address,
         message: u8,
@@ -330,7 +330,7 @@ module sage_user::user_actions {
 
         let updated_at = clock.timestamp_ms();
 
-        event::emit(UserMembershipUpdate {
+        event::emit(UserFollowsUpdate {
             account_type: membership_type,
             followed_user: user_address,
             message: membership_message,
@@ -376,7 +376,7 @@ module sage_user::user_actions {
 
         let updated_at = clock.timestamp_ms();
 
-        event::emit(UserMembershipUpdate {
+        event::emit(UserFollowsUpdate {
             account_type: membership_type,
             followed_user: user_address,
             message: membership_message,
