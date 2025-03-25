@@ -346,13 +346,45 @@ module sage_channel::test_channel {
 
     #[test]
     #[expected_failure(abort_code = EInvalidChannelName)]
-    fun channel_assert_name_fail() {
+    fun channel_assert_name_format_fail() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
             let name = utf8(b"name-");
+
+            channel::assert_channel_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidChannelName)]
+    fun channel_assert_name_length_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"CHANNELnameCHANNELname");
+
+            channel::assert_channel_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidChannelName)]
+    fun channel_assert_name_symbol_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"channel*name");
 
             channel::assert_channel_name(&name);
         };

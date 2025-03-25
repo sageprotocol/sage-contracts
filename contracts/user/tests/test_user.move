@@ -459,13 +459,45 @@ module sage_user::test_user {
 
     #[test]
     #[expected_failure(abort_code = EInvalidUsername)]
-    fun test_user_assert_name_fail() {
+    fun test_user_assert_name_format_fail() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let name = utf8(b"abcdefghijklmnopqrstuvwxyz");
+            let name = utf8(b"USERname-");
+
+            user::assert_user_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_assert_name_length_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"USERnameUSERnameUSERn");
+
+            user::assert_user_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_assert_name_symbol_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"USER*name");
 
             user::assert_user_name(&name);
         };
