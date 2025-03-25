@@ -175,19 +175,16 @@ module sage_user::user_actions {
             &name
         );
 
-        let channel_following = membership::create(ctx);
         let follows = membership::create(ctx);
         let posts = posts::create(ctx);
         let soul_address = soul::create(
             user_key,
             ctx
         );
-        let user_following = membership::create(ctx);
 
         let user_address = user::create(
             avatar_hash,
             banner_hash,
-            channel_following,
             created_at,
             description,
             follows,
@@ -196,7 +193,6 @@ module sage_user::user_actions {
             name,
             posts,
             soul_address,
-            user_following,
             ctx
         );
 
