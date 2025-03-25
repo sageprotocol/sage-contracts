@@ -2,7 +2,14 @@
 module sage_user::test_user {
     use std::string::{utf8};
 
-    use sui::test_scenario::{Self as ts};
+    use sui::{
+        test_scenario::{Self as ts},
+        test_utils::{destroy}
+    };
+
+    use sage_admin::{
+        apps::{Self}
+    };
 
     use sage_shared::{
         membership::{Self},
@@ -21,7 +28,9 @@ module sage_user::test_user {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const OTHER: address = @0xCAFE;
     const SOUL: address = @0xBABE;
+    const SERVER: address = @server;
 
     // --------------- Errors ---------------
 
@@ -29,9 +38,18 @@ module sage_user::test_user {
     const EUserAvatarMismatch: u64 = 1;
     const EUserBannerMismatch: u64 = 2;
     const EUserDescriptionMismatch: u64 = 3;
-    const EUserKeyMismatch: u64 = 4;
-    const EUserOwnerMismatch: u64 = 5;
-    const EUserNameMismatch: u64 = 6;
+    const EUserFavoritesLengthMismatch: u64 = 4;
+    const EUserKeyMismatch: u64 = 5;
+    const EUserOwnerMismatch: u64 = 6;
+    const EUserNameMismatch: u64 = 7;
+    const EUserPropertyMismatch: u64 = 8;
+
+    // --------------- Name Tag ---------------
+
+    #[test_only]
+    public struct FakeChannel has key {
+        id: UID
+    }
 
     // --------------- Test Functions ---------------
 
@@ -500,6 +518,287 @@ module sage_user::test_user {
             let name = utf8(b"USER*name");
 
             user::assert_user_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_app_specific_string() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            apps::init_for_testing(ts::ctx(scenario));
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let app_name = utf8(b"sage");
+
+            let app = apps::create_for_testing(
+                app_name,
+                ts::ctx(scenario)
+            );
+
+            let (
+                property_name,
+                retrieved_app_name
+            ) = user::create_app_specific_string_for_testing(
+                &app,
+                utf8(b"my-property")
+            );
+
+            assert!(property_name == utf8(b"sage-my-property"), EUserPropertyMismatch);
+            assert!(app_name == retrieved_app_name, EUserPropertyMismatch);
+
+            destroy(app);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_add_favorite_channel() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let avatar_hash = utf8(b"avatar-hash");
+        let banner_hash = utf8(b"banner-hash");
+        let created_at: u64 = 999;
+        let description = utf8(b"description");
+        let key = utf8(b"user-name");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            apps::init_for_testing(ts::ctx(scenario));
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let follows = membership::create(ts::ctx(scenario));
+            let posts = posts::create(ts::ctx(scenario));
+
+            let _user_address = user::create(
+                avatar_hash,
+                banner_hash,
+                created_at,
+                description,
+                follows,
+                key,
+                ADMIN,
+                name,
+                posts,
+                SOUL,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            app,
+            mut self_user
+        ) = {
+            let app = apps::create_for_testing(
+                utf8(b"sage"),
+                ts::ctx(scenario)
+            );
+
+            let channel = FakeChannel {
+                id: object::new(ts::ctx(scenario))
+            };
+
+            let mut self_user = ts::take_shared<User>(scenario);
+
+            user::add_favorite_channel<FakeChannel>(
+                &app,
+                &channel,
+                &mut self_user,
+                ts::ctx(scenario)
+            );
+
+            let length = user::get_channel_favorites_length(
+                &app,
+                &mut self_user
+            );
+
+            assert!(length == 1, EUserFavoritesLengthMismatch);
+
+            destroy(channel);
+
+            (
+                app,
+                self_user
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel = FakeChannel {
+                id: object::new(ts::ctx(scenario))
+            };
+
+            user::add_favorite_channel<FakeChannel>(
+                &app,
+                &channel,
+                &mut self_user,
+                ts::ctx(scenario)
+            );
+
+            let length = user::get_channel_favorites_length(
+                &app,
+                &mut self_user
+            );
+
+            assert!(length == 2, EUserFavoritesLengthMismatch);
+
+            destroy(app);
+            destroy(channel);
+
+            ts::return_shared(self_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_add_favorite_user() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let avatar_hash = utf8(b"avatar-hash");
+        let banner_hash = utf8(b"banner-hash");
+        let created_at: u64 = 999;
+        let description = utf8(b"description");
+        let key = utf8(b"user-name");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            apps::init_for_testing(ts::ctx(scenario));
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let follows = membership::create(ts::ctx(scenario));
+            let posts = posts::create(ts::ctx(scenario));
+
+            let _user_address = user::create(
+                avatar_hash,
+                banner_hash,
+                created_at,
+                description,
+                follows,
+                key,
+                ADMIN,
+                name,
+                posts,
+                SOUL,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let follows = membership::create(ts::ctx(scenario));
+            let posts = posts::create(ts::ctx(scenario));
+
+            let _user_address = user::create(
+                avatar_hash,
+                banner_hash,
+                created_at,
+                description,
+                follows,
+                key,
+                ADMIN,
+                name,
+                posts,
+                SOUL,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let follows = membership::create(ts::ctx(scenario));
+            let posts = posts::create(ts::ctx(scenario));
+
+            let _user_address = user::create(
+                avatar_hash,
+                banner_hash,
+                created_at,
+                description,
+                follows,
+                key,
+                ADMIN,
+                name,
+                posts,
+                SOUL,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            app,
+            other_user,
+            server_user,
+            mut self_user
+        ) = {
+            let app = apps::create_for_testing(
+                utf8(b"sage"),
+                ts::ctx(scenario)
+            );
+
+            let other_user = ts::take_shared<User>(scenario);
+            let server_user = ts::take_shared<User>(scenario);
+            let mut self_user = ts::take_shared<User>(scenario);
+
+            user::add_favorite_user(
+                &app,
+                &mut self_user,
+                &other_user,
+                ts::ctx(scenario)
+            );
+
+            let length = user::get_user_favorites_length(
+                &app,
+                &mut self_user
+            );
+
+            assert!(length == 1, EUserFavoritesLengthMismatch);
+
+            (
+                app,
+                other_user,
+                server_user,
+                self_user
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user::add_favorite_user(
+                &app,
+                &mut self_user,
+                &server_user,
+                ts::ctx(scenario)
+            );
+
+            let length = user::get_user_favorites_length(
+                &app,
+                &mut self_user
+            );
+
+            assert!(length == 2, EUserFavoritesLengthMismatch);
+
+            destroy(app);
+
+            ts::return_shared(other_user);
+            ts::return_shared(server_user);
+            ts::return_shared(self_user);
         };
 
         ts::end(scenario_val);

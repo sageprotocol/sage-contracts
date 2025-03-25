@@ -1,7 +1,18 @@
 module sage_user::user {
-    use std::string::{String};
+    use std::{
+        string::{String, utf8}
+    };
+
+    use sui::{
+        dynamic_field::{Self}
+    };
+
+    use sage_admin::{
+        apps::{Self, App}
+    };
 
     use sage_shared::{
+        favorites::{Self, Favorites},
         membership::{Membership},
         posts::{Posts}
     };
@@ -102,7 +113,159 @@ module sage_user::user {
         user.name
     }
 
+    public fun get_channel_favorites_length(
+        app: &App,
+        user: &mut User
+    ): u64 {
+        let (
+            favorites_key,
+            _app_name
+        ) = create_app_specific_string(
+            app,
+            utf8(b"favorite-channels")
+        );
+
+        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
+            &user.id,
+            favorites_key
+        );
+
+        if (does_exist) {
+            let favorites = dynamic_field::borrow_mut<String, Favorites>(
+                &mut user.id,
+                favorites_key
+            );
+
+            favorites.get_length()
+        } else {
+            0
+        }
+    }
+
+    public fun get_user_favorites_length(
+        app: &App,
+        user: &mut User
+    ): u64 {
+        let (
+            favorites_key,
+            _app_name
+        ) = create_app_specific_string(
+            app,
+            utf8(b"favorite-users")
+        );
+
+        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
+            &user.id,
+            favorites_key
+        );
+
+        if (does_exist) {
+            let favorites = dynamic_field::borrow_mut<String, Favorites>(
+                &mut user.id,
+                favorites_key
+            );
+
+            favorites.get_length()
+        } else {
+            0
+        }
+    }
+
     // --------------- Friend Functions ---------------
+
+    public(package) fun add_favorite_channel<ChannelType: key>(
+        app: &App,
+        channel: &ChannelType,
+        user: &mut User,
+        ctx: &mut TxContext
+    ): (String, address, address) {
+        let (
+            favorites_key,
+            app_name
+        ) = create_app_specific_string(
+            app,
+            utf8(b"favorite-channels")
+        );
+
+        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
+            &user.id,
+            favorites_key
+        );
+
+        let favorite_channel_address = object::id_address(channel);
+
+        if (does_exist) {
+            let favorites = dynamic_field::borrow_mut<String, Favorites>(
+                &mut user.id,
+                favorites_key
+            );
+
+            favorites.add(favorite_channel_address);
+        } else {
+            let mut favorites = favorites::create(ctx);
+
+            favorites.add(favorite_channel_address);
+
+            dynamic_field::add(
+                &mut user.id,
+                favorites_key,
+                favorites
+            );
+        };
+
+        (
+            app_name,
+            user.id.to_address(),
+            favorite_channel_address
+        )
+    }
+
+    public(package) fun add_favorite_user(
+        app: &App,
+        self_user: &mut User,
+        favorite_user: &User,
+        ctx: &mut TxContext
+    ): (String, address, address) {
+        let (
+            favorites_key,
+            app_name
+        ) = create_app_specific_string(
+            app,
+            utf8(b"favorite-users")
+        );
+
+        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
+            &self_user.id,
+            favorites_key
+        );
+
+        let favorite_user_address = favorite_user.id.to_address();
+
+        if (does_exist) {
+            let favorites = dynamic_field::borrow_mut<String, Favorites>(
+                &mut self_user.id,
+                favorites_key
+            );
+
+            favorites.add(favorite_user_address);
+        } else {
+            let mut favorites = favorites::create(ctx);
+
+            favorites.add(favorite_user_address);
+
+            dynamic_field::add(
+                &mut self_user.id,
+                favorites_key,
+                favorites
+            );
+        };
+
+        (
+            app_name,
+            self_user.id.to_address(),
+            favorite_user_address
+        )
+    }
 
     public(package) fun borrow_follows_mut(
         user: &mut User
@@ -174,6 +337,23 @@ module sage_user::user {
 
     // --------------- Internal Functions ---------------
 
+    fun create_app_specific_string(
+        app: &App,
+        property: String
+    ): (String, String) {
+        let mut app_specific_property = apps::get_name(app);
+
+        let app_name = app_specific_property;
+
+        app_specific_property.append(utf8(b"-"));
+        app_specific_property.append(property);
+
+        (
+            app_specific_property,
+            app_name
+        )
+    }
+
     fun is_valid_description(
         description: &String
     ): bool {
@@ -187,6 +367,17 @@ module sage_user::user {
     }
 
     // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun create_app_specific_string_for_testing(
+        app: &App,
+        property: String
+    ): (String, String) {
+        create_app_specific_string(
+            app,
+            property
+        )
+    }
 
     #[test_only]
     public fun is_valid_description_for_testing(
