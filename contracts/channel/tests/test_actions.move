@@ -682,7 +682,7 @@ module sage_channel::test_channel_actions {
     }
 
     #[test]
-    fun test_channel_actions_membership() {
+    fun test_channel_actions_follows() {
         let (
             mut scenario_val,
             app,
@@ -744,7 +744,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::join<SUI, ValidAuthSoul>(
+            channel_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -784,7 +784,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::leave<SUI>(
+            channel_actions::unfollow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
@@ -829,7 +829,7 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_channel_actions_join_auth_fail() {
+    fun test_channel_actions_follow_auth_fail() {
         let (
             mut scenario_val,
             app,
@@ -895,7 +895,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::join<SUI, InvalidAuthSoul>(
+            channel_actions::follow<SUI, InvalidAuthSoul>(
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -929,7 +929,7 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_channel_actions_join_incorrect_custom_payment() {
+    fun test_channel_actions_follow_incorrect_custom_payment() {
         let (
             mut scenario_val,
             app,
@@ -991,7 +991,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::join<SUI, ValidAuthSoul>(
+            channel_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -1023,7 +1023,7 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_channel_actions_join_incorrect_sui_payment() {
+    fun test_channel_actions_follow_incorrect_sui_payment() {
         let (
             mut scenario_val,
             app,
@@ -1085,7 +1085,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::join<SUI, ValidAuthSoul>(
+            channel_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -1117,7 +1117,7 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_channel_actions_leave_incorrect_custom_payment() {
+    fun test_channel_actions_unfollow_incorrect_custom_payment() {
         let (
             mut scenario_val,
             app,
@@ -1179,7 +1179,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::join<SUI, ValidAuthSoul>(
+            channel_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -1199,7 +1199,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::leave<SUI>(
+            channel_actions::unfollow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
@@ -1229,7 +1229,7 @@ module sage_channel::test_channel_actions {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_channel_actions_leave_incorrect_sui_payment() {
+    fun test_channel_actions_unfollow_incorrect_sui_payment() {
         let (
             mut scenario_val,
             app,
@@ -1291,7 +1291,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::join<SUI, ValidAuthSoul>(
+            channel_actions::follow<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &mut channel,
                 &channel_fees,
@@ -1311,7 +1311,7 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::leave<SUI>(
+            channel_actions::unfollow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,

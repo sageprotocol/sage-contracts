@@ -301,7 +301,7 @@ module sage_channel::channel_actions {
         channel_address
     }
 
-    public fun join<CoinType, SoulType: key> (
+    public fun follow<CoinType, SoulType: key> (
         authentication_config: &AuthenticationConfig,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
@@ -335,54 +335,6 @@ module sage_channel::channel_actions {
             message,
             account_type
         ) = membership::wallet_join(
-            membership,
-            self
-        );
-
-        let channel_key = channel::get_key(channel);
-        let updated_at = clock.timestamp_ms();
-
-        event::emit(ChannelFollowsUpdate {
-            account_type,
-            channel_key,
-            message,
-            updated_at,
-            user: self
-        });
-
-        fees::collect_payment<CoinType>(
-            custom_payment,
-            sui_payment
-        );
-    }
-
-    public fun leave<CoinType> (
-        channel: &mut Channel,
-        channel_fees: &ChannelFees,
-        clock: &Clock,
-        custom_payment: Coin<CoinType>,
-        sui_payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ) {
-        let (
-            custom_payment,
-            sui_payment
-        ) = channel_fees::assert_leave_channel_payment<CoinType>(
-            channel_fees,
-            custom_payment,
-            sui_payment
-        );
-
-        let self = tx_context::sender(ctx);
-
-        let membership = channel::borrow_follows_mut(
-            channel
-        );
-
-        let (
-            message,
-            account_type
-        ) = membership::wallet_leave(
             membership,
             self
         );
@@ -563,6 +515,54 @@ module sage_channel::channel_actions {
             moderator_type,
             updated_at,
             user: user_address
+        });
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+    }
+
+    public fun unfollow<CoinType> (
+        channel: &mut Channel,
+        channel_fees: &ChannelFees,
+        clock: &Clock,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let (
+            custom_payment,
+            sui_payment
+        ) = channel_fees::assert_leave_channel_payment<CoinType>(
+            channel_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        let self = tx_context::sender(ctx);
+
+        let membership = channel::borrow_follows_mut(
+            channel
+        );
+
+        let (
+            message,
+            account_type
+        ) = membership::wallet_leave(
+            membership,
+            self
+        );
+
+        let channel_key = channel::get_key(channel);
+        let updated_at = clock.timestamp_ms();
+
+        event::emit(ChannelFollowsUpdate {
+            account_type,
+            channel_key,
+            message,
+            updated_at,
+            user: self
         });
 
         fees::collect_payment<CoinType>(
