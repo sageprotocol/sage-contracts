@@ -24,6 +24,7 @@ module sage_admin::test_apps {
 
     const EAppAddressMismatch: u64 = 0;
     const EMissingAppRecord: u64 = 1;
+    const EAppPropertyMismatch: u64 = 2;
 
     // --------------- Test Functions ---------------
 
@@ -149,6 +150,42 @@ module sage_admin::test_apps {
                 app,
                 app_registry_val
             );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun create_app_specific_string() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            apps::init_for_testing(ts::ctx(scenario));
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let app_name = utf8(b"sage");
+
+            let app = apps::create_for_testing(
+                app_name,
+                ts::ctx(scenario)
+            );
+
+            let (
+                property_name,
+                retrieved_app_name
+            ) = apps::create_app_specific_string(
+                &app,
+                utf8(b"my-property")
+            );
+
+            assert!(property_name == utf8(b"sage-my-property"), EAppPropertyMismatch);
+            assert!(app_name == retrieved_app_name, EAppPropertyMismatch);
+
+            destroy(app);
         };
 
         ts::end(scenario_val);
