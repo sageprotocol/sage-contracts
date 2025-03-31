@@ -1,6 +1,6 @@
 module sage_admin::apps {
     use std::{
-        string::{String}
+        string::{String, utf8}
     };
 
     use sui::{
@@ -62,6 +62,23 @@ module sage_admin::apps {
             name,
             value
         );
+    }
+
+    public fun create_app_specific_string(
+        app: &App,
+        property: String
+    ): (String, String) {
+        let mut app_specific_property = get_name(app);
+
+        let app_name = app_specific_property;
+
+        app_specific_property.append(utf8(b"-"));
+        app_specific_property.append(property);
+
+        (
+            app_specific_property,
+            app_name
+        )
     }
 
     public fun get_address(
