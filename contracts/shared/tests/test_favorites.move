@@ -16,7 +16,8 @@ module sage_shared::test_favorites {
     // --------------- Errors ---------------
 
     const EFavoritesMismatch: u64 = 0;
-    const ENoFavoritesRecord: u64 = 1;
+    const EFavoritesRecord: u64 = 1;
+    const ENoFavoritesRecord: u64 = 2;
 
     // --------------- Test Functions ---------------
 
@@ -61,6 +62,43 @@ module sage_shared::test_favorites {
             let length = favorites::get_length(&favorites);
 
             assert!(length == 1, EFavoritesMismatch);
+
+            destroy(favorites);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_favorites_remove() {
+        let mut scenario_val = ts::begin(ADMIN);
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut favorites = favorites::create(ts::ctx(scenario));
+
+            favorites::add(
+                &mut favorites,
+                ADMIN
+            );
+
+            favorites::remove(
+                &mut favorites,
+                ADMIN
+            );
+
+            let has_favorited = favorites::has_favorited(
+                &favorites,
+                ADMIN
+            );
+
+            assert!(!has_favorited, EFavoritesRecord);
+
+            let length = favorites::get_length(&favorites);
+
+            assert!(length == 0, EFavoritesMismatch);
 
             destroy(favorites);
         };
