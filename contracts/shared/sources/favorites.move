@@ -65,6 +65,13 @@ module sage_shared::favorites {
         favorites.favorites.contains(key)
     }
 
+    public fun remove(
+        favorites: &mut Favorites,
+        key: address
+    ) {
+        favorites.favorites.remove(key);
+    }
+
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
