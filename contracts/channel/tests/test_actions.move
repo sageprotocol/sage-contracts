@@ -200,7 +200,7 @@ module sage_channel::test_channel_actions {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            authentication::update_soul<ValidAuthSoul>(
+            authentication::update_type<ValidAuthSoul>(
                 &admin_cap,
                 &mut authentication_config
             );

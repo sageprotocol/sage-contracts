@@ -119,7 +119,7 @@ module sage_admin::test_authentication {
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            authentication::update_soul<ValidAuthSoul>(
+            authentication::update_type<ValidAuthSoul>(
                 &admin_cap,
                 &mut authentication_config
             );
@@ -178,7 +178,7 @@ module sage_admin::test_authentication {
         let invalid_auth_soul = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            authentication::update_soul<ValidAuthSoul>(
+            authentication::update_type<ValidAuthSoul>(
                 &admin_cap,
                 &mut authentication_config
             );

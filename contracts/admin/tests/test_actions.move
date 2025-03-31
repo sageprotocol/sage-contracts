@@ -94,7 +94,7 @@ module sage_admin::test_actions {
 
             let mut authentication_config = ts::take_shared<AuthenticationConfig>(scenario);
 
-            authentication::update_soul<ValidAuthSoul>(
+            authentication::update_type<ValidAuthSoul>(
                 &admin_cap,
                 &mut authentication_config
             );
