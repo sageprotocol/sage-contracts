@@ -21,7 +21,8 @@ module sage_user::test_user_registry {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
-    const USER: address = @0xBABE;
+    const OWNED_USER: address = @0xBABE;
+    const SHARED_USER: address = @0xCAFE;
 
     // --------------- Errors ---------------
 
@@ -84,7 +85,8 @@ module sage_user::test_user_registry {
                 user_registry,
                 name,
                 ADMIN,
-                USER
+                OWNED_USER,
+                SHARED_USER
             );
 
             let owner_address = user_registry::get_owner_address_from_key(
@@ -94,12 +96,19 @@ module sage_user::test_user_registry {
 
             assert!(owner_address == ADMIN, EUserMismatch);
 
-            let user_obj_address = user_registry::get_user_address_from_key(
+            let owned_user_obj_address = user_registry::get_owned_user_address_from_key(
                 user_registry,
                 name
             );
 
-            assert!(user_obj_address == USER, EUserMismatch);
+            assert!(owned_user_obj_address == OWNED_USER, EUserMismatch);
+
+            let shared_user_obj_address = user_registry::get_shared_user_address_from_key(
+                user_registry,
+                name
+            );
+
+            assert!(shared_user_obj_address == SHARED_USER, EUserMismatch);
 
             let user_key = user_registry::get_key_from_owner_address(
                 user_registry,
@@ -108,9 +117,16 @@ module sage_user::test_user_registry {
 
             assert!(user_key == name, EUserMismatch);
 
-            let user_key = user_registry::get_key_from_user_address(
+            let user_key = user_registry::get_key_from_owned_user_address(
                 user_registry,
-                USER
+                OWNED_USER
+            );
+
+            assert!(user_key == name, EUserMismatch);
+
+            let user_key = user_registry::get_key_from_shared_user_address(
+                user_registry,
+                SHARED_USER
             );
 
             assert!(user_key == name, EUserMismatch);
@@ -154,7 +170,8 @@ module sage_user::test_user_registry {
                 user_registry,
                 name,
                 ADMIN,
-                USER
+                OWNED_USER,
+                SHARED_USER
             );
 
             user_registry::assert_user_address_exists(

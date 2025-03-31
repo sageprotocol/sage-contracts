@@ -25,15 +25,15 @@ module sage_user::user_actions {
     };
 
     use sage_user::{
-        soul::{Self},
-        user::{Self, User},
         user_fees::{Self, UserFees},
         user_invite::{
             Self,
             InviteConfig,
             UserInviteRegistry
         },
-        user_registry::{Self, UserRegistry}
+        user_owned::{Self, UserOwned},
+        user_registry::{Self, UserRegistry},
+        user_shared::{Self, UserShared}
     };
 
     use sage_utils::{
@@ -42,11 +42,18 @@ module sage_user::user_actions {
 
     // --------------- Constants ---------------
 
+    const DESCRIPTION_MAX_LENGTH: u64 = 370;
+
+    const USERNAME_MIN_LENGTH: u64 = 3;
+    const USERNAME_MAX_LENGTH: u64 = 20;
+
     // --------------- Errors ---------------
 
-    const EInviteRequired: u64 = 370;
-    const ENoSelfJoin: u64 = 371;
-    const EUserNameMismatch: u64 = 372;
+    const EInvalidUserDescription: u64 = 370;
+    const EInvalidUsername: u64 = 371;
+    const EInviteRequired: u64 = 372;
+    const ENoSelfJoin: u64 = 373;
+    const EUserNameMismatch: u64 = 374;
 
     // --------------- Name Tag ---------------
 
@@ -60,13 +67,13 @@ module sage_user::user_actions {
 
     public struct UserCreated has copy, drop {
         id: address,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         created_at: u64,
         description: String,
         invited_by: Option<address>,
-        owner: address,
-        soul: address,
+        user_owned: address,
+        user_shared: address,
         user_key: String,
         user_name: String
     }
@@ -91,8 +98,8 @@ module sage_user::user_actions {
     }
 
     public struct UserUpdated has copy, drop {
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         description: String,
         updated_at: u64,
         user_key: String,
@@ -103,6 +110,26 @@ module sage_user::user_actions {
 
     // --------------- Public Functions ---------------
 
+    public fun assert_user_description(
+        description: &String
+    ) {
+        let is_valid_description = is_valid_description(description);
+
+        assert!(is_valid_description, EInvalidUserDescription);
+    }
+
+    public fun assert_user_name(
+        name: &String
+    ) {
+        let is_valid_name = string_helpers::is_valid_name(
+            name,
+            USERNAME_MIN_LENGTH,
+            USERNAME_MAX_LENGTH
+        );
+
+        assert!(is_valid_name, EInvalidUsername);
+    }
+
     public fun create<CoinType> (
         clock: &Clock,
         invite_config: &InviteConfig,
@@ -111,14 +138,17 @@ module sage_user::user_actions {
         user_fees: &UserFees,
         invite_code_option: Option<String>,
         invite_key_option: Option<String>,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
-    ): address {
+    ): (address, address) {
+        assert_user_name(&name);
+        assert_user_description(&description);
+
         let (
             custom_payment,
             sui_payment
@@ -128,7 +158,9 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let is_invite_included = option::is_some(&invite_code_option) && option::is_some(&invite_key_option);
+        let is_invite_included = 
+            option::is_some(&invite_code_option) &&
+            option::is_some(&invite_key_option);
 
         let is_invite_required = user_invite::is_invite_required(
             invite_config
@@ -177,30 +209,43 @@ module sage_user::user_actions {
 
         let follows = membership::create(ctx);
         let posts = posts::create(ctx);
-        let soul_address = soul::create(
+
+        let (
+            owned_user,
+            owned_user_address
+        ) = user_owned::create(
+            avatar,
+            banner,
+            created_at,
+            description,
             user_key,
+            name,
+            self,
             ctx
         );
 
-        let user_address = user::create(
-            avatar_hash,
-            banner_hash,
+        let shared_user_address = user_shared::create(
             created_at,
-            description,
             follows,
             user_key,
+            owned_user_address,
             self,
-            name,
             posts,
-            soul_address,
             ctx
+        );
+
+        user_owned::set_shared_user(
+            owned_user,
+            self,
+            shared_user_address
         );
 
         user_registry::add(
             user_registry,
             user_key,
             self,
-            user_address
+            owned_user_address,
+            shared_user_address
         );
 
         fees::collect_payment<CoinType>(
@@ -209,27 +254,30 @@ module sage_user::user_actions {
         );
 
         event::emit(UserCreated {
-            id: user_address,
-            avatar_hash,
-            banner_hash,
+            id: self,
+            avatar,
+            banner,
             created_at,
             description,
             invited_by,
-            owner: self,
-            soul: soul_address,
+            user_owned: owned_user_address,
+            user_shared: shared_user_address,
             user_key,
             user_name: name
         });
 
-        user_address
+        (
+            owned_user_address,
+            shared_user_address
+        )
     }
 
-    public fun create_invite<CoinType, SoulType: key> (
+    public fun create_invite<CoinType> (
         authentication_config: &AuthenticationConfig,
         invite_config: &InviteConfig,
         user_fees: &UserFees,
         user_invite_registry: &mut UserInviteRegistry,
-        soul: &SoulType,
+        owned_user: &UserOwned,
         invite_code: String,
         invite_hash: vector<u8>,
         invite_key: String,
@@ -237,9 +285,9 @@ module sage_user::user_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<SoulType>(
+        authentication::assert_authentication<UserOwned>(
             authentication_config,
-            soul
+            owned_user
         );
 
         user_invite::assert_invite_not_required(invite_config);
@@ -289,19 +337,19 @@ module sage_user::user_actions {
         );
     }
 
-    public fun follow<CoinType, SoulType: key> (
+    public fun follow<CoinType> (
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
-        soul: &SoulType,
-        user: &mut User,
+        owned_user: &UserOwned,
+        shared_user: &mut UserShared,
         user_fees: &UserFees,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<SoulType>(
+        authentication::assert_authentication<UserOwned>(
             authentication_config,
-            soul
+            owned_user
         );
 
         let (
@@ -314,11 +362,11 @@ module sage_user::user_actions {
         );
 
         let self = tx_context::sender(ctx);
-        let user_address = user::get_owner(user);
+        let user_address = user_shared::get_owner(shared_user);
 
         assert!(self != user_address, ENoSelfJoin);
 
-        let follows = user::borrow_follows_mut(user);
+        let follows = user_shared::borrow_follows_mut(shared_user);
 
         let (
             membership_message,
@@ -346,7 +394,7 @@ module sage_user::user_actions {
 
     public fun unfollow<CoinType> (
         clock: &Clock,
-        user: &mut User,
+        shared_user: &mut UserShared,
         user_fees: &UserFees,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
@@ -362,9 +410,9 @@ module sage_user::user_actions {
         );
 
         let self = tx_context::sender(ctx);
-        let user_address = user::get_owner(user);
+        let user_address = user_shared::get_owner(shared_user);
 
-        let follows = user::borrow_follows_mut(user);
+        let follows = user_shared::borrow_follows_mut(shared_user);
 
         let (
             membership_message,
@@ -390,12 +438,12 @@ module sage_user::user_actions {
         );
     }
 
-    public fun post<CoinType, SoulType: key> (
+    public fun post<CoinType> (
         app: &App,
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
-        soul: &SoulType,
-        user: &mut User,
+        owned_user: &UserOwned,
+        shared_user: &mut UserShared,
         user_fees: &UserFees,
         data: String,
         description: String,
@@ -413,17 +461,17 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let posts = user::borrow_posts_mut(user);
+        let posts = user_shared::borrow_posts_mut(shared_user);
 
         let (
             post_address,
             _self,
             timestamp
-        ) = post_actions::create<SoulType>(
+        ) = post_actions::create<UserOwned>(
             authentication_config,
             clock,
+            owned_user,
             posts,
-            soul,
             data,
             description,
             title,
@@ -437,7 +485,7 @@ module sage_user::user_actions {
 
         let app_name = apps::get_name(app);
         let self = tx_context::sender(ctx);
-        let user_key = user::get_key(user);
+        let user_key = user_shared::get_key(shared_user);
 
         event::emit(UserPostCreated {
             id: post_address,
@@ -457,9 +505,9 @@ module sage_user::user_actions {
         clock: &Clock,
         user_registry: &UserRegistry,
         user_fees: &UserFees,
-        user: &mut User,
-        avatar_hash: String,
-        banner_hash: String,
+        owned_user: &mut UserOwned,
+        avatar: String,
+        banner: String,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,
@@ -490,10 +538,10 @@ module sage_user::user_actions {
 
         let updated_at = clock.timestamp_ms();
 
-        user::update(
-            user,
-            avatar_hash,
-            banner_hash,
+        user_owned::update(
+            owned_user,
+            avatar,
+            banner,
             description,
             name,
             updated_at
@@ -505,8 +553,8 @@ module sage_user::user_actions {
         );
 
         event::emit(UserUpdated {
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             user_key: owned_user_key,
             user_name: name,
             description,
@@ -518,5 +566,24 @@ module sage_user::user_actions {
 
     // --------------- Internal Functions ---------------
 
+    fun is_valid_description(
+        description: &String
+    ): bool {
+        let len = description.length();
+
+        if (len > DESCRIPTION_MAX_LENGTH) {
+            return false
+        };
+
+        true
+    }
+
     // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun is_valid_description_for_testing(
+        name: &String
+    ): bool {
+        is_valid_description(name)
+    }
 }

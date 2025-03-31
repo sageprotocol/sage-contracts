@@ -1,53 +1,27 @@
-module sage_user::user {
+module sage_user::user_shared {
     use std::{
-        string::{String, utf8}
-    };
-
-    use sui::{
-        dynamic_field::{Self}
-    };
-
-    use sage_admin::{
-        apps::{Self, App}
+        string::{String}
     };
 
     use sage_shared::{
-        favorites::{Self, Favorites},
         membership::{Membership},
         posts::{Posts}
     };
 
-    use sage_utils::{
-        string_helpers::{Self}
-    };
-
     // --------------- Constants ---------------
-
-    const DESCRIPTION_MAX_LENGTH: u64 = 370;
-
-    const USERNAME_MIN_LENGTH: u64 = 3;
-    const USERNAME_MAX_LENGTH: u64 = 20;
 
     // --------------- Errors ---------------
 
-    const EInvalidUserDescription: u64 = 370;
-    const EInvalidUsername: u64 = 371;
-
     // --------------- Name Tag ---------------
 
-    public struct User has key {
+    public struct UserShared has key {
         id: UID,
-        avatar_hash: String,
-        banner_hash: String,
         created_at: u64,
-        description: String,
         follows: Membership,
         key: String,
+        owned_user: address,
         owner: address,
-        name: String,
         posts: Posts,
-        soul: address,
-        total_earnings: u64,
         updated_at: u64
     }
 
@@ -57,332 +31,66 @@ module sage_user::user {
 
     // --------------- Public Functions ---------------
 
-    public fun assert_user_description(
-        description: &String
-    ) {
-        let is_valid_description = is_valid_description(description);
-
-        assert!(is_valid_description, EInvalidUserDescription);
-    }
-
-    public fun assert_user_name(
-        name: &String
-    ) {
-        let is_valid_name = string_helpers::is_valid_name(
-            name,
-            USERNAME_MIN_LENGTH,
-            USERNAME_MAX_LENGTH
-        );
-
-        assert!(is_valid_name, EInvalidUsername);
-    }
-
-    public fun get_avatar(
-        user: &User
-    ): String {
-        user.avatar_hash
-    }
-
-    public fun get_banner(
-        user: &User
-    ): String {
-        user.banner_hash
-    }
-
-    public fun get_description(
-        user: &User
-    ): String {
-        user.description
-    }
-
-    public fun get_owner(
-        user: &User
-    ): address {
-        user.owner
-    }
-
     public fun get_key(
-        user: &User
+        shared_user: &UserShared
     ): String {
-        user.key
+        shared_user.key
     }
 
-    public fun get_name(
-        user: &User
-    ): String {
-        user.name
+     public fun get_owner(
+        shared_user: &UserShared
+    ): address {
+        shared_user.owner
     }
 
-    public fun get_channel_favorites_length(
-        app: &App,
-        user: &mut User
-    ): u64 {
-        let (
-            favorites_key,
-            _app_name
-        ) = create_app_specific_string(
-            app,
-            utf8(b"favorite-channels")
-        );
-
-        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
-            &user.id,
-            favorites_key
-        );
-
-        if (does_exist) {
-            let favorites = dynamic_field::borrow_mut<String, Favorites>(
-                &mut user.id,
-                favorites_key
-            );
-
-            favorites.get_length()
-        } else {
-            0
-        }
-    }
-
-    public fun get_user_favorites_length(
-        app: &App,
-        user: &mut User
-    ): u64 {
-        let (
-            favorites_key,
-            _app_name
-        ) = create_app_specific_string(
-            app,
-            utf8(b"favorite-users")
-        );
-
-        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
-            &user.id,
-            favorites_key
-        );
-
-        if (does_exist) {
-            let favorites = dynamic_field::borrow_mut<String, Favorites>(
-                &mut user.id,
-                favorites_key
-            );
-
-            favorites.get_length()
-        } else {
-            0
-        }
+    public fun get_owned_user(
+        shared_user: &UserShared
+    ): address {
+        shared_user.owned_user
     }
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun add_favorite_channel<ChannelType: key>(
-        app: &App,
-        channel: &ChannelType,
-        user: &mut User,
-        ctx: &mut TxContext
-    ): (String, address, address) {
-        let (
-            favorites_key,
-            app_name
-        ) = create_app_specific_string(
-            app,
-            utf8(b"favorite-channels")
-        );
-
-        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
-            &user.id,
-            favorites_key
-        );
-
-        let favorite_channel_address = object::id_address(channel);
-
-        if (does_exist) {
-            let favorites = dynamic_field::borrow_mut<String, Favorites>(
-                &mut user.id,
-                favorites_key
-            );
-
-            favorites.add(favorite_channel_address);
-        } else {
-            let mut favorites = favorites::create(ctx);
-
-            favorites.add(favorite_channel_address);
-
-            dynamic_field::add(
-                &mut user.id,
-                favorites_key,
-                favorites
-            );
-        };
-
-        (
-            app_name,
-            user.id.to_address(),
-            favorite_channel_address
-        )
-    }
-
-    public(package) fun add_favorite_user(
-        app: &App,
-        self_user: &mut User,
-        favorite_user: &User,
-        ctx: &mut TxContext
-    ): (String, address, address) {
-        let (
-            favorites_key,
-            app_name
-        ) = create_app_specific_string(
-            app,
-            utf8(b"favorite-users")
-        );
-
-        let does_exist = dynamic_field::exists_with_type<String, Favorites>(
-            &self_user.id,
-            favorites_key
-        );
-
-        let favorite_user_address = favorite_user.id.to_address();
-
-        if (does_exist) {
-            let favorites = dynamic_field::borrow_mut<String, Favorites>(
-                &mut self_user.id,
-                favorites_key
-            );
-
-            favorites.add(favorite_user_address);
-        } else {
-            let mut favorites = favorites::create(ctx);
-
-            favorites.add(favorite_user_address);
-
-            dynamic_field::add(
-                &mut self_user.id,
-                favorites_key,
-                favorites
-            );
-        };
-
-        (
-            app_name,
-            self_user.id.to_address(),
-            favorite_user_address
-        )
-    }
-
     public(package) fun borrow_follows_mut(
-        user: &mut User
+        shared_user: &mut UserShared
     ): &mut Membership {
-        &mut user.follows
+        &mut shared_user.follows
     }
 
     public(package) fun borrow_posts_mut(
-        user: &mut User
+        shared_user: &mut UserShared
     ): &mut Posts {
-        &mut user.posts
+        &mut shared_user.posts
     }
 
     public(package) fun create(
-        avatar_hash: String,
-        banner_hash: String,
         created_at: u64,
-        description: String,
         follows: Membership,
         key: String,
+        owned_user: address,
         owner: address,
-        name: String,
         posts: Posts,
-        soul: address,
         ctx: &mut TxContext
     ): address {
-        assert_user_name(&name);
-        assert_user_description(&description);
-
-        let user = User {
+        let shared_user = UserShared {
             id: object::new(ctx),
-            avatar_hash,
-            banner_hash,
             created_at,
-            description,
             follows,
             key,
+            owned_user,
             owner,
-            name,
             posts,
-            soul,
-            total_earnings: 0,
             updated_at: created_at
         };
 
-        let user_address = user.id.to_address();
+        let user_address = shared_user.id.to_address();
 
-        transfer::share_object(user);
+        transfer::share_object(shared_user);
 
         user_address
     }
 
-    public(package) fun update(
-        user: &mut User,
-        avatar_hash: String,
-        banner_hash: String,
-        description: String,
-        name: String,
-        updated_at: u64
-    ) {
-        assert_user_description(&description);
-
-        user.avatar_hash = avatar_hash;
-        user.banner_hash = banner_hash;
-        user.description = description;
-        user.name = name;
-        user.updated_at = updated_at;
-    }
-
     // --------------- Internal Functions ---------------
 
-    fun create_app_specific_string(
-        app: &App,
-        property: String
-    ): (String, String) {
-        let mut app_specific_property = apps::get_name(app);
-
-        let app_name = app_specific_property;
-
-        app_specific_property.append(utf8(b"-"));
-        app_specific_property.append(property);
-
-        (
-            app_specific_property,
-            app_name
-        )
-    }
-
-    fun is_valid_description(
-        description: &String
-    ): bool {
-        let len = description.length();
-
-        if (len > DESCRIPTION_MAX_LENGTH) {
-            return false
-        };
-
-        true
-    }
-
     // --------------- Test Functions ---------------
-
-    #[test_only]
-    public fun create_app_specific_string_for_testing(
-        app: &App,
-        property: String
-    ): (String, String) {
-        create_app_specific_string(
-            app,
-            property
-        )
-    }
-
-    #[test_only]
-    public fun is_valid_description_for_testing(
-        name: &String
-    ): bool {
-        is_valid_description(name)
-    }
 }

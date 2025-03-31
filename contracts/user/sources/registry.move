@@ -25,8 +25,10 @@ module sage_user::user_registry {
         id: UID,
         address_registry: Table<address, String>,
         address_reverse_registry: Table<String, address>,
-        user_registry: Table<String, address>,
-        user_reverse_registry: Table<address, String>
+        user_owned_registry: Table<String, address>,
+        user_owned_reverse_registry: Table<address, String>,
+        user_shared_registry: Table<String, address>,
+        user_shared_reverse_registry: Table<address, String>
     }
 
     public struct USER_REGISTRY has drop {}
@@ -45,8 +47,10 @@ module sage_user::user_registry {
             id: object::new(ctx),
             address_registry: table::new(ctx),
             address_reverse_registry: table::new(ctx),
-            user_registry: table::new(ctx),
-            user_reverse_registry: table::new(ctx)
+            user_owned_registry: table::new(ctx),
+            user_owned_reverse_registry: table::new(ctx),
+            user_shared_registry: table::new(ctx),
+            user_shared_reverse_registry: table::new(ctx)
         };
 
         transfer::share_object(user_registry);
@@ -85,11 +89,18 @@ module sage_user::user_registry {
         *user_registry.address_reverse_registry.borrow(user_key)
     }
 
-    public fun get_user_address_from_key (
+    public fun get_owned_user_address_from_key (
         user_registry: &UserRegistry,
         user_key: String
     ): address {
-        *user_registry.user_registry.borrow(user_key)
+        *user_registry.user_owned_registry.borrow(user_key)
+    }
+
+    public fun get_shared_user_address_from_key (
+        user_registry: &UserRegistry,
+        user_key: String
+    ): address {
+        *user_registry.user_shared_registry.borrow(user_key)
     }
 
     // from wallet/kiosk
@@ -100,12 +111,20 @@ module sage_user::user_registry {
         *user_registry.address_registry.borrow(user_address)
     }
 
-    // from user object
-    public fun get_key_from_user_address (
+    // from owned user object
+    public fun get_key_from_owned_user_address (
         user_registry: &UserRegistry,
         user_address: address
     ): String {
-        *user_registry.user_reverse_registry.borrow(user_address)
+        *user_registry.user_owned_reverse_registry.borrow(user_address)
+    }
+
+    // from shared user object
+    public fun get_key_from_shared_user_address (
+        user_registry: &UserRegistry,
+        user_address: address
+    ): String {
+        *user_registry.user_shared_reverse_registry.borrow(user_address)
     }
 
     public fun has_address_record (
@@ -123,7 +142,8 @@ module sage_user::user_registry {
             &username
         );
 
-        user_registry.user_registry.contains(user_key)
+        user_registry.user_owned_registry.contains(user_key) &&
+        user_registry.user_shared_registry.contains(user_key)
     }
 
     // --------------- Friend Functions ---------------
@@ -132,13 +152,16 @@ module sage_user::user_registry {
         user_registry: &mut UserRegistry,
         user_key: String,
         self_address: address,
-        user_address: address
+        owned_user_address: address,
+        shared_user_address: address
     ) {
         user_registry.address_registry.add(self_address, user_key);
-        user_registry.user_registry.add(user_key, user_address);
+        user_registry.user_owned_registry.add(user_key, owned_user_address);
+        user_registry.user_shared_registry.add(user_key, shared_user_address);
 
         user_registry.address_reverse_registry.add(user_key, self_address);
-        user_registry.user_reverse_registry.add(user_address, user_key);
+        user_registry.user_owned_reverse_registry.add(owned_user_address, user_key);
+        user_registry.user_shared_reverse_registry.add(shared_user_address, user_key);
     }
 
     // --------------- Internal Functions ---------------

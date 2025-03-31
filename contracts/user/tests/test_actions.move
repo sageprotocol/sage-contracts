@@ -19,10 +19,7 @@ module sage_user::test_user_actions {
         },
         authentication::{
             Self,
-            AuthenticationConfig,
-            InvalidAuthSoul,
-            ValidAuthSoul,
-            ENotAuthenticated
+            AuthenticationConfig
         },
         apps::{Self, App}
     };
@@ -34,9 +31,10 @@ module sage_user::test_user_actions {
 
     use sage_user::{
         test_user_invite::{Self},
-        user::{Self, User},
         user_actions::{
             Self,
+            EInvalidUserDescription,
+            EInvalidUsername,
             EInviteRequired,
             ENoSelfJoin,
             EUserNameMismatch
@@ -55,7 +53,9 @@ module sage_user::test_user_actions {
             EInviteInvalid,
             EInviteNotAllowed
         },
-        user_registry::{Self, UserRegistry}
+        user_owned::{Self, UserOwned},
+        user_registry::{Self, UserRegistry},
+        user_shared::{Self, UserShared}
     };
 
     // --------------- Constants ---------------
@@ -81,20 +81,22 @@ module sage_user::test_user_actions {
 
     // --------------- Errors ---------------
 
-    const EHasMember: u64 = 0;
-    const EHashMismatch: u64 = 1;
-    const ENoInviteRecord: u64 = 2;
-    const ENoPostsRecord: u64 = 3;
-    const EPostsLengthMismatch: u64 = 4;
-    const EUserAvatarMismatch: u64 = 5;
-    const EUserBannerMismatch: u64 = 6;
-    const EUserDescriptionMismatch: u64 = 7;
-    const EUserKeyMismatch: u64 = 8;
-    const EUserOwnerMismatch: u64 = 9;
-    const EUserInviteMismatch: u64 = 10;
-    const EUserMembershipCountMismatch: u64 = 11;
-    const ETestUserNameMismatch: u64 = 12;
-    const EUserNotMember: u64 = 13;
+    const EDescriptionInvalid: u64 = 0;
+    const EHasMember: u64 = 1;
+    const EHashMismatch: u64 = 2;
+    const ENoInviteRecord: u64 = 3;
+    const ENoPostsRecord: u64 = 4;
+    const EPostsLengthMismatch: u64 = 5;
+    const EUserAddressMismatch: u64 = 6;
+    const EUserAvatarMismatch: u64 = 7;
+    const EUserBannerMismatch: u64 = 8;
+    const EUserDescriptionMismatch: u64 = 9;
+    const EUserKeyMismatch: u64 = 10;
+    const EUserOwnerMismatch: u64 = 11;
+    const EUserInviteMismatch: u64 = 12;
+    const EUserMembershipCountMismatch: u64 = 13;
+    const ETestUserNameMismatch: u64 = 14;
+    const EUserNotMember: u64 = 15;
 
     // --------------- Test Functions ---------------
 
@@ -104,7 +106,6 @@ module sage_user::test_user_actions {
         authentication_config: AuthenticationConfig,
         clock: Clock,
         invite_config: InviteConfig,
-        soul: ValidAuthSoul,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry,
         user_fees: UserFees
@@ -113,7 +114,6 @@ module sage_user::test_user_actions {
         destroy(authentication_config);
         ts::return_shared(clock);
         destroy(invite_config);
-        destroy(soul);
         destroy(user_registry);
         destroy(user_invite_registry);
         destroy(user_fees);
@@ -126,7 +126,6 @@ module sage_user::test_user_actions {
         AuthenticationConfig,
         Clock,
         InviteConfig,
-        ValidAuthSoul,
         UserRegistry,
         UserInviteRegistry,
         UserFees
@@ -155,7 +154,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             user_registry,
             user_invite_registry
         ) = {
@@ -173,16 +171,12 @@ module sage_user::test_user_actions {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            authentication::update_soul<ValidAuthSoul>(
+            authentication::update_type<UserOwned>(
                 &admin_cap,
                 &mut authentication_config
             );
 
             let clock = ts::take_shared<Clock>(scenario);
-
-            let soul = authentication::create_valid_auth_soul(
-                ts::ctx(scenario)
-            );
 
             user_fees::create<SUI>(
                 &fee_cap,
@@ -210,7 +204,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry
             )
@@ -229,7 +222,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             user_registry,
             user_invite_registry,
             user_fees
@@ -244,7 +236,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             user_registry,
             user_invite_registry,
             user_fees
@@ -259,11 +250,104 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
             );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_assert_description_pass() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let description = utf8(b"description");
+
+            user_actions::assert_user_description(&description);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUserDescription)]
+    fun test_user_assert_description_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let description = utf8(b"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg");
+
+            user_actions::assert_user_description(&description);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_assert_name_pass() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"name");
+
+            user_actions::assert_user_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_assert_name_format_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"USERname-");
+
+            user_actions::assert_user_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_assert_name_length_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"USERnameUSERnameUSERn");
+
+            user_actions::assert_user_name(&name);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_assert_name_symbol_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"USER*name");
+
+            user_actions::assert_user_name(&name);
         };
 
         ts::end(scenario_val);
@@ -277,7 +361,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -285,13 +368,17 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
+        let key = utf8(b"user-name");
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let (
+            owned_user_address,
+            shared_user_address
+        ) = {
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -301,7 +388,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                owned_user_address,
+                shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -309,14 +399,19 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            (
+                owned_user_address,
+                shared_user_address
+            )
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -335,34 +430,61 @@ module sage_user::test_user_actions {
 
             assert!(has_member, EHasMember);
 
-            let user = ts::take_shared<User>(scenario);
+            let retrieved_owned_user_address = user_registry::get_owned_user_address_from_key(
+                &user_registry,
+                key
+            );
 
-            let retrieved_avatar = user::get_avatar(&user);
-            assert!(retrieved_avatar == avatar_hash, EUserAvatarMismatch);
+            let retrieved_shared_user_address = user_registry::get_shared_user_address_from_key(
+                &user_registry,
+                key
+            );
 
-            let retrieved_banner = user::get_banner(&user);
-            assert!(retrieved_banner == banner_hash, EUserBannerMismatch);
+            assert!(retrieved_owned_user_address == owned_user_address, EUserAddressMismatch);
+            assert!(retrieved_shared_user_address == shared_user_address, EUserAddressMismatch);
 
-            let retrieved_description = user::get_description(&user);
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            let retrieved_avatar = user_owned::get_avatar(&owned_user);
+            assert!(retrieved_avatar == avatar, EUserAvatarMismatch);
+
+            let retrieved_banner = user_owned::get_banner(&owned_user);
+            assert!(retrieved_banner == banner, EUserBannerMismatch);
+
+            let retrieved_description = user_owned::get_description(&owned_user);
             assert!(retrieved_description == description, EUserDescriptionMismatch);
 
-            let retrieved_owner = user::get_owner(&user);
+            let retrieved_owner = user_owned::get_owner(&owned_user);
             assert!(retrieved_owner == ADMIN, EUserOwnerMismatch);
 
-            let retrieved_key = user::get_key(&user);
+            let retrieved_key = user_owned::get_key(&owned_user);
             assert!(retrieved_key == utf8(b"user-name"), EUserKeyMismatch);
 
-            let retrieved_name = user::get_name(&user);
+            let retrieved_name = user_owned::get_name(&owned_user);
             assert!(retrieved_name == name, ETestUserNameMismatch);
 
-            ts::return_shared(user);
+            let retrieved_shared_user_address = user_owned::get_shared_user(&owned_user);
+            assert!(retrieved_shared_user_address == shared_user_address, EUserAddressMismatch);
+
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            let retrieved_owner = user_shared::get_owner(&shared_user);
+            assert!(retrieved_owner == ADMIN, EUserOwnerMismatch);
+
+            let retrieved_key = user_shared::get_key(&shared_user);
+            assert!(retrieved_key == utf8(b"user-name"), EUserKeyMismatch);
+
+            let retrieved_owned_user_address = user_shared::get_owned_user(&shared_user);
+            assert!(retrieved_owned_user_address == owned_user_address, EUserAddressMismatch);
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -380,7 +502,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -388,9 +509,10 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
+        let key = utf8(b"user-name");
         let name = utf8(b"USER-name");
 
         let invite_code = utf8(b"code");
@@ -410,7 +532,10 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let (
+            owned_user_address,
+            shared_user_address
+        ) = {
             let custom_payment = mint_for_testing<SUI>(
                 CREATE_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -420,7 +545,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                owned_user_address,
+                shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -428,14 +556,19 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::some(invite_code),
                 option::some(invite_key),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            (
+                owned_user_address,
+                shared_user_address
+            )
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -454,34 +587,193 @@ module sage_user::test_user_actions {
 
             assert!(has_member, EHasMember);
 
-            let user = ts::take_shared<User>(scenario);
+            let retrieved_owned_user_address = user_registry::get_owned_user_address_from_key(
+                &user_registry,
+                key
+            );
 
-            let retrieved_avatar = user::get_avatar(&user);
-            assert!(retrieved_avatar == avatar_hash, EUserAvatarMismatch);
+            let retrieved_shared_user_address = user_registry::get_shared_user_address_from_key(
+                &user_registry,
+                key
+            );
 
-            let retrieved_banner = user::get_banner(&user);
-            assert!(retrieved_banner == banner_hash, EUserBannerMismatch);
+            assert!(retrieved_owned_user_address == owned_user_address, EUserAddressMismatch);
+            assert!(retrieved_shared_user_address == shared_user_address, EUserAddressMismatch);
 
-            let retrieved_description = user::get_description(&user);
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            let retrieved_avatar = user_owned::get_avatar(&owned_user);
+            assert!(retrieved_avatar == avatar, EUserAvatarMismatch);
+
+            let retrieved_banner = user_owned::get_banner(&owned_user);
+            assert!(retrieved_banner == banner, EUserBannerMismatch);
+
+            let retrieved_description = user_owned::get_description(&owned_user);
             assert!(retrieved_description == description, EUserDescriptionMismatch);
 
-            let retrieved_owner = user::get_owner(&user);
+            let retrieved_owner = user_owned::get_owner(&owned_user);
             assert!(retrieved_owner == ADMIN, EUserOwnerMismatch);
 
-            let retrieved_key = user::get_key(&user);
+            let retrieved_key = user_owned::get_key(&owned_user);
             assert!(retrieved_key == utf8(b"user-name"), EUserKeyMismatch);
 
-            let retrieved_name = user::get_name(&user);
+            let retrieved_name = user_owned::get_name(&owned_user);
             assert!(retrieved_name == name, ETestUserNameMismatch);
 
-            ts::return_shared(user);
+            let retrieved_shared_user_address = user_owned::get_shared_user(&owned_user);
+            assert!(retrieved_shared_user_address == shared_user_address, EUserAddressMismatch);
+
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            let retrieved_owner = user_shared::get_owner(&shared_user);
+            assert!(retrieved_owner == ADMIN, EUserOwnerMismatch);
+
+            let retrieved_key = user_shared::get_key(&shared_user);
+            assert!(retrieved_key == utf8(b"user-name"), EUserKeyMismatch);
+
+            let retrieved_owned_user_address = user_shared::get_owned_user(&shared_user);
+            assert!(retrieved_owned_user_address == owned_user_address, EUserAddressMismatch);
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUserDescription)]
+    fun test_user_create_description_fail() {
+        let (
+            mut scenario_val,
+            app,
+            authentication_config,
+            clock,
+            invite_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy_for_testing(
+                app,
+                authentication_config,
+                clock,
+                invite_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidUsername)]
+    fun test_user_create_name_fail() {
+        let (
+            mut scenario_val,
+            app,
+            authentication_config,
+            clock,
+            invite_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"abcdefghijklmnopqrstuvwxyz");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy_for_testing(
+                app,
+                authentication_config,
+                clock,
+                invite_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -500,7 +792,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -508,8 +799,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -537,7 +828,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -545,8 +839,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -559,7 +853,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -578,7 +871,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -586,8 +878,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -602,7 +894,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -610,8 +905,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::some(utf8(b"code")),
                 option::some(utf8(b"key")),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -624,7 +919,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -643,7 +937,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -651,8 +944,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -683,7 +976,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -691,8 +987,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::some(invite_code),
                 option::some(invite_key),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -705,7 +1001,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -724,7 +1019,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -732,8 +1026,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -748,7 +1042,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -756,8 +1053,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -770,7 +1067,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -789,7 +1085,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -797,8 +1092,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -813,7 +1108,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -821,8 +1119,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -835,7 +1133,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -853,8 +1150,7 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
-            user_registry,
+            mut user_registry,
             mut user_invite_registry,
             user_fees
         ) = setup_for_testing();
@@ -868,6 +1164,38 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                utf8(b"avatar"),
+                utf8(b"banner"),
+                utf8(b"description"),
+                utf8(b"name"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
                 CREATE_INVITE_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
@@ -876,12 +1204,14 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::create_invite<SUI, ValidAuthSoul>(
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::create_invite<SUI>(
                 &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
-                &soul,
+                &owned_user,
                 invite_code,
                 invite_hash,
                 invite_key,
@@ -904,6 +1234,8 @@ module sage_user::test_user_actions {
 
             assert!(hash == invite_hash, EHashMismatch);
             assert!(user == ADMIN, EUserInviteMismatch);
+
+            ts::return_to_sender(scenario, owned_user);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -913,74 +1245,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
-                user_registry,
-                user_invite_registry,
-                user_fees
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_user_actions_invite_create_auth_fail() {
-        let (
-            mut scenario_val,
-            app,
-            authentication_config,
-            clock,
-            invite_config,
-            soul,
-            user_registry,
-            mut user_invite_registry,
-            user_fees
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let invite_code = utf8(b"code");
-        let invite_key = utf8(b"key");
-        let invite_hash = b"hash";
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_INVITE_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_INVITE_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
-            user_actions::create_invite<SUI, InvalidAuthSoul>(
-                &authentication_config,
-                &invite_config,
-                &user_fees,
-                &mut user_invite_registry,
-                &invalid_soul,
-                invite_code,
-                invite_hash,
-                invite_key,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            destroy(invalid_soul);
-
-            destroy_for_testing(
-                app,
-                authentication_config,
-                clock,
-                invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -999,8 +1263,7 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
-            user_registry,
+            mut user_registry,
             mut user_invite_registry,
             user_fees
         ) = setup_for_testing();
@@ -1014,6 +1277,38 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                utf8(b"avatar"),
+                utf8(b"banner"),
+                utf8(b"description"),
+                utf8(b"name"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
             );
@@ -1022,12 +1317,14 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::create_invite<SUI, ValidAuthSoul>(
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::create_invite<SUI>(
                 &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
-                &soul,
+                &owned_user,
                 invite_code,
                 invite_hash,
                 invite_key,
@@ -1036,12 +1333,13 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
+            ts::return_to_sender(scenario, owned_user);
+
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1060,8 +1358,7 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
-            user_registry,
+            mut user_registry,
             mut user_invite_registry,
             user_fees
         ) = setup_for_testing();
@@ -1075,6 +1372,38 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                utf8(b"avatar"),
+                utf8(b"banner"),
+                utf8(b"description"),
+                utf8(b"name"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
                 CREATE_INVITE_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
@@ -1083,12 +1412,14 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::create_invite<SUI, ValidAuthSoul>(
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::create_invite<SUI>(
                 &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
-                &soul,
+                &owned_user,
                 invite_code,
                 invite_hash,
                 invite_key,
@@ -1097,12 +1428,13 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
+            ts::return_to_sender(scenario, owned_user);
+
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1121,8 +1453,7 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
-            user_registry,
+            mut user_registry,
             mut user_invite_registry,
             user_fees
         ) = setup_for_testing();
@@ -1132,6 +1463,38 @@ module sage_user::test_user_actions {
         let invite_code = utf8(b"code");
         let invite_key = utf8(b"key");
         let invite_hash = b"hash";
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                utf8(b"avatar"),
+                utf8(b"banner"),
+                utf8(b"description"),
+                utf8(b"name"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
 
         ts::next_tx(scenario, SERVER);
         {
@@ -1157,12 +1520,14 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::create_invite<SUI, ValidAuthSoul>(
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::create_invite<SUI>(
                 &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
-                &soul,
+                &owned_user,
                 invite_code,
                 invite_hash,
                 invite_key,
@@ -1170,6 +1535,8 @@ module sage_user::test_user_actions {
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            ts::return_to_sender(scenario, owned_user);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -1179,7 +1546,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1197,7 +1563,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             user_registry,
             mut user_invite_registry,
             user_fees
@@ -1245,7 +1610,6 @@ module sage_user::test_user_actions {
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1263,7 +1627,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1271,8 +1634,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
 
         ts::next_tx(scenario, OTHER);
@@ -1288,7 +1651,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _other_user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1296,8 +1662,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1307,8 +1673,8 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        {
-            let mut other_user = ts::take_shared<User>(scenario);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
 
             let name = utf8(b"user-name");
 
@@ -1321,7 +1687,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1329,8 +1698,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1338,6 +1707,11 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
             let custom_payment = mint_for_testing<SUI>(
                 JOIN_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -1347,18 +1721,20 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::follow<SUI, ValidAuthSoul>(
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::follow<SUI>(
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut other_user,
+                &owned_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            let follows = user::borrow_follows_mut(&mut other_user);
+            let follows = user_shared::borrow_follows_mut(&mut other_shared_user);
 
             let is_member = membership::is_member(
                 follows,
@@ -1384,14 +1760,14 @@ module sage_user::test_user_actions {
 
             user_actions::unfollow<SUI>(
                 &clock,
-                &mut other_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            let membership = user::borrow_follows_mut(&mut other_user);
+            let membership = user_shared::borrow_follows_mut(&mut other_shared_user);
 
             let is_member = membership::is_member(
                 membership,
@@ -1406,140 +1782,14 @@ module sage_user::test_user_actions {
 
             assert!(member_length == 0, EUserMembershipCountMismatch);
 
-            ts::return_shared(other_user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(other_shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
-                user_registry,
-                user_invite_registry,
-                user_fees
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_user_actions_follow_auth_fail() {
-        let (
-            mut scenario_val,
-            app,
-            authentication_config,
-            clock,
-            invite_config,
-            soul,
-            mut user_registry,
-            mut user_invite_registry,
-            user_fees
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
-        let description = utf8(b"description");
-
-        ts::next_tx(scenario, OTHER);
-        {
-            let name = utf8(b"other-name");
-
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _other_user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let mut other_user = ts::take_shared<User>(scenario);
-
-            let name = utf8(b"user-name");
-
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
-            user_actions::follow<SUI, InvalidAuthSoul>(
-                &authentication_config,
-                &clock,
-                &invalid_soul,
-                &mut other_user,
-                &user_fees,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            destroy(invalid_soul);
-            ts::return_shared(other_user);
-
-            destroy_for_testing(
-                app,
-                authentication_config,
-                clock,
-                invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1558,7 +1808,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1566,8 +1815,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
 
         ts::next_tx(scenario, OTHER);
@@ -1583,7 +1832,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _other_user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1591,8 +1843,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1603,8 +1855,6 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut other_user = ts::take_shared<User>(scenario);
-
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -1616,7 +1866,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1624,15 +1877,18 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+        };
 
+        ts::next_tx(scenario, ADMIN);
+        {
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
                 ts::ctx(scenario)
@@ -1641,26 +1897,29 @@ module sage_user::test_user_actions {
                 JOIN_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
+            
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut other_shared_user = ts::take_shared<UserShared>(scenario);
 
-            user_actions::follow<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI>(
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut other_user,
+                &owned_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(other_user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(other_shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1679,7 +1938,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1687,8 +1945,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
 
         ts::next_tx(scenario, OTHER);
@@ -1704,7 +1962,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _other_user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1712,8 +1973,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1724,8 +1985,6 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut other_user = ts::take_shared<User>(scenario);
-
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -1737,7 +1996,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1745,14 +2007,20 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut other_shared_user = ts::take_shared<UserShared>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 JOIN_USER_CUSTOM_FEE,
@@ -1763,25 +2031,25 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::follow<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI>(
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut other_user,
+                &owned_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(other_user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(other_shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1800,7 +2068,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1808,8 +2075,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
 
         ts::next_tx(scenario, ADMIN);
@@ -1826,7 +2093,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1834,8 +2104,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1846,7 +2116,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut user = ts::take_shared<User>(scenario);
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 JOIN_USER_CUSTOM_FEE,
@@ -1857,25 +2128,25 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::follow<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI>(
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut user,
+                &owned_user,
+                &mut shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1894,7 +2165,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1902,8 +2172,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
 
         ts::next_tx(scenario, OTHER);
@@ -1919,7 +2189,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _other_user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1927,8 +2200,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1938,8 +2211,8 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        {
-            let mut other_user = ts::take_shared<User>(scenario);
+        let mut other_shared_user ={
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
 
             let name = utf8(b"user-name");
 
@@ -1952,7 +2225,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -1960,14 +2236,21 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 JOIN_USER_CUSTOM_FEE,
@@ -1978,11 +2261,11 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::follow<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI>(
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut other_user,
+                &owned_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
@@ -2000,21 +2283,21 @@ module sage_user::test_user_actions {
 
             user_actions::unfollow<SUI>(
                 &clock,
-                &mut other_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(other_user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(other_shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2033,7 +2316,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2041,8 +2323,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
 
         ts::next_tx(scenario, OTHER);
@@ -2058,7 +2340,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _other_user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2066,8 +2351,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2077,8 +2362,8 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        {
-            let mut other_user = ts::take_shared<User>(scenario);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
 
             let name = utf8(b"user-name");
 
@@ -2091,7 +2376,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2099,14 +2387,21 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {  
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 JOIN_USER_CUSTOM_FEE,
@@ -2117,11 +2412,11 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            user_actions::follow<SUI, ValidAuthSoul>(
+            user_actions::follow<SUI>(
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut other_user,
+                &owned_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
@@ -2139,21 +2434,21 @@ module sage_user::test_user_actions {
 
             user_actions::unfollow<SUI>(
                 &clock,
-                &mut other_user,
+                &mut other_shared_user,
                 &user_fees,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(other_user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(other_shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2171,7 +2466,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2179,8 +2473,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -2195,7 +2489,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2203,8 +2500,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2215,7 +2512,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut user = ts::take_shared<User>(scenario);
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
             let description = utf8(b"description");
@@ -2233,12 +2531,12 @@ module sage_user::test_user_actions {
             let (
                 _post_address,
                 timestamp
-            ) = user_actions::post<SUI, ValidAuthSoul>(
+            ) = user_actions::post<SUI>(
                 &app,
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut user,
+                &owned_user,
+                &mut shared_user,
                 &user_fees,
                 data,
                 description,
@@ -2248,7 +2546,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let posts = user::borrow_posts_mut(&mut user);
+            let posts = user_shared::borrow_posts_mut(&mut shared_user);
 
             let has_record = posts::has_record(
                 posts,
@@ -2261,122 +2559,14 @@ module sage_user::test_user_actions {
 
             assert!(length == 1, EPostsLengthMismatch);
 
-            ts::return_shared(user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
-                user_registry,
-                user_invite_registry,
-                user_fees
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_user_actions_post_auth_fail() {
-        let (
-            mut scenario_val,
-            app,
-            authentication_config,
-            clock,
-            invite_config,
-            soul,
-            mut user_registry,
-            mut user_invite_registry,
-            user_fees
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
-        let description = utf8(b"description");
-        let name = utf8(b"USER-name");
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let mut user = ts::take_shared<User>(scenario);
-
-            let data = utf8(b"data");
-            let description = utf8(b"description");
-            let title = utf8(b"title");
-
-            let custom_payment = mint_for_testing<SUI>(
-                POST_TO_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                POST_TO_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
-            let (
-                _post_address,
-                _timestamp
-            ) = user_actions::post<SUI, InvalidAuthSoul>(
-                &app,
-                &authentication_config,
-                &clock,
-                &invalid_soul,
-                &mut user,
-                &user_fees,
-                data,
-                description,
-                title,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            destroy(invalid_soul);
-            ts::return_shared(user);
-
-            destroy_for_testing(
-                app,
-                authentication_config,
-                clock,
-                invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2395,7 +2585,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2403,8 +2592,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -2419,7 +2608,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2427,8 +2619,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2439,7 +2631,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut user = ts::take_shared<User>(scenario);
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
             let description = utf8(b"description");
@@ -2457,12 +2650,12 @@ module sage_user::test_user_actions {
             let (
                 _post_address,
                 _timestamp
-            ) = user_actions::post<SUI, ValidAuthSoul>(
+            ) = user_actions::post<SUI>(
                 &app,
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut user,
+                &owned_user,
+                &mut shared_user,
                 &user_fees,
                 data,
                 description,
@@ -2472,14 +2665,14 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2498,7 +2691,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2506,8 +2698,8 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"USER-name");
 
@@ -2522,7 +2714,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2530,8 +2725,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2542,7 +2737,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let mut user = ts::take_shared<User>(scenario);
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
             let description = utf8(b"description");
@@ -2560,12 +2756,12 @@ module sage_user::test_user_actions {
             let (
                 _post_address,
                 _timestamp
-            ) = user_actions::post<SUI, ValidAuthSoul>(
+            ) = user_actions::post<SUI>(
                 &app,
                 &authentication_config,
                 &clock,
-                &soul,
-                &mut user,
+                &owned_user,
+                &mut shared_user,
                 &user_fees,
                 data,
                 description,
@@ -2575,14 +2771,14 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
 
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2600,7 +2796,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2623,8 +2818,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
+            let avatar = utf8(b"avatar");
+            let banner = utf8(b"banner");
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
@@ -2637,7 +2832,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2645,8 +2843,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2657,14 +2855,12 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar_hash = utf8(b"avatar_hash");
-            let new_banner_hash = utf8(b"banner_hash");
-            let new_description = utf8(b"description");
+            let new_avatar = utf8(b"new-avatar");
+            let new_banner = utf8(b"new-banner");
+            let new_description = utf8(b"new-description");
             let new_name = utf8(b"USER-name");
 
-            let mut user = ts::take_shared<User>(
-                scenario
-            );
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 UPDATE_USER_CUSTOM_FEE,
@@ -2679,9 +2875,9 @@ module sage_user::test_user_actions {
                 &clock,
                 &user_registry,
                 &user_fees,
-                &mut user,
-                new_avatar_hash,
-                new_banner_hash,
+                &mut owned_user,
+                new_avatar,
+                new_banner,
                 new_description,
                 new_name,
                 custom_payment,
@@ -2689,32 +2885,28 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let retrieved_avatar = user::get_avatar(&user);
-            assert!(retrieved_avatar == new_avatar_hash, EUserAvatarMismatch);
+            let retrieved_avatar = user_owned::get_avatar(&owned_user);
+            assert!(retrieved_avatar == new_avatar, EUserAvatarMismatch);
 
-            let retrieved_banner = user::get_banner(&user);
-            assert!(retrieved_banner == new_banner_hash, EUserBannerMismatch);
+            let retrieved_banner = user_owned::get_banner(&owned_user);
+            assert!(retrieved_banner == new_banner, EUserBannerMismatch);
 
-            let retrieved_description = user::get_description(&user);
+            let retrieved_description = user_owned::get_description(&owned_user);
             assert!(retrieved_description == new_description, EUserDescriptionMismatch);
 
-            let retrieved_key = user::get_key(&user);
+            let retrieved_key = user_owned::get_key(&owned_user);
             assert!(retrieved_key == utf8(b"user-name"), EUserKeyMismatch);
 
-            let retrieved_name = user::get_name(&user);
+            let retrieved_name = user_owned::get_name(&owned_user);
             assert!(retrieved_name == new_name, ETestUserNameMismatch);
 
-            ts::return_shared(user);
-        };
+            ts::return_to_sender(scenario, owned_user);
 
-        ts::next_tx(scenario, ADMIN);
-        {
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2733,7 +2925,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2756,8 +2947,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
+            let avatar = utf8(b"avatar");
+            let banner = utf8(b"banner");
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
@@ -2770,7 +2961,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2778,8 +2972,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2790,12 +2984,12 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar_hash = utf8(b"avatar_hash");
-            let new_banner_hash = utf8(b"banner_hash");
-            let new_description = utf8(b"description");
+            let new_avatar = utf8(b"new-avatar");
+            let new_banner = utf8(b"new-banner");
+            let new_description = utf8(b"new-description");
             let new_name = utf8(b"USER-name");
 
-            let mut user = ts::take_shared<User>(
+            let mut owned_user = ts::take_from_sender<UserOwned>(
                 scenario
             );
 
@@ -2812,9 +3006,9 @@ module sage_user::test_user_actions {
                 &clock,
                 &user_registry,
                 &user_fees,
-                &mut user,
-                new_avatar_hash,
-                new_banner_hash,
+                &mut owned_user,
+                new_avatar,
+                new_banner,
                 new_description,
                 new_name,
                 custom_payment,
@@ -2822,17 +3016,13 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
-        };
+            ts::return_to_sender(scenario, owned_user);
 
-        ts::next_tx(scenario, ADMIN);
-        {
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2851,7 +3041,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2874,8 +3063,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
+            let avatar = utf8(b"avatar");
+            let banner = utf8(b"banner");
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
@@ -2888,7 +3077,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -2896,8 +3088,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2908,12 +3100,12 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar_hash = utf8(b"avatar_hash");
-            let new_banner_hash = utf8(b"banner_hash");
-            let new_description = utf8(b"description");
+            let new_avatar = utf8(b"new-avatar");
+            let new_banner = utf8(b"new-banner");
+            let new_description = utf8(b"new-description");
             let new_name = utf8(b"USER-name");
 
-            let mut user = ts::take_shared<User>(
+            let mut owned_user = ts::take_from_sender<UserOwned>(
                 scenario
             );
 
@@ -2930,9 +3122,9 @@ module sage_user::test_user_actions {
                 &clock,
                 &user_registry,
                 &user_fees,
-                &mut user,
-                new_avatar_hash,
-                new_banner_hash,
+                &mut owned_user,
+                new_avatar,
+                new_banner,
                 new_description,
                 new_name,
                 custom_payment,
@@ -2940,17 +3132,13 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
-        };
+            ts::return_to_sender(scenario, owned_user);
 
-        ts::next_tx(scenario, ADMIN);
-        {
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2969,7 +3157,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2992,8 +3179,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
+            let avatar = utf8(b"avatar");
+            let banner = utf8(b"banner");
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
@@ -3006,7 +3193,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -3014,8 +3204,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3026,12 +3216,12 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar_hash = utf8(b"avatar_hash");
-            let new_banner_hash = utf8(b"banner_hash");
-            let new_description = utf8(b"description");
+            let new_avatar = utf8(b"new-avatar");
+            let new_banner = utf8(b"new-banner");
+            let new_description = utf8(b"new-description");
             let new_name = utf8(b"different");
 
-            let mut user = ts::take_shared<User>(
+            let mut owned_user = ts::take_from_sender<UserOwned>(
                 scenario
             );
 
@@ -3048,9 +3238,9 @@ module sage_user::test_user_actions {
                 &clock,
                 &user_registry,
                 &user_fees,
-                &mut user,
-                new_avatar_hash,
-                new_banner_hash,
+                &mut owned_user,
+                new_avatar,
+                new_banner,
                 new_description,
                 new_name,
                 custom_payment,
@@ -3058,17 +3248,13 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
-        };
+            ts::return_to_sender(scenario, owned_user);
 
-        ts::next_tx(scenario, ADMIN);
-        {
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -3087,7 +3273,6 @@ module sage_user::test_user_actions {
             authentication_config,
             clock,
             mut invite_config,
-            soul,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -3110,8 +3295,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
+            let avatar = utf8(b"avatar");
+            let banner = utf8(b"banner");
             let description = utf8(b"description");
             let name = utf8(b"user-name");
 
@@ -3124,7 +3309,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -3132,8 +3320,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3144,8 +3332,8 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, OTHER);
         {
-            let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
+            let avatar = utf8(b"avatar");
+            let banner = utf8(b"banner");
             let description = utf8(b"description");
             let name = utf8(b"other-name");
 
@@ -3158,7 +3346,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let _user_address = user_actions::create<SUI>(
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
                 &clock,
                 &invite_config,
                 &mut user_registry,
@@ -3166,8 +3357,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar_hash,
-                banner_hash,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3178,12 +3369,12 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, OTHER);
         {
-            let new_avatar_hash = utf8(b"avatar_hash");
-            let new_banner_hash = utf8(b"banner_hash");
-            let new_description = utf8(b"description");
+            let new_avatar = utf8(b"new-avatar");
+            let new_banner = utf8(b"new-banner");
+            let new_description = utf8(b"new-description");
             let new_name = utf8(b"USER-name");
 
-            let mut user = ts::take_shared<User>(
+            let mut owned_user = ts::take_from_sender<UserOwned>(
                 scenario
             );
 
@@ -3200,9 +3391,9 @@ module sage_user::test_user_actions {
                 &clock,
                 &user_registry,
                 &user_fees,
-                &mut user,
-                new_avatar_hash,
-                new_banner_hash,
+                &mut owned_user,
+                new_avatar,
+                new_banner,
                 new_description,
                 new_name,
                 custom_payment,
@@ -3210,21 +3401,43 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_shared(user);
-        };
+            ts::return_to_sender(scenario, owned_user);
 
-        ts::next_tx(scenario, ADMIN);
-        {
             destroy_for_testing(
                 app,
                 authentication_config,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry,
                 user_fees
             );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_description_validity() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let description = utf8(b"ab");
+
+            let is_valid = user_actions::is_valid_description_for_testing(&description);
+
+            assert!(is_valid == true, EDescriptionInvalid);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let description = utf8(b"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg");
+
+            let is_valid = user_actions::is_valid_description_for_testing(&description);
+
+            assert!(is_valid == false, EDescriptionInvalid);
         };
 
         ts::end(scenario_val);
