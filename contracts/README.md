@@ -95,5 +95,5 @@ The first user will create a SageSoul, and this type needs to be set in the auth
 - SWAP WALLET TO SAGE ADMIN
 
 ```sh
-$ sui client call --package <ADMIN_PKG_ID> --module authentication --function update_soul --type-args <SOUL_TYPE_ID> --args <ADMIN_CAP_ID> <AUTH_CONFIG_ID>
+$ sui client call --package <ADMIN_PKG_ID> --module authentication --function update_type --type-args <SOUL_TYPE_ID> --args <ADMIN_CAP_ID> <AUTH_CONFIG_ID>
 ```
