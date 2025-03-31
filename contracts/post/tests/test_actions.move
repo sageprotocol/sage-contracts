@@ -71,16 +71,16 @@ module sage_post::test_post_actions {
         app: App,
         authentication_config: AuthenticationConfig,
         clock: Clock,
+        owned_user: ValidAuthSoul,
         post_fees: PostFees,
-        royalties: Royalties,
-        soul: ValidAuthSoul
+        royalties: Royalties
     ) {
         destroy(app);
         destroy(authentication_config);
         ts::return_shared(clock);
+        destroy(owned_user);
         destroy(post_fees);
         destroy(royalties);
-        destroy(soul);
     }
 
     #[test_only]
@@ -126,7 +126,7 @@ module sage_post::test_post_actions {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            authentication::update_soul<ValidAuthSoul>(
+            authentication::update_type<ValidAuthSoul>(
                 &admin_cap,
                 &mut authentication_config
             );
@@ -195,7 +195,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -206,9 +206,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -224,7 +224,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -244,8 +244,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -287,9 +287,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -306,7 +306,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -330,8 +330,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<InvalidAuthSoul>(
                 &authentication_config,
                 &clock,
-                &mut posts,
                 &invalid_soul,
+                &mut posts,
                 data,
                 description,
                 title,
@@ -345,9 +345,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -363,7 +363,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -383,8 +383,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -422,9 +422,9 @@ module sage_post::test_post_actions {
                 &app,
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut parent_post,
                 &post_fees,
-                &soul,
                 data,
                 description,
                 title,
@@ -470,9 +470,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -489,7 +489,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -509,8 +509,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -549,9 +549,9 @@ module sage_post::test_post_actions {
                 &app,
                 &authentication_config,
                 &clock,
+                &invalid_soul,
                 &mut parent_post,
                 &post_fees,
-                &invalid_soul,
                 data,
                 description,
                 title,
@@ -568,9 +568,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -587,7 +587,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -607,8 +607,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -643,9 +643,9 @@ module sage_post::test_post_actions {
                 &app,
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut parent_post,
                 &post_fees,
-                &soul,
                 data,
                 description,
                 title,
@@ -660,9 +660,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -679,7 +679,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -699,8 +699,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -735,9 +735,9 @@ module sage_post::test_post_actions {
                 &app,
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut parent_post,
                 &post_fees,
-                &soul,
                 data,
                 description,
                 title,
@@ -752,9 +752,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -770,7 +770,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -790,8 +790,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -817,10 +817,10 @@ module sage_post::test_post_actions {
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut post,
                 &post_fees,
                 &royalties,
-                &soul,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -845,9 +845,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -864,7 +864,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -884,8 +884,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -915,10 +915,10 @@ module sage_post::test_post_actions {
             post_actions::like<SUI, InvalidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &invalid_soul,
                 &mut post,
                 &post_fees,
                 &royalties,
-                &invalid_soul,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -931,9 +931,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -950,7 +950,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -970,8 +970,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -997,10 +997,10 @@ module sage_post::test_post_actions {
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut post,
                 &post_fees,
                 &royalties,
-                &soul,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1012,9 +1012,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 
@@ -1031,7 +1031,7 @@ module sage_post::test_post_actions {
             clock,
             post_fees,
             royalties,
-            soul
+            owned_user
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1051,8 +1051,8 @@ module sage_post::test_post_actions {
             ) = post_actions::create<ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut posts,
-                &soul,
                 data,
                 description,
                 title,
@@ -1078,10 +1078,10 @@ module sage_post::test_post_actions {
             post_actions::like<SUI, ValidAuthSoul>(
                 &authentication_config,
                 &clock,
+                &owned_user,
                 &mut post,
                 &post_fees,
                 &royalties,
-                &soul,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1093,9 +1093,9 @@ module sage_post::test_post_actions {
                 app,
                 authentication_config,
                 clock,
+                owned_user,
                 post_fees,
-                royalties,
-                soul
+                royalties
             );
         };
 

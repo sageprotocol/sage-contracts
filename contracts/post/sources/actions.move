@@ -53,13 +53,13 @@ module sage_post::post_actions {
 
     // --------------- Public Functions ---------------
 
-    public fun comment<CoinType, SoulType: key>(
+    public fun comment<CoinType, UserOwnedType: key>(
         app: &App,
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
+        owned_user: &UserOwnedType,
         parent_post: &mut Post,
         post_fees: &PostFees,
-        soul: &SoulType,
         data: String,
         description: String,
         title: String,
@@ -67,9 +67,9 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        authentication::assert_authentication<SoulType>(
+        authentication::assert_authentication<UserOwnedType>(
             authentication_config,
-            soul
+            owned_user
         );
         
         let (
@@ -121,19 +121,19 @@ module sage_post::post_actions {
         (post_address, self, timestamp)
     }
 
-    public fun create<SoulType: key> (
+    public fun create<UserOwnedType: key> (
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
+        owned_user: &UserOwnedType,
         posts: &mut Posts,
-        soul: &SoulType,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        authentication::assert_authentication<SoulType>(
+        authentication::assert_authentication<UserOwnedType>(
             authentication_config,
-            soul
+            owned_user
         );
 
         let timestamp = clock.timestamp_ms();
@@ -155,20 +155,20 @@ module sage_post::post_actions {
         (post_address, self, timestamp)
     }
 
-    public fun like<CoinType, SoulType: key> (
+    public fun like<CoinType, UserOwnedType: key> (
         authentication_config: &AuthenticationConfig,
         clock: &Clock,
+        owned_user: &UserOwnedType,
         post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
-        soul: &SoulType,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<SoulType>(
+        authentication::assert_authentication<UserOwnedType>(
             authentication_config,
-            soul
+            owned_user
         );
 
         let self = tx_context::sender(ctx);
