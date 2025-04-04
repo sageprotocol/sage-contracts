@@ -18,12 +18,12 @@ module sage_admin::test_actions {
         },
         admin_actions::{Self},
         apps::{Self, AppRegistry},
-        authentication::{
+        fees::{Royalties},
+        types::{
             Self,
-            AuthenticationConfig,
-            ValidAuthSoul
-        },
-        fees::{Royalties}
+            UserOwnedConfig,
+            ValidType
+        }
     };
 
     #[test_only]
@@ -48,7 +48,6 @@ module sage_admin::test_actions {
         {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
-            authentication::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -92,28 +91,31 @@ module sage_admin::test_actions {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let mut authentication_config = ts::take_shared<AuthenticationConfig>(scenario);
-
-            authentication::update_type<ValidAuthSoul>(
+            types::create_owned_user_config<ValidType>(
                 &admin_cap,
-                &mut authentication_config
-            );
-
-            let soul = authentication::create_valid_auth_soul(ts::ctx(scenario));
-
-            let _app_address = admin_actions::create_app<ValidAuthSoul>(
-                &mut app_registry,
-                &authentication_config,
-                &soul,
-                utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
             ts::return_to_sender(scenario, admin_cap);
-            ts::return_shared(authentication_config);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user_config = scenario.take_shared<UserOwnedConfig>();
+            let valid_type = types::create_valid_type_for_testing(ts::ctx(scenario));
+
+            let _app_address = admin_actions::create_app<ValidType>(
+                &mut app_registry,
+                utf8(b"sage"),
+                &valid_type,
+                &owned_user_config,
+                ts::ctx(scenario)
+            );
+            
+            ts::return_shared(owned_user_config);
 
             destroy(app_registry);
-            destroy(soul);
+            destroy(valid_type);
         };
 
         ts::end(scenario_val);

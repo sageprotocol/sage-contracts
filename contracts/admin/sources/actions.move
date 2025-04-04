@@ -6,8 +6,11 @@ module sage_admin::admin_actions {
     use sage_admin::{
         admin::{AdminCap, FeeCap},
         apps::{Self, App, AppRegistry},
-        authentication::{Self, AuthenticationConfig},
-        fees::{Self, Royalties}
+        fees::{Self, Royalties},
+        types::{
+            Self,
+            UserOwnedConfig
+        }
     };
 
     use sage_utils::{
@@ -31,16 +34,16 @@ module sage_admin::admin_actions {
 
     // --------------- Public Functions ---------------
 
-    public fun create_app<SoulType: key> (
+    public fun create_app<OwnedUserType: key> (
         app_registry: &mut AppRegistry,
-        authentication_config: &AuthenticationConfig,
-        soul: &SoulType,
         app_name: String,
+        owned_user: &OwnedUserType,
+        owned_user_config: &UserOwnedConfig,
         ctx: &mut TxContext
     ): address {
-        authentication::assert_authentication<SoulType>(
-            authentication_config,
-            soul
+        types::assert_owned_user<OwnedUserType>(
+            owned_user_config,
+            owned_user
         );
 
         create_app_internal(
