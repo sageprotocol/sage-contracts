@@ -11,8 +11,8 @@ module sage_channel::channel_actions {
     use sage_admin::{
         admin::{AdminCap},
         apps::{Self, App},
-        authentication::{Self, AuthenticationConfig},
-        fees::{Self}
+        fees::{Self},
+        types::{UserOwnedConfig}
     };
 
     use sage_channel::{
@@ -32,8 +32,9 @@ module sage_channel::channel_actions {
     };
 
     use sage_user::{
-        user::{Self, User},
-        user_registry::{Self, UserRegistry}
+        user_owned::{UserOwned},
+        user_registry::{Self, UserRegistry},
+        user_shared::{Self, UserShared}
     };
 
     use sage_utils::{
@@ -52,8 +53,8 @@ module sage_channel::channel_actions {
 
     public struct ChannelCreated has copy, drop {
         id: address,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         channel_key: String,
         channel_name: String,
         created_at: u64,
@@ -89,8 +90,8 @@ module sage_channel::channel_actions {
     }
 
     public struct ChannelUpdated has copy, drop {
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         channel_key: String,
         channel_name: String,
         description: String,
@@ -141,7 +142,7 @@ module sage_channel::channel_actions {
         channel: &mut Channel,
         channel_fees: &ChannelFees,
         clock: &Clock,
-        user: &User,
+        shared_user: &UserShared,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -166,8 +167,8 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let user_address = user::get_owner(
-            user
+        let user_address = user_shared::get_owner(
+            shared_user
         );
 
         let (
@@ -195,25 +196,19 @@ module sage_channel::channel_actions {
         );
     }
 
-    public fun create<CoinType, SoulType: key> (
-        authentication_config: &AuthenticationConfig,
+    public fun create<CoinType> (
         channel_fees: &ChannelFees,
         channel_registry: &mut ChannelRegistry,
         clock: &Clock,
-        soul: &SoulType,
-        avatar_hash: String,
-        banner_hash: String,
+        _: &UserOwned,
+        avatar: String,
+        banner: String,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext,
     ): address {
-        authentication::assert_authentication<SoulType>(
-            authentication_config,
-            soul
-        );
-
         let (
             custom_payment,
             sui_payment
@@ -247,8 +242,8 @@ module sage_channel::channel_actions {
         );
 
         let channel_address = channel::create(
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             description,
             created_at,
             self,
@@ -273,8 +268,8 @@ module sage_channel::channel_actions {
 
         event::emit(ChannelCreated {
             id: channel_address,
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             channel_key,
             channel_name: name,
             created_at,
@@ -301,21 +296,15 @@ module sage_channel::channel_actions {
         channel_address
     }
 
-    public fun follow<CoinType, SoulType: key> (
-        authentication_config: &AuthenticationConfig,
+    public fun follow<CoinType> (
         channel: &mut Channel,
         channel_fees: &ChannelFees,
         clock: &Clock,
-        soul: &SoulType,
+        _: &UserOwned,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<SoulType>(
-            authentication_config,
-            soul
-        );
-
         let self = tx_context::sender(ctx);
 
         let (
@@ -356,13 +345,13 @@ module sage_channel::channel_actions {
         );
     }
 
-    public fun post<CoinType, SoulType: key> (
+    public fun post<CoinType> (
         app: &App,
-        authentication_config: &AuthenticationConfig,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
         clock: &Clock,
-        soul: &SoulType,
+        owned_user: &UserOwned,
+        owned_user_config: &UserOwnedConfig,
         data: String,
         description: String,
         title: String,
@@ -396,11 +385,11 @@ module sage_channel::channel_actions {
             post_address,
             _self,
             timestamp
-        ) = post_actions::create<SoulType>(
-            authentication_config,
+        ) = post_actions::create<UserOwned>(
             clock,
+            owned_user,
+            owned_user_config,
             posts,
-            soul,
             data,
             description,
             title,
@@ -469,7 +458,7 @@ module sage_channel::channel_actions {
         channel: &mut Channel,
         channel_fees: &ChannelFees,
         clock: &Clock,
-        user: &User,
+        shared_user: &UserShared,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -494,8 +483,8 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let user_address = user::get_owner(
-            user
+        let user_address = user_shared::get_owner(
+            shared_user
         );
 
         let (
@@ -575,8 +564,8 @@ module sage_channel::channel_actions {
         _: &AdminCap,
         channel: &mut Channel,
         clock: &Clock,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         description: String,
         name: String
     ) {
@@ -589,16 +578,16 @@ module sage_channel::channel_actions {
 
         channel::update(
             channel,
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             description,
             name,
             updated_at
         );
 
         event::emit(ChannelUpdated {
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             channel_key,
             channel_name: name,
             description,
@@ -610,8 +599,8 @@ module sage_channel::channel_actions {
         channel: &mut Channel,
         channel_fees: &ChannelFees,
         clock: &Clock,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,
@@ -645,16 +634,16 @@ module sage_channel::channel_actions {
 
         channel::update(
             channel,
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             description,
             name,
             updated_at
         );
 
         event::emit(ChannelUpdated {
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
             channel_key,
             channel_name: name,
             description,

@@ -16,14 +16,11 @@ module sage_channel::test_channel_actions {
             AdminCap,
             FeeCap
         },
-        authentication::{
+        apps::{Self, App},
+        types::{
             Self,
-            AuthenticationConfig,
-            InvalidAuthSoul,
-            ValidAuthSoul,
-            ENotAuthenticated
-        },
-        apps::{Self, App}
+            UserOwnedConfig
+        }
     };
 
     use sage_channel::{
@@ -48,11 +45,12 @@ module sage_channel::test_channel_actions {
     };
 
     use sage_user::{
-        user::{User},
         user_actions::{Self},
         user_fees::{Self, UserFees},
         user_invite::{Self, InviteConfig, UserInviteRegistry},
-        user_registry::{Self, UserRegistry}
+        user_owned::{UserOwned},
+        user_registry::{Self, UserRegistry},
+        user_shared::{UserShared}
     };
 
     use sage_utils::{
@@ -119,23 +117,29 @@ module sage_channel::test_channel_actions {
     #[test_only]
     fun destroy_for_testing(
         app: App,
-        authentication_config: AuthenticationConfig,
         channel_fees: ChannelFees,
         channel_registry: ChannelRegistry,
         clock: Clock,
         invite_config: InviteConfig,
-        soul: ValidAuthSoul,
+        owned_user_admin: UserOwned,
+        owned_user_server: UserOwned,
+        owned_user_config: UserOwnedConfig,
+        shared_user_admin: UserShared,
+        shared_user_server: UserShared,
         user_fees: UserFees,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry
     ) {
         destroy(app);
-        destroy(authentication_config);
         destroy(channel_fees);
         destroy(channel_registry);
         ts::return_shared(clock);
         destroy(invite_config);
-        destroy(soul);
+        destroy(owned_user_admin);
+        destroy(owned_user_server);
+        destroy(owned_user_config);
+        destroy(shared_user_admin);
+        destroy(shared_user_server);
         destroy(user_fees);
         destroy(user_registry);
         destroy(user_invite_registry);
@@ -145,12 +149,15 @@ module sage_channel::test_channel_actions {
     fun setup_for_testing(): (
         Scenario,
         App,
-        AuthenticationConfig,
         ChannelFees,
         ChannelRegistry,
         Clock,
         InviteConfig,
-        ValidAuthSoul,
+        UserOwned,
+        UserOwned,
+        UserOwnedConfig,
+        UserShared,
+        UserShared,
         UserFees,
         UserRegistry,
         UserInviteRegistry
@@ -160,7 +167,6 @@ module sage_channel::test_channel_actions {
         {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
-            authentication::init_for_testing(ts::ctx(scenario));
             channel_registry::init_for_testing(ts::ctx(scenario));
             user_invite::init_for_testing(ts::ctx(scenario));
             user_registry::init_for_testing(ts::ctx(scenario));
@@ -177,13 +183,11 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             app,
-            authentication_config,
             channel_registry,
             clock,
             invite_config,
-            soul,
-            user_registry,
-            user_invite_registry
+            mut user_registry,
+            mut user_invite_registry
         ) = {
             let channel_registry = scenario.take_shared<ChannelRegistry>();
             let invite_config = scenario.take_shared<InviteConfig>();
@@ -195,19 +199,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let mut authentication_config = scenario.take_shared<AuthenticationConfig>();
-
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            authentication::update_type<ValidAuthSoul>(
-                &admin_cap,
-                &mut authentication_config
-            );
-
             let clock = ts::take_shared<Clock>(scenario);
 
-            let soul = authentication::create_valid_auth_soul(
+            types::create_owned_user_config<UserOwned>(
+                &admin_cap,
                 ts::ctx(scenario)
             );
 
@@ -254,11 +252,9 @@ module sage_channel::test_channel_actions {
 
             (
                 app,
-                authentication_config,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
                 user_registry,
                 user_invite_registry
             )
@@ -267,26 +263,125 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             channel_fees,
-            user_fees
+            user_fees,
+            owned_user_config
          ) = {
             let channel_fees = scenario.take_shared<ChannelFees>();
             let user_fees = scenario.take_shared<UserFees>();
 
+            let owned_user_config = scenario.take_shared<UserOwnedConfig>();
+
             (
                 channel_fees,
-                user_fees
+                user_fees,
+                owned_user_config
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_address,
+                _shared_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                utf8(b"avatar"),
+                utf8(b"banner"),
+                utf8(b"description"),
+                utf8(b"admin"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (
+            owned_user_admin,
+            shared_user_admin
+        ) = {
+            let owned_user = ts::take_from_address<UserOwned>(
+                scenario,
+                ADMIN
+            );
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_address,
+                _shared_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                utf8(b"avatar"),
+                utf8(b"banner"),
+                utf8(b"description"),
+                utf8(b"server"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            (
+                owned_user,
+                shared_user
+            )
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let (
+            owned_user_server,
+            shared_user_server
+        ) = {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            (
+                owned_user,
+                shared_user
             )
         };
 
         (
             scenario_val,
             app,
-            authentication_config,
             channel_fees,
             channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -298,12 +393,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -315,12 +413,15 @@ module sage_channel::test_channel_actions {
         {
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -335,12 +436,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -348,8 +452,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -366,14 +470,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -387,10 +490,10 @@ module sage_channel::test_channel_actions {
             let mut channel = ts::take_shared<Channel>(scenario);
 
             let retrieved_avatar = channel::get_avatar(&channel);
-            assert!(retrieved_avatar == avatar_hash, EChannelAvatarMismatch);
+            assert!(retrieved_avatar == avatar, EChannelAvatarMismatch);
 
             let retrieved_banner = channel::get_banner(&channel);
-            assert!(retrieved_banner == banner_hash, EChannelBannerMismatch);
+            assert!(retrieved_banner == banner, EChannelBannerMismatch);
 
             let retrieved_creator = channel::get_created_by(&channel);
             assert!(retrieved_creator == ADMIN, EChannelCreatorMismatch);
@@ -459,85 +562,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
-                user_fees,
-                user_registry,
-                user_invite_registry
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_channel_actions_create_auth_fail() {
-        let (
-            mut scenario_val,
-            app,
-            authentication_config,
-            channel_fees,
-            mut channel_registry,
-            clock,
-            invite_config,
-            soul,
-            user_fees,
-            user_registry,
-            user_invite_registry
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
-            let description = utf8(b"description");
-            let name = utf8(b"channel-name");
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
-            let _channel_address = channel_actions::create<SUI, InvalidAuthSoul>(
-                &authentication_config,
-                &channel_fees,
-                &mut channel_registry,
-                &clock,
-                &invalid_soul,
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            destroy(invalid_soul);
-
-            destroy_for_testing(
-                app,
-                authentication_config,
-                channel_fees,
-                channel_registry,
-                clock,
-                invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -553,12 +586,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -566,10 +602,10 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
-            let description = utf8(b"description");
-            let name = utf8(b"channel-name");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -582,14 +618,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -599,12 +634,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -620,12 +658,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -633,10 +674,10 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-            let banner_hash = utf8(b"banner_hash");
-            let description = utf8(b"description");
-            let name = utf8(b"channel-name");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -649,14 +690,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -666,12 +706,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -686,12 +729,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -699,8 +745,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -715,14 +761,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -744,12 +789,11 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::follow<SUI, ValidAuthSoul>(
-                &authentication_config,
+            channel_actions::follow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -812,112 +856,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
-                user_fees,
-                user_registry,
-                user_invite_registry
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_channel_actions_follow_auth_fail() {
-        let (
-            mut scenario_val,
-            app,
-            authentication_config,
-            channel_fees,
-            mut channel_registry,
-            clock,
-            invite_config,
-            soul,
-            user_fees,
-            user_registry,
-            user_invite_registry
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
-        let description = utf8(b"description");
-        let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
-                &channel_fees,
-                &mut channel_registry,
-                &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let mut channel = ts::take_shared<Channel>(scenario);
-
-            let custom_payment = mint_for_testing<SUI>(
-                JOIN_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                JOIN_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
-            channel_actions::follow<SUI, InvalidAuthSoul>(
-                &authentication_config,
-                &mut channel,
-                &channel_fees,
-                &clock,
-                &invalid_soul,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            ts::return_shared(channel);
-
-            destroy(invalid_soul);
-
-            destroy_for_testing(
-                app,
-                authentication_config,
-                channel_fees,
-                channel_registry,
-                clock,
-                invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -933,12 +880,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -946,8 +896,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -962,14 +912,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -991,12 +940,11 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::follow<SUI, ValidAuthSoul>(
-                &authentication_config,
+            channel_actions::follow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1006,12 +954,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1027,12 +978,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -1040,8 +994,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -1056,14 +1010,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1085,12 +1038,11 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::follow<SUI, ValidAuthSoul>(
-                &authentication_config,
+            channel_actions::follow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1100,12 +1052,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1121,12 +1076,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -1134,8 +1092,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -1150,14 +1108,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1179,12 +1136,11 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::follow<SUI, ValidAuthSoul>(
-                &authentication_config,
+            channel_actions::follow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1212,12 +1168,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1233,12 +1192,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -1246,8 +1208,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -1262,14 +1224,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1291,12 +1252,11 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            channel_actions::follow<SUI, ValidAuthSoul>(
-                &authentication_config,
+            channel_actions::follow<SUI>(
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1324,12 +1284,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1344,54 +1307,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        let key = string_helpers::to_lowercase(&name);
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -1404,14 +1339,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1430,7 +1364,7 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &clock,
                 &user_registry,
-                key
+                utf8(b"server")
             );
 
             let moderation = channel::borrow_moderators_mut(&mut channel);
@@ -1463,7 +1397,7 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &clock,
                 &user_registry,
-                key
+                utf8(b"server")
             );
 
             let moderation = channel::borrow_moderators_mut(&mut channel);
@@ -1491,12 +1425,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1511,52 +1448,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -1569,14 +1480,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1588,7 +1498,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 ADD_MODERATOR_CUSTOM_FEE,
@@ -1603,7 +1512,7 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1626,13 +1535,11 @@ module sage_channel::test_channel_actions {
             assert!(!is_owner, EIsOwner);
 
             ts::return_shared(channel);
-            ts::return_shared(user);
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 REMOVE_MODERATOR_CUSTOM_FEE,
@@ -1647,7 +1554,7 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1674,16 +1581,18 @@ module sage_channel::test_channel_actions {
             assert!(length == 1, EModeratorLengthMismatch);
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1699,52 +1608,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -1757,14 +1640,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1776,7 +1658,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, SERVER);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 ADD_MODERATOR_CUSTOM_FEE,
@@ -1791,23 +1672,25 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1823,52 +1706,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -1881,14 +1738,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -1900,7 +1756,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 INCORRECT_FEE,
@@ -1915,23 +1770,25 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -1947,52 +1804,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -2005,14 +1836,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2024,7 +1854,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 ADD_MODERATOR_CUSTOM_FEE,
@@ -2039,23 +1868,25 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2071,52 +1902,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -2129,14 +1934,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2148,7 +1952,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 ADD_MODERATOR_CUSTOM_FEE,
@@ -2163,20 +1966,18 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
         };
 
         ts::next_tx(scenario, SERVER);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 REMOVE_MODERATOR_CUSTOM_FEE,
@@ -2191,23 +1992,25 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2223,52 +2026,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -2281,14 +2058,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2300,7 +2076,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 ADD_MODERATOR_CUSTOM_FEE,
@@ -2315,7 +2090,7 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2334,23 +2109,25 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2366,52 +2143,26 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
-            mut user_registry,
-            mut user_invite_registry
+            user_registry,
+            user_invite_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, SERVER);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_USER_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_USER_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _user_address = user_actions::create<SUI>(
-                &clock,
-                &invite_config,
-                &mut user_registry,
-                &mut user_invite_registry,
-                &user_fees,
-                option::none(),
-                option::none(),
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -2424,14 +2175,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2443,7 +2193,6 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
-            let user = ts::take_shared<User>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 ADD_MODERATOR_CUSTOM_FEE,
@@ -2458,7 +2207,7 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2477,23 +2226,25 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &user,
+                &shared_user_server,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             ts::return_shared(channel);
-            ts::return_shared(user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2508,12 +2259,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -2521,8 +2275,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -2537,14 +2291,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2572,13 +2325,13 @@ module sage_channel::test_channel_actions {
             let (
                 _post_address,
                 timestamp
-            ) = channel_actions::post<SUI, ValidAuthSoul>(
+            ) = channel_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_admin,
+                &owned_user_config,
                 data,
                 description,
                 title,
@@ -2613,122 +2366,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
-                user_fees,
-                user_registry,
-                user_invite_registry
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
-    fun test_channel_actions_post_auth_fail() {
-        let (
-            mut scenario_val,
-            app,
-            authentication_config,
-            channel_fees,
-            mut channel_registry,
-            clock,
-            invite_config,
-            soul,
-            user_fees,
-            user_registry,
-            user_invite_registry
-        ) = setup_for_testing();
-
-        let scenario = &mut scenario_val;
-
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
-        let description = utf8(b"description");
-        let name = utf8(b"CHANNEL-name");
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let custom_payment = mint_for_testing<SUI>(
-                CREATE_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                CREATE_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
-                &channel_fees,
-                &mut channel_registry,
-                &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
-                description,
-                name,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-        };
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let mut channel = ts::take_shared<Channel>(scenario);
-
-            let custom_payment = mint_for_testing<SUI>(
-                POST_TO_CHANNEL_CUSTOM_FEE,
-                ts::ctx(scenario)
-            );
-            let sui_payment = mint_for_testing<SUI>(
-                POST_TO_CHANNEL_SUI_FEE,
-                ts::ctx(scenario)
-            );
-
-            let data = utf8(b"data");
-            let title = utf8(b"title");
-
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
-            let (
-                _post_address,
-                _timestamp
-            ) = channel_actions::post<SUI, InvalidAuthSoul>(
-                &app,
-                &authentication_config,
-                &mut channel,
-                &channel_fees,
-                &clock,
-                &invalid_soul,
-                data,
-                description,
-                title,
-                custom_payment,
-                sui_payment,
-                ts::ctx(scenario)
-            );
-
-            ts::return_shared(channel);
-
-            destroy(invalid_soul);
-
-            destroy_for_testing(
-                app,
-                authentication_config,
-                channel_fees,
-                channel_registry,
-                clock,
-                invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2744,12 +2390,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -2757,8 +2406,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -2773,14 +2422,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2808,13 +2456,13 @@ module sage_channel::test_channel_actions {
             let (
                 _post_address,
                 _timestamp
-            ) = channel_actions::post<SUI, ValidAuthSoul>(
+            ) = channel_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_admin,
+                &owned_user_config,
                 data,
                 description,
                 title,
@@ -2827,12 +2475,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2848,12 +2499,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -2861,8 +2515,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -2877,14 +2531,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -2912,13 +2565,13 @@ module sage_channel::test_channel_actions {
             let (
                 _post_address,
                 _timestamp
-            ) = channel_actions::post<SUI, ValidAuthSoul>(
+            ) = channel_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_admin,
+                &owned_user_config,
                 data,
                 description,
                 title,
@@ -2931,12 +2584,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -2952,12 +2608,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -2965,8 +2624,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -2981,14 +2640,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3016,13 +2674,13 @@ module sage_channel::test_channel_actions {
             let (
                 _post_address,
                 _timestamp
-            ) = channel_actions::post<SUI, ValidAuthSoul>(
+            ) = channel_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &mut channel,
                 &channel_fees,
                 &clock,
-                &soul,
+                &owned_user_server,
+                &owned_user_config,
                 data,
                 description,
                 title,
@@ -3035,12 +2693,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3055,12 +2716,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3068,8 +2732,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3086,14 +2750,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3153,12 +2816,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3174,12 +2840,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3187,8 +2856,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3203,14 +2872,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3245,12 +2913,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3265,12 +2936,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3278,8 +2952,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3296,14 +2970,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3372,12 +3045,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3393,12 +3069,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3406,8 +3085,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3422,14 +3101,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3473,12 +3151,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3494,12 +3175,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3507,8 +3191,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3523,14 +3207,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3574,12 +3257,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3595,12 +3281,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3608,8 +3297,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3624,14 +3313,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3675,12 +3363,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
@@ -3696,12 +3387,15 @@ module sage_channel::test_channel_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             channel_fees,
             mut channel_registry,
             clock,
             invite_config,
-            soul,
+            owned_user_admin,
+            owned_user_server,
+            owned_user_config,
+            shared_user_admin,
+            shared_user_server,
             user_fees,
             user_registry,
             user_invite_registry
@@ -3709,8 +3403,8 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar_hash = utf8(b"avatar_hash");
-        let banner_hash = utf8(b"banner_hash");
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
 
@@ -3725,14 +3419,13 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
-            let _channel_address = channel_actions::create<SUI, ValidAuthSoul>(
-                &authentication_config,
+            let _channel_address = channel_actions::create<SUI>(
                 &channel_fees,
                 &mut channel_registry,
                 &clock,
-                &soul,
-                avatar_hash,
-                banner_hash,
+                &owned_user_admin,
+                avatar,
+                banner,
                 description,
                 name,
                 custom_payment,
@@ -3776,12 +3469,15 @@ module sage_channel::test_channel_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 channel_fees,
                 channel_registry,
                 clock,
                 invite_config,
-                soul,
+                owned_user_admin,
+                owned_user_server,
+                owned_user_config,
+                shared_user_admin,
+                shared_user_server,
                 user_fees,
                 user_registry,
                 user_invite_registry
