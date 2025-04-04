@@ -17,14 +17,14 @@ module sage_post::test_post_actions {
             FeeCap
         },
         apps::{Self, App},
-        authentication::{
+        fees::{Self, Royalties},
+        types::{
             Self,
-            AuthenticationConfig,
-            InvalidAuthSoul,
-            ValidAuthSoul,
-            ENotAuthenticated
-        },
-        fees::{Self, Royalties}
+            UserOwnedConfig,
+            InvalidType,
+            ValidType,
+            ETypeMismatch
+        }
     };
 
     use sage_post::{
@@ -69,69 +69,73 @@ module sage_post::test_post_actions {
     #[test_only]
     fun destroy_for_testing(
         app: App,
-        authentication_config: AuthenticationConfig,
         clock: Clock,
-        owned_user: ValidAuthSoul,
+        owned_user_config: UserOwnedConfig,
         post_fees: PostFees,
-        royalties: Royalties
+        royalties: Royalties,
+        valid_type: ValidType
     ) {
         destroy(app);
-        destroy(authentication_config);
         ts::return_shared(clock);
-        destroy(owned_user);
+        destroy(owned_user_config);
         destroy(post_fees);
         destroy(royalties);
+        destroy(valid_type);
     }
 
     #[test_only]
     fun setup_for_testing(): (
         Scenario,
         App,
-        AuthenticationConfig,
         Clock,
+        UserOwnedConfig,
         PostFees,
         Royalties,
-        ValidAuthSoul
+        ValidType
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
-            authentication::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            types::create_owned_user_config<ValidType>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
             let mut clock = clock::create_for_testing(ts::ctx(scenario));
 
             clock::set_for_testing(&mut clock, 0);
             clock::share_for_testing(clock);
+
+            ts::return_to_sender(scenario, admin_cap);
         };
 
         ts::next_tx(scenario, ADMIN);
         let (
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             royalties,
-            soul
+            valid_type
         ) = {
             let mut app = apps::create_for_testing(
                 utf8(b"sage"),
                 ts::ctx(scenario)
             );
-
-            let mut authentication_config = scenario.take_shared<AuthenticationConfig>();
-
-            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+            
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            authentication::update_type<ValidAuthSoul>(
-                &admin_cap,
-                &mut authentication_config
-            );
-
             let clock = ts::take_shared<Clock>(scenario);
+
+            let owned_user_config = ts::take_shared<UserOwnedConfig>(
+                scenario
+            );
 
             let royalties = fees::create_for_testing<SUI>(
                 &mut app,
@@ -142,7 +146,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let soul = authentication::create_valid_auth_soul(
+            let valid_type = types::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -156,15 +160,14 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            ts::return_to_sender(scenario, admin_cap);
             ts::return_to_sender(scenario, fee_cap);
 
             (
                 app,
-                authentication_config,
                 clock,
+                owned_user_config,
                 royalties,
-                soul
+                valid_type
             )
         };
 
@@ -178,11 +181,11 @@ module sage_post::test_post_actions {
         (
             scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            soul
+            valid_type
         )
     }
 
@@ -191,11 +194,11 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -204,11 +207,11 @@ module sage_post::test_post_actions {
         {
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -220,17 +223,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         let timestamp = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -241,10 +248,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 self,
                 timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -264,6 +271,7 @@ module sage_post::test_post_actions {
 
             assert!(length == 1, EPostsLengthMismatch);
 
+            destroy(owned_user);
             destroy(posts);
 
             timestamp
@@ -285,11 +293,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -297,40 +305,40 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
+    #[expected_failure(abort_code = ETypeMismatch)]
     fun test_post_actions_create_auth_fail() {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
+            let owned_user = types::create_invalid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let invalid_soul = authentication::create_invalid_auth_soul(
-                ts::ctx(scenario)
-            );
-
             let (
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<InvalidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<InvalidType>(
                 &clock,
-                &invalid_soul,
+                &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -338,16 +346,16 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            destroy(invalid_soul);
+            destroy(owned_user);
             destroy(posts);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -359,17 +367,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let owned_user = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -380,10 +392,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -392,6 +404,8 @@ module sage_post::test_post_actions {
             );
 
             destroy(posts);
+
+            owned_user
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -418,11 +432,11 @@ module sage_post::test_post_actions {
                 _comment_address,
                 self,
                 timestamp
-            ) = post_actions::comment<SUI, ValidAuthSoul>(
+            ) = post_actions::comment<SUI, ValidType>(
                 &app,
-                &authentication_config,
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
                 data,
@@ -466,13 +480,15 @@ module sage_post::test_post_actions {
 
             ts::return_shared(comment);
 
+            destroy(owned_user);
+
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -480,22 +496,26 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
+    #[expected_failure(abort_code = ETypeMismatch)]
     fun test_post_actions_comment_auth_fail() {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -506,10 +526,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -517,6 +537,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            destroy(owned_user);
             destroy(posts);
         };
 
@@ -528,7 +549,7 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let invalid_soul = authentication::create_invalid_auth_soul(
+            let owned_user = types::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -545,11 +566,11 @@ module sage_post::test_post_actions {
                 _comment_address,
                 _self,
                 _timestamp
-            ) = post_actions::comment<SUI, InvalidAuthSoul>(
+            ) = post_actions::comment<SUI, InvalidType>(
                 &app,
-                &authentication_config,
                 &clock,
-                &invalid_soul,
+                &owned_user,
+                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
                 data,
@@ -562,15 +583,15 @@ module sage_post::test_post_actions {
 
             ts::return_shared(parent_post);
 
-            destroy(invalid_soul);
+            destroy(owned_user);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -583,17 +604,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let owned_user = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -604,10 +629,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -616,6 +641,8 @@ module sage_post::test_post_actions {
             );
 
             destroy(posts);
+
+            owned_user
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -639,11 +666,11 @@ module sage_post::test_post_actions {
                 _comment_address,
                 _self,
                 _timestamp
-            ) = post_actions::comment<SUI, ValidAuthSoul>(
+            ) = post_actions::comment<SUI, ValidType>(
                 &app,
-                &authentication_config,
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
                 data,
@@ -654,15 +681,17 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            destroy(owned_user);
+
             ts::return_shared(parent_post);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -675,17 +704,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let owned_user = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -696,10 +729,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -708,6 +741,8 @@ module sage_post::test_post_actions {
             );
 
             destroy(posts);
+
+            owned_user
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -731,11 +766,11 @@ module sage_post::test_post_actions {
                 _comment_address,
                 _self,
                 _timestamp
-            ) = post_actions::comment<SUI, ValidAuthSoul>(
+            ) = post_actions::comment<SUI, ValidType>(
                 &app,
-                &authentication_config,
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
                 data,
@@ -745,16 +780,18 @@ module sage_post::test_post_actions {
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            destroy(owned_user);
             
             ts::return_shared(parent_post);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -766,17 +803,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let owned_user = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -787,10 +828,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -799,6 +840,8 @@ module sage_post::test_post_actions {
             );
 
             destroy(posts);
+
+            owned_user
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -814,10 +857,10 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, ValidAuthSoul>(
-                &authentication_config,
+            post_actions::like<SUI, ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -839,15 +882,17 @@ module sage_post::test_post_actions {
 
             assert!(length == 1, ELikesMismatch);
 
+            destroy(owned_user);
+
             ts::return_shared(post);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -855,22 +900,26 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ENotAuthenticated)]
+    #[expected_failure(abort_code = ETypeMismatch)]
     fun test_post_actions_like_auth_fail() {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -881,10 +930,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -892,6 +941,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            destroy(owned_user);
             destroy(posts);
         };
 
@@ -908,14 +958,14 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let invalid_soul = authentication::create_invalid_auth_soul(
+            let owned_user = types::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, InvalidAuthSoul>(
-                &authentication_config,
+            post_actions::like<SUI, InvalidType>(
                 &clock,
-                &invalid_soul,
+                &owned_user,
+                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -924,16 +974,17 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            destroy(owned_user);
+
             ts::return_shared(post);
-            destroy(invalid_soul);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -946,17 +997,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let owned_user = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -967,10 +1022,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -979,6 +1034,8 @@ module sage_post::test_post_actions {
             );
 
             destroy(posts);
+
+            owned_user
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -994,10 +1051,10 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, ValidAuthSoul>(
-                &authentication_config,
+            post_actions::like<SUI, ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -1006,15 +1063,17 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            destroy(owned_user);
+
             ts::return_shared(post);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 
@@ -1027,17 +1086,21 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
+            owned_user_config,
             post_fees,
             royalties,
-            owned_user
+            valid_type
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let owned_user = {
+            let owned_user = types::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
             let mut posts = posts::create(ts::ctx(scenario));
 
             let data = utf8(b"data");
@@ -1048,10 +1111,10 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidAuthSoul>(
-                &authentication_config,
+            ) = post_actions::create<ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -1060,6 +1123,8 @@ module sage_post::test_post_actions {
             );
 
             destroy(posts);
+
+            owned_user
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -1075,10 +1140,10 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, ValidAuthSoul>(
-                &authentication_config,
+            post_actions::like<SUI, ValidType>(
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
@@ -1087,15 +1152,17 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            destroy(owned_user);
+
             ts::return_shared(post);
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
-                owned_user,
+                owned_user_config,
                 post_fees,
-                royalties
+                royalties,
+                valid_type
             );
         };
 

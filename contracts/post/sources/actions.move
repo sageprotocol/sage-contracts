@@ -10,8 +10,8 @@ module sage_post::post_actions {
 
     use sage_admin::{
         apps::{Self, App},
-        authentication::{Self, AuthenticationConfig},
-        fees::{Self, Royalties}
+        fees::{Self, Royalties},
+        types::{Self, UserOwnedConfig}
     };
 
     use sage_post::{
@@ -55,9 +55,9 @@ module sage_post::post_actions {
 
     public fun comment<CoinType, UserOwnedType: key>(
         app: &App,
-        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         owned_user: &UserOwnedType,
+        owned_user_config: &UserOwnedConfig,
         parent_post: &mut Post,
         post_fees: &PostFees,
         data: String,
@@ -67,8 +67,8 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        authentication::assert_authentication<UserOwnedType>(
-            authentication_config,
+        types::assert_owned_user(
+            owned_user_config,
             owned_user
         );
         
@@ -122,17 +122,17 @@ module sage_post::post_actions {
     }
 
     public fun create<UserOwnedType: key> (
-        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         owned_user: &UserOwnedType,
+        owned_user_config: &UserOwnedConfig,
         posts: &mut Posts,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        authentication::assert_authentication<UserOwnedType>(
-            authentication_config,
+        types::assert_owned_user(
+            owned_user_config,
             owned_user
         );
 
@@ -156,9 +156,9 @@ module sage_post::post_actions {
     }
 
     public fun like<CoinType, UserOwnedType: key> (
-        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         owned_user: &UserOwnedType,
+        owned_user_config: &UserOwnedConfig,
         post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
@@ -166,8 +166,8 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<UserOwnedType>(
-            authentication_config,
+        types::assert_owned_user(
+            owned_user_config,
             owned_user
         );
 

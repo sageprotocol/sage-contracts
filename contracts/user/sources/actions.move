@@ -11,8 +11,8 @@ module sage_user::user_actions {
     use sage_admin::{
         admin::{InviteCap},
         apps::{Self, App},
-        authentication::{Self, AuthenticationConfig},
-        fees::{Self}
+        fees::{Self},
+        types::{UserOwnedConfig}
     };
 
     use sage_post::{
@@ -56,6 +56,10 @@ module sage_user::user_actions {
     const EUserNameMismatch: u64 = 374;
 
     // --------------- Name Tag ---------------
+
+    public struct UserConfig has key {
+        id: UID
+    }
 
     // --------------- Events ---------------
 
@@ -106,9 +110,15 @@ module sage_user::user_actions {
         user_name: String
     }
 
+    public struct USER_ACTIONS has drop {}
+
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    // public fun add_favorite_channel<ChannelType: key> {}
+
+    // public fun assert_is_channel<ChannelType: key> {}
 
     public fun assert_user_description(
         description: &String
@@ -273,11 +283,10 @@ module sage_user::user_actions {
     }
 
     public fun create_invite<CoinType> (
-        authentication_config: &AuthenticationConfig,
         invite_config: &InviteConfig,
         user_fees: &UserFees,
         user_invite_registry: &mut UserInviteRegistry,
-        owned_user: &UserOwned,
+        _: &UserOwned,
         invite_code: String,
         invite_hash: vector<u8>,
         invite_key: String,
@@ -285,11 +294,6 @@ module sage_user::user_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<UserOwned>(
-            authentication_config,
-            owned_user
-        );
-
         user_invite::assert_invite_not_required(invite_config);
 
         let (
@@ -338,20 +342,14 @@ module sage_user::user_actions {
     }
 
     public fun follow<CoinType> (
-        authentication_config: &AuthenticationConfig,
         clock: &Clock,
-        owned_user: &UserOwned,
+        _: &UserOwned,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        authentication::assert_authentication<UserOwned>(
-            authentication_config,
-            owned_user
-        );
-
         let (
             custom_payment,
             sui_payment
@@ -440,9 +438,9 @@ module sage_user::user_actions {
 
     public fun post<CoinType> (
         app: &App,
-        authentication_config: &AuthenticationConfig,
         clock: &Clock,
         owned_user: &UserOwned,
+        owned_user_config: &UserOwnedConfig,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
         data: String,
@@ -468,9 +466,9 @@ module sage_user::user_actions {
             _self,
             timestamp
         ) = post_actions::create<UserOwned>(
-            authentication_config,
             clock,
             owned_user,
+            owned_user_config,
             posts,
             data,
             description,

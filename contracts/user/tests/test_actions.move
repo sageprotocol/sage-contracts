@@ -17,11 +17,8 @@ module sage_user::test_user_actions {
             FeeCap,
             InviteCap
         },
-        authentication::{
-            Self,
-            AuthenticationConfig
-        },
-        apps::{Self, App}
+        apps::{Self, App},
+        types::{Self, UserOwnedConfig}
     };
 
     use sage_shared::{
@@ -103,17 +100,17 @@ module sage_user::test_user_actions {
     #[test_only]
     fun destroy_for_testing(
         app: App,
-        authentication_config: AuthenticationConfig,
         clock: Clock,
         invite_config: InviteConfig,
+        owned_user_config: UserOwnedConfig,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry,
         user_fees: UserFees
     ) {
         destroy(app);
-        destroy(authentication_config);
         ts::return_shared(clock);
         destroy(invite_config);
+        destroy(owned_user_config);
         destroy(user_registry);
         destroy(user_invite_registry);
         destroy(user_fees);
@@ -123,9 +120,9 @@ module sage_user::test_user_actions {
     fun setup_for_testing(): (
         Scenario,
         App,
-        AuthenticationConfig,
         Clock,
         InviteConfig,
+        UserOwnedConfig,
         UserRegistry,
         UserInviteRegistry,
         UserFees
@@ -135,7 +132,6 @@ module sage_user::test_user_actions {
         {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
-            authentication::init_for_testing(ts::ctx(scenario));
             user_invite::init_for_testing(ts::ctx(scenario));
             user_registry::init_for_testing(ts::ctx(scenario));
         };
@@ -151,7 +147,6 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             app,
-            authentication_config,
             clock,
             invite_config,
             user_registry,
@@ -166,17 +161,15 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let mut authentication_config = scenario.take_shared<AuthenticationConfig>();
-
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
-            authentication::update_type<UserOwned>(
-                &admin_cap,
-                &mut authentication_config
-            );
-
             let clock = ts::take_shared<Clock>(scenario);
+
+            types::create_owned_user_config<UserOwned>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
 
             user_fees::create<SUI>(
                 &fee_cap,
@@ -201,7 +194,6 @@ module sage_user::test_user_actions {
 
             (
                 app,
-                authentication_config,
                 clock,
                 invite_config,
                 user_registry,
@@ -210,18 +202,25 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let user_fees = {
+        let (
+            owned_user_config,
+            user_fees
+         ) = {
+            let owned_user_config = ts::take_shared<UserOwnedConfig>(scenario);
             let user_fees = ts::take_shared<UserFees>(scenario);
 
-            user_fees
+            (
+                owned_user_config,
+                user_fees
+            )
         };
 
         (
             scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             user_registry,
             user_invite_registry,
             user_fees
@@ -233,9 +232,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             user_registry,
             user_invite_registry,
             user_fees
@@ -247,9 +246,9 @@ module sage_user::test_user_actions {
         {
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -358,9 +357,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -482,9 +481,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -499,9 +498,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -639,9 +638,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -657,9 +656,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -705,9 +704,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -723,9 +722,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -771,9 +770,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -789,9 +788,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -850,9 +849,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -868,9 +867,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -916,9 +915,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -934,9 +933,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -998,9 +997,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1016,9 +1015,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1064,9 +1063,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1082,9 +1081,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1130,9 +1129,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1147,9 +1146,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1207,7 +1206,6 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::create_invite<SUI>(
-                &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
@@ -1242,9 +1240,9 @@ module sage_user::test_user_actions {
         {
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1260,9 +1258,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1320,7 +1318,6 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::create_invite<SUI>(
-                &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
@@ -1337,9 +1334,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1355,9 +1352,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1415,7 +1412,6 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::create_invite<SUI>(
-                &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
@@ -1432,9 +1428,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1450,9 +1446,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1523,7 +1519,6 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::create_invite<SUI>(
-                &authentication_config,
                 &invite_config,
                 &user_fees,
                 &mut user_invite_registry,
@@ -1543,9 +1538,9 @@ module sage_user::test_user_actions {
         {
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1560,9 +1555,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             user_registry,
             mut user_invite_registry,
             user_fees
@@ -1607,9 +1602,9 @@ module sage_user::test_user_actions {
         {
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1624,9 +1619,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1724,7 +1719,6 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::follow<SUI>(
-                &authentication_config,
                 &clock,
                 &owned_user,
                 &mut other_shared_user,
@@ -1787,9 +1781,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1805,9 +1799,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -1902,7 +1896,6 @@ module sage_user::test_user_actions {
             let mut other_shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::follow<SUI>(
-                &authentication_config,
                 &clock,
                 &owned_user,
                 &mut other_shared_user,
@@ -1917,9 +1910,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -1935,9 +1928,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2032,7 +2025,6 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
-                &authentication_config,
                 &clock,
                 &owned_user,
                 &mut other_shared_user,
@@ -2047,9 +2039,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2065,9 +2057,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2129,7 +2121,6 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
-                &authentication_config,
                 &clock,
                 &owned_user,
                 &mut shared_user,
@@ -2144,9 +2135,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2162,9 +2153,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2262,7 +2253,6 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
-                &authentication_config,
                 &clock,
                 &owned_user,
                 &mut other_shared_user,
@@ -2295,9 +2285,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2313,9 +2303,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2413,7 +2403,6 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
-                &authentication_config,
                 &clock,
                 &owned_user,
                 &mut other_shared_user,
@@ -2446,10 +2435,10 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
-                user_registry,
+        
+        owned_user_config,        user_registry,
                 user_invite_registry,
                 user_fees
             );
@@ -2463,9 +2452,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2533,9 +2522,9 @@ module sage_user::test_user_actions {
                 timestamp
             ) = user_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut shared_user,
                 &user_fees,
                 data,
@@ -2564,9 +2553,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2582,9 +2571,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2652,9 +2641,9 @@ module sage_user::test_user_actions {
                 _timestamp
             ) = user_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut shared_user,
                 &user_fees,
                 data,
@@ -2670,9 +2659,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2688,9 +2677,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2758,9 +2747,9 @@ module sage_user::test_user_actions {
                 _timestamp
             ) = user_actions::post<SUI>(
                 &app,
-                &authentication_config,
                 &clock,
                 &owned_user,
+                &owned_user_config,
                 &mut shared_user,
                 &user_fees,
                 data,
@@ -2776,9 +2765,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2793,9 +2782,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -2904,9 +2893,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -2922,9 +2911,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -3020,9 +3009,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -3038,9 +3027,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -3136,9 +3125,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -3154,9 +3143,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -3252,9 +3241,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
@@ -3270,9 +3259,9 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            authentication_config,
             clock,
             mut invite_config,
+            owned_user_config,
             mut user_registry,
             mut user_invite_registry,
             user_fees
@@ -3405,9 +3394,9 @@ module sage_user::test_user_actions {
 
             destroy_for_testing(
                 app,
-                authentication_config,
                 clock,
                 invite_config,
+                owned_user_config,
                 user_registry,
                 user_invite_registry,
                 user_fees
