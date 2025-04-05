@@ -353,7 +353,8 @@ module sage_user::test_user_owned {
             user_owned::remove_favorite_channel<FakeChannel>(
                 &app,
                 &fake_channel,
-                &mut owned_user
+                &mut owned_user,
+                ts::ctx(scenario)
             );
 
             destroy(app);
@@ -415,7 +416,8 @@ module sage_user::test_user_owned {
             user_owned::remove_favorite_channel<FakeChannel>(
                 &app,
                 &fake_channel,
-                &mut owned_user
+                &mut owned_user,
+                ts::ctx(scenario)
             );
 
             let length = user_owned::get_channel_favorites_length(
@@ -616,7 +618,8 @@ module sage_user::test_user_owned {
             user_owned::remove_favorite_user(
                 &app,
                 &mut owned_user,
-                &shared_user
+                &shared_user,
+                ts::ctx(scenario)
             );
 
             let length = user_owned::get_user_favorites_length(
@@ -711,7 +714,8 @@ module sage_user::test_user_owned {
             user_owned::remove_favorite_user(
                 &app,
                 &mut owned_user,
-                &shared_user
+                &shared_user,
+                ts::ctx(scenario)
             );
 
             let length = user_owned::get_user_favorites_length(

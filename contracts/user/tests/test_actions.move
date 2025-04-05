@@ -18,7 +18,12 @@ module sage_user::test_user_actions {
             InviteCap
         },
         apps::{Self, App},
-        types::{Self, UserOwnedConfig}
+        types::{
+            Self,
+            ChannelConfig,
+            UserOwnedConfig,
+            ETypeMismatch
+        }
     };
 
     use sage_shared::{
@@ -79,21 +84,32 @@ module sage_user::test_user_actions {
     // --------------- Errors ---------------
 
     const EDescriptionInvalid: u64 = 0;
-    const EHasMember: u64 = 1;
-    const EHashMismatch: u64 = 2;
-    const ENoInviteRecord: u64 = 3;
-    const ENoPostsRecord: u64 = 4;
-    const EPostsLengthMismatch: u64 = 5;
-    const EUserAddressMismatch: u64 = 6;
-    const EUserAvatarMismatch: u64 = 7;
-    const EUserBannerMismatch: u64 = 8;
-    const EUserDescriptionMismatch: u64 = 9;
-    const EUserKeyMismatch: u64 = 10;
-    const EUserOwnerMismatch: u64 = 11;
-    const EUserInviteMismatch: u64 = 12;
-    const EUserMembershipCountMismatch: u64 = 13;
-    const ETestUserNameMismatch: u64 = 14;
-    const EUserNotMember: u64 = 15;
+    const EFavoritesMismatch: u64 = 1;
+    const EHasMember: u64 = 2;
+    const EHashMismatch: u64 = 3;
+    const ENoInviteRecord: u64 = 4;
+    const ENoPostsRecord: u64 = 5;
+    const EPostsLengthMismatch: u64 = 6;
+    const EUserAddressMismatch: u64 = 7;
+    const EUserAvatarMismatch: u64 = 8;
+    const EUserBannerMismatch: u64 = 9;
+    const EUserDescriptionMismatch: u64 = 10;
+    const EUserKeyMismatch: u64 = 11;
+    const EUserOwnerMismatch: u64 = 12;
+    const EUserInviteMismatch: u64 = 13;
+    const EUserMembershipCountMismatch: u64 = 14;
+    const ETestUserNameMismatch: u64 = 15;
+    const EUserNotMember: u64 = 16;
+
+    // --------------- Name Tag ---------------
+
+    public struct InvalidChannel has key {
+        id: UID
+    }
+
+    public struct ValidChannel has key {
+        id: UID
+    }
 
     // --------------- Test Functions ---------------
 
@@ -1600,6 +1616,394 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_favorite_channel() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, ADMIN);
+        let admin_cap = {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            admin_cap
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            types::create_channel_config<ValidChannel>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
+            let name = utf8(b"admin");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel = ValidChannel {
+                id: object::new(ts::ctx(scenario))
+            };
+            let channel_config = ts::take_shared<ChannelConfig>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::add_favorite_channel<ValidChannel>(
+                &app,
+                &clock,
+                &channel,
+                &channel_config,
+                &mut owned_user,
+                ts::ctx(scenario)
+            );
+
+            let length = user_owned::get_channel_favorites_length(
+                &app,
+                &owned_user
+            );
+
+            assert!(length == 1, EFavoritesMismatch);
+
+            user_actions::remove_favorite_channel<ValidChannel>(
+                &app,
+                &clock,
+                &channel,
+                &mut owned_user,
+                ts::ctx(scenario)
+            );
+
+            let length = user_owned::get_channel_favorites_length(
+                &app,
+                &owned_user
+            );
+
+            assert!(length == 0, EFavoritesMismatch);
+
+            destroy(admin_cap);
+            destroy(channel);
+            destroy(channel_config);
+            destroy(owned_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ETypeMismatch)]
+    fun test_user_actions_favorite_channel_add_fail() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, ADMIN);
+        let admin_cap = {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            admin_cap
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            types::create_channel_config<ValidChannel>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
+            let name = utf8(b"admin");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel = InvalidChannel {
+                id: object::new(ts::ctx(scenario))
+            };
+            let channel_config = ts::take_shared<ChannelConfig>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::add_favorite_channel<InvalidChannel>(
+                &app,
+                &clock,
+                &channel,
+                &channel_config,
+                &mut owned_user,
+                ts::ctx(scenario)
+            );
+
+            destroy(admin_cap);
+            destroy(channel);
+            destroy(channel_config);
+            destroy(owned_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_favorite_user() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, ADMIN);
+        let admin_cap = {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            admin_cap
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let name = utf8(b"admin");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut owned_user_admin = {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            owned_user
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let shared_user_other = {
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel = ValidChannel {
+                id: object::new(ts::ctx(scenario))
+            };
+
+            user_actions::add_favorite_user(
+                &app,
+                &clock,
+                &mut owned_user_admin,
+                &shared_user_other,
+                ts::ctx(scenario)
+            );
+
+            let length = user_owned::get_user_favorites_length(
+                &app,
+                &owned_user_admin
+            );
+
+            assert!(length == 1, EFavoritesMismatch);
+
+            user_actions::remove_favorite_user(
+                &app,
+                &clock,
+                &mut owned_user_admin,
+                &shared_user_other,
+                ts::ctx(scenario)
+            );
+
+            let length = user_owned::get_user_favorites_length(
+                &app,
+                &owned_user_admin
+            );
+
+            assert!(length == 0, EFavoritesMismatch);
+
+            destroy(admin_cap);
+            destroy(channel);
+            destroy(owned_user_admin);
+            destroy(shared_user_other);
+
             destroy_for_testing(
                 app,
                 clock,

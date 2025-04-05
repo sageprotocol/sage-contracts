@@ -12,7 +12,11 @@ module sage_user::user_actions {
         admin::{InviteCap},
         apps::{Self, App},
         fees::{Self},
-        types::{UserOwnedConfig}
+        types::{
+            Self,
+            ChannelConfig,
+            UserOwnedConfig
+        }
     };
 
     use sage_post::{
@@ -57,11 +61,15 @@ module sage_user::user_actions {
 
     // --------------- Name Tag ---------------
 
-    public struct UserConfig has key {
-        id: UID
-    }
-
     // --------------- Events ---------------
+
+    public struct ChannelFavoritesUpdate has copy, drop {
+        app: address,
+        favorited_channel: address,
+        message: u8,
+        updated_at: u64,
+        user: address
+    }
 
     public struct InviteCreated has copy, drop {
         invite_code: String,
@@ -80,6 +88,14 @@ module sage_user::user_actions {
         user_shared: address,
         user_key: String,
         user_name: String
+    }
+
+    public struct UserFavoritesUpdate has copy, drop {
+        app: address,
+        favorited_user: address,
+        message: u8,
+        updated_at: u64,
+        user: address
     }
 
     public struct UserFollowsUpdate has copy, drop {
@@ -116,9 +132,71 @@ module sage_user::user_actions {
 
     // --------------- Public Functions ---------------
 
-    // public fun add_favorite_channel<ChannelType: key> {}
+    public fun add_favorite_channel<ChannelType: key> (
+        app: &App,
+        clock: &Clock,
+        channel: &ChannelType,
+        channel_config: &ChannelConfig,
+        owned_user: &mut UserOwned,
+        ctx: &mut TxContext
+    ) {
+        types::assert_channel(
+            channel_config,
+            channel
+        );
 
-    // public fun assert_is_channel<ChannelType: key> {}
+        let (
+            app_address,
+            message,
+            self,
+            favorited_channel
+        ) = user_owned::add_favorite_channel(
+            app,
+            channel,
+            owned_user,
+            ctx
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        event::emit(ChannelFavoritesUpdate {
+            app: app_address,
+            favorited_channel,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
+    }
+
+    public fun add_favorite_user (
+        app: &App,
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        user: &UserShared,
+        ctx: &mut TxContext
+    ) {
+        let (
+            app_address,
+            message,
+            self,
+            favorited_user
+        ) = user_owned::add_favorite_user(
+            app,
+            owned_user,
+            user,
+            ctx
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        event::emit(UserFavoritesUpdate {
+            app: app_address,
+            favorited_user,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
+    }
 
     public fun assert_user_description(
         description: &String
@@ -497,6 +575,66 @@ module sage_user::user_actions {
         });
 
         (post_address, timestamp)
+    }
+
+    public fun remove_favorite_channel<ChannelType: key> (
+        app: &App,
+        clock: &Clock,
+        channel: &ChannelType,
+        owned_user: &mut UserOwned,
+        ctx: &mut TxContext
+    ) {
+        let (
+            app_address,
+            message,
+            self,
+            favorited_channel
+        ) = user_owned::remove_favorite_channel(
+            app,
+            channel,
+            owned_user,
+            ctx
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        event::emit(ChannelFavoritesUpdate {
+            app: app_address,
+            favorited_channel,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
+    }
+
+    public fun remove_favorite_user (
+        app: &App,
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        user: &UserShared,
+        ctx: &mut TxContext
+    ) {
+        let (
+            app_address,
+            message,
+            self,
+            favorited_user
+        ) = user_owned::remove_favorite_user(
+            app,
+            owned_user,
+            user,
+            ctx
+        );
+
+        let timestamp = clock.timestamp_ms();
+
+        event::emit(UserFavoritesUpdate {
+            app: app_address,
+            favorited_user,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
     }
 
     public fun update<CoinType> (

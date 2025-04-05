@@ -21,6 +21,9 @@ module sage_user::user_owned {
 
     // --------------- Constants ---------------
 
+    const FAVORITE_ADD: u8 = 10;
+    const FAVORITE_REMOVE: u8 = 11;
+
     // --------------- Errors ---------------
 
     const ENoAppFavorites: u64 = 370;
@@ -149,17 +152,20 @@ module sage_user::user_owned {
 
     // --------------- Friend Functions ---------------
 
-    // ADD FAVORITES TO ACTIONS!!!!
-
     public(package) fun add_favorite_channel<ChannelType: key>(
         app: &App,
         channel: &ChannelType,
         owned_user: &mut UserOwned,
         ctx: &mut TxContext
-    ): (String, address, address) {
+    ): (
+        address,
+        u8,
+        address,
+        address
+    ) {
         let (
             favorites_key,
-            app_name
+            _app_name
         ) = apps::create_app_specific_string(
             app,
             utf8(b"favorite-channels")
@@ -191,9 +197,13 @@ module sage_user::user_owned {
             );
         };
 
+        let app_address = object::id_address(app);
+        let self = tx_context::sender(ctx);
+
         (
-            app_name,
-            owned_user.id.to_address(),
+            app_address,
+            FAVORITE_ADD,
+            self,
             favorite_channel_address
         )
     }
@@ -238,10 +248,15 @@ module sage_user::user_owned {
         owned_user: &mut UserOwned,
         user: &UserShared,
         ctx: &mut TxContext
-    ): (String, address, address) {
+    ): (
+        address,
+        u8,
+        address,
+        address
+    ) {
         let (
             favorites_key,
-            app_name
+            _app_name
         ) = apps::create_app_specific_string(
             app,
             utf8(b"favorite-users")
@@ -273,9 +288,13 @@ module sage_user::user_owned {
             );
         };
 
+        let app_address = object::id_address(app);
+        let self = tx_context::sender(ctx);
+
         (
-            app_name,
-            owned_user.id.to_address(),
+            app_address,
+            FAVORITE_ADD,
+            self,
             favorite_user_wallet_address
         )
     }
@@ -315,11 +334,17 @@ module sage_user::user_owned {
     public(package) fun remove_favorite_channel<ChannelType: key>(
         app: &App,
         channel: &ChannelType,
-        owned_user: &mut UserOwned
-    ): (String, address, address) {
+        owned_user: &mut UserOwned,
+        ctx: &TxContext
+    ): (
+        address,
+        u8,
+        address,
+        address
+    ) {
         let (
             favorites_key,
-            app_name
+            _app_name
         ) = apps::create_app_specific_string(
             app,
             utf8(b"favorite-channels")
@@ -341,9 +366,13 @@ module sage_user::user_owned {
 
         favorites.remove(favorite_channel_address);
 
+        let app_address = object::id_address(app);
+        let self = tx_context::sender(ctx);
+
         (
-            app_name,
-            owned_user.id.to_address(),
+            app_address,
+            FAVORITE_REMOVE,
+            self,
             favorite_channel_address
         )
     }
@@ -351,11 +380,17 @@ module sage_user::user_owned {
     public(package) fun remove_favorite_user(
         app: &App,
         owned_user: &mut UserOwned,
-        user: &UserShared
-    ): (String, address, address) {
+        user: &UserShared,
+        ctx: &TxContext
+    ): (
+        address,
+        u8,
+        address,
+        address
+    ) {
         let (
             favorites_key,
-            app_name
+            _app_name
         ) = apps::create_app_specific_string(
             app,
             utf8(b"favorite-users")
@@ -368,19 +403,23 @@ module sage_user::user_owned {
 
         assert!(does_exist, ENoAppFavorites);
 
-        let favorite_user_address = user.get_owner();
+        let favorite_user_wallet_address = user.get_owner();
 
         let favorites = df::borrow_mut<String, Favorites>(
             &mut owned_user.id,
             favorites_key
         );
 
-        favorites.remove(favorite_user_address);
+        favorites.remove(favorite_user_wallet_address);
+
+        let app_address = object::id_address(app);
+        let self = tx_context::sender(ctx);
 
         (
-            app_name,
-            owned_user.id.to_address(),
-            favorite_user_address
+            app_address,
+            FAVORITE_REMOVE,
+            self,
+            favorite_user_wallet_address
         )
     }
 
