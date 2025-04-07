@@ -1,5 +1,5 @@
 module sage_user::user_actions {
-    use std::string::{String};
+    use std::string::{String, utf8};
 
     use sui::{
         clock::Clock,
@@ -24,8 +24,7 @@ module sage_user::user_actions {
     };
 
     use sage_shared::{
-        membership::{Self},
-        posts::{Self}
+        membership::{Self}
     };
 
     use sage_user::{
@@ -296,7 +295,6 @@ module sage_user::user_actions {
         );
 
         let follows = membership::create(ctx);
-        let posts = posts::create(ctx);
 
         let (
             owned_user,
@@ -318,7 +316,6 @@ module sage_user::user_actions {
             user_key,
             owned_user_address,
             self,
-            posts,
             ctx
         );
 
@@ -537,21 +534,39 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let posts = user_shared::borrow_posts_mut(shared_user);
+        let (
+            posts_key,
+            app_name
+        ) = apps::create_app_specific_string(
+            app,
+            utf8(b"posts")
+        );
+
+        let mut posts = user_shared::take_posts(
+            shared_user,
+            posts_key,
+            ctx
+        );
 
         let (
             post_address,
-            _self,
+            self,
             timestamp
         ) = post_actions::create<UserOwned>(
             clock,
             owned_user,
             owned_user_config,
-            posts,
+            &mut posts,
             data,
             description,
             title,
             ctx
+        );
+
+        user_shared::return_posts(
+            shared_user,
+            posts,
+            posts_key
         );
 
         fees::collect_payment<CoinType>(
@@ -559,8 +574,6 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let app_name = apps::get_name(app);
-        let self = tx_context::sender(ctx);
         let user_key = user_shared::get_key(shared_user);
 
         event::emit(UserPostCreated {

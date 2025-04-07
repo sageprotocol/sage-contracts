@@ -7,8 +7,7 @@ module sage_user::test_user_shared {
     };
 
     use sage_shared::{
-        membership::{Self},
-        posts::{Self}
+        membership::{Self}
     };
 
     use sage_user::{
@@ -25,8 +24,9 @@ module sage_user::test_user_shared {
 
     // --------------- Errors ---------------
 
-    const EUserKeyMismatch: u64 = 5;
-    const EUserOwnerMismatch: u64 = 6;
+    const EPostsMismatch: u64 = 0;
+    const EUserKeyMismatch: u64 = 1;
+    const EUserOwnerMismatch: u64 = 2;
 
     // --------------- Test Functions ---------------
 
@@ -41,7 +41,6 @@ module sage_user::test_user_shared {
         ts::next_tx(scenario, ADMIN);
         {
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _user_address = user_shared::create(
                 created_at,
@@ -49,7 +48,6 @@ module sage_user::test_user_shared {
                 key,
                 USER_OWNED,
                 ADMIN,
-                posts,
                 ts::ctx(scenario)
             );
         };
@@ -84,7 +82,6 @@ module sage_user::test_user_shared {
         ts::next_tx(scenario, ADMIN);
         {
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _user_address = user_shared::create(
                 created_at,
@@ -92,7 +89,6 @@ module sage_user::test_user_shared {
                 key,
                 USER_OWNED,
                 ADMIN,
-                posts,
                 ts::ctx(scenario)
             );
         };
@@ -110,17 +106,18 @@ module sage_user::test_user_shared {
     }
 
     #[test]
-    fun test_user_borrow_posts() {
+    fun test_user_posts() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         let created_at: u64 = 999;
         let key = utf8(b"user-name");
 
+        let posts_key = utf8(b"sage-posts");
+
         ts::next_tx(scenario, ADMIN);
         {
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _user_address = user_shared::create(
                 created_at,
@@ -128,7 +125,6 @@ module sage_user::test_user_shared {
                 key,
                 USER_OWNED,
                 ADMIN,
-                posts,
                 ts::ctx(scenario)
             );
         };
@@ -137,7 +133,24 @@ module sage_user::test_user_shared {
         {
             let mut user = ts::take_shared<UserShared>(scenario);
 
-            let _posts = user_shared::borrow_posts_mut(&mut user);
+            let posts = user_shared::take_posts(
+                &mut user,
+                posts_key,
+                ts::ctx(scenario)
+            );
+
+            user_shared::return_posts(
+                &mut user,
+                posts,
+                posts_key
+            );
+
+            let does_exist = user_shared::posts_exists(
+                &user,
+                posts_key
+            );
+
+            assert!(does_exist, EPostsMismatch);
 
             ts::return_shared(user);
         };

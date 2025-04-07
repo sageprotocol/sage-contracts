@@ -1,11 +1,15 @@
 module sage_user::user_shared {
+    use sui::{
+        dynamic_field::{Self as df}
+    };
+
     use std::{
         string::{String}
     };
 
     use sage_shared::{
         membership::{Membership},
-        posts::{Posts}
+        posts::{Self, Posts}
     };
 
     // --------------- Constants ---------------
@@ -21,7 +25,6 @@ module sage_user::user_shared {
         key: String,
         owned_user: address,
         owner: address,
-        posts: Posts,
         updated_at: u64
     }
 
@@ -57,19 +60,12 @@ module sage_user::user_shared {
         &mut shared_user.follows
     }
 
-    public(package) fun borrow_posts_mut(
-        shared_user: &mut UserShared
-    ): &mut Posts {
-        &mut shared_user.posts
-    }
-
     public(package) fun create(
         created_at: u64,
         follows: Membership,
         key: String,
         owned_user: address,
         owner: address,
-        posts: Posts,
         ctx: &mut TxContext
     ): address {
         let shared_user = UserShared {
@@ -79,7 +75,6 @@ module sage_user::user_shared {
             key,
             owned_user,
             owner,
-            posts,
             updated_at: created_at
         };
 
@@ -90,7 +85,50 @@ module sage_user::user_shared {
         user_address
     }
 
+    public(package) fun return_posts(
+        shared_user: &mut UserShared,
+        posts: Posts,
+        posts_key: String
+    ) {
+        df::add(
+            &mut shared_user.id,
+            posts_key,
+            posts
+        );
+    }
+
+    public(package) fun take_posts(
+        shared_user: &mut UserShared,
+        posts_key: String,
+        ctx: &mut TxContext
+    ): Posts {
+        let does_exist = df::exists_with_type<String, Posts>(
+            &shared_user.id,
+            posts_key
+        );
+
+        if (does_exist) {
+            df::remove(
+                &mut shared_user.id,
+                posts_key
+            )
+        } else {
+            posts::create(ctx)
+        }
+    }
+
     // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
+
+    #[test_only]
+    public fun posts_exists(
+        shared_user: &UserShared,
+        posts_key: String
+    ): bool {
+        df::exists_with_type<String, Posts>(
+            &shared_user.id,
+            posts_key
+        )
+    }
 }

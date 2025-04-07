@@ -35,6 +35,7 @@ module sage_channel::test_channel {
     const EChannelKeyMismatch: u64 = 4;
     const EChannelNameMismatch: u64 = 5;
     const EDescriptionInvalid: u64 = 6;
+    const EPostsFailure: u64 = 7;
 
     // --------------- Test Functions ---------------
 
@@ -76,11 +77,10 @@ module sage_channel::test_channel {
 
             let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _channel = channel::create(
-                utf8(b"avatar_hash"),
-                utf8(b"banner_hash"),
+                utf8(b"avatar"),
+                utf8(b"banner"),
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -88,7 +88,6 @@ module sage_channel::test_channel {
                 channel_name,
                 moderators,
                 channel_name,
-                posts,
                 ts::ctx(scenario)
             );
         };
@@ -103,17 +102,16 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
+            let avatar = utf8(b"avatar");
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
-                avatar_hash,
-                utf8(b"banner_hash"),
+                avatar,
+                utf8(b"banner"),
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -121,7 +119,6 @@ module sage_channel::test_channel {
                 channel_name,
                 moderators,
                 channel_name,
-                posts,
                 ts::ctx(scenario)
             );
         };
@@ -145,17 +142,16 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
+            let avatar = utf8(b"avatar");
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
-                avatar_hash,
-                utf8(b"banner_hash"),
+                avatar,
+                utf8(b"banner"),
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -163,7 +159,6 @@ module sage_channel::test_channel {
                 channel_name,
                 moderators,
                 channel_name,
-                posts,
                 ts::ctx(scenario)
             );
         };
@@ -181,23 +176,22 @@ module sage_channel::test_channel {
     }
 
     #[test]
-    fun channel_borrow_posts() {
+    fun channel_posts() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar_hash = utf8(b"avatar_hash");
+            let avatar = utf8(b"avatar");
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
-                avatar_hash,
-                utf8(b"banner_hash"),
+                avatar,
+                utf8(b"banner"),
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -205,16 +199,63 @@ module sage_channel::test_channel {
                 channel_name,
                 moderators,
                 channel_name,
-                posts,
                 ts::ctx(scenario)
             );
         };
 
+        let post_address = @0xfff;
+        let posts_key = utf8(b"test");
+        let post_timestamp = 0;
+
         ts::next_tx(scenario, ADMIN);
-        {
+        let mut channel = {
             let mut channel= ts::take_shared<Channel>(scenario);
 
-            let _posts = channel::borrow_posts_mut(&mut channel);
+            let mut posts = channel::take_posts(
+                &mut channel,
+                posts_key,
+                ts::ctx(scenario)
+            );
+
+            posts::add(
+                &mut posts,
+                post_timestamp,
+                post_address
+            );
+
+            channel::return_posts(
+                &mut channel,
+                posts,
+                posts_key
+            );
+
+            channel
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let posts = channel::take_posts(
+                &mut channel,
+                posts_key,
+                ts::ctx(scenario)
+            );
+
+            let has_record = posts::has_record(
+                &posts,
+                post_timestamp
+            );
+
+            assert!(has_record, EPostsFailure);
+
+            let length = posts::get_length(&posts);
+
+            assert!(length == 1, EPostsFailure);
+
+            channel::return_posts(
+                &mut channel,
+                posts,
+                posts_key
+            );
 
             destroy(channel);
         };
@@ -229,17 +270,16 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         let channel_name = {
-            let avatar_hash = utf8(b"avatar_hash");
+            let avatar = utf8(b"avatar");
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
             let follows = membership::create(ts::ctx(scenario));
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
-                avatar_hash,
-                utf8(b"banner_hash"),
+                avatar,
+                utf8(b"banner"),
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -247,7 +287,6 @@ module sage_channel::test_channel {
                 channel_name,
                 moderators,
                 channel_name,
-                posts,
                 ts::ctx(scenario)
             );
 
@@ -256,8 +295,8 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_channel_avatar = utf8(b"new_avatar_hash");
-            let new_channel_banner = utf8(b"new_banner_hash");
+            let new_channel_avatar = utf8(b"new_avatar");
+            let new_channel_banner = utf8(b"new_banner");
             let new_channel_description = utf8(b"new_description");
             let new_channel_name = utf8(b"NEW-name");
 

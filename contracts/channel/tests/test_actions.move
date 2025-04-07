@@ -2261,7 +2261,7 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
-            clock,
+            mut clock,
             invite_config,
             owned_user_admin,
             owned_user_server,
@@ -2279,6 +2279,8 @@ module sage_channel::test_channel_actions {
         let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
+
+        let posts_key = utf8(b"sage-posts");
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -2307,7 +2309,51 @@ module sage_channel::test_channel_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let timestamp = {
+        let timestamp_1 = {
+            let mut channel = ts::take_shared<Channel>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let data = utf8(b"data");
+            let title = utf8(b"title");
+
+            let (
+                _post_address,
+                timestamp
+            ) = channel_actions::post<SUI>(
+                &app,
+                &mut channel,
+                &channel_fees,
+                &clock,
+                &owned_user_admin,
+                &owned_user_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(channel);
+
+            clock::increment_for_testing(
+                &mut clock,
+                1
+            );
+
+            timestamp
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let timestamp_2 = {
             let mut channel = ts::take_shared<Channel>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
@@ -2349,18 +2395,35 @@ module sage_channel::test_channel_actions {
         {
             let mut channel = ts::take_shared<Channel>(scenario);
 
-            let posts = channel::borrow_posts_mut(&mut channel);
+            let posts = channel::take_posts(
+                &mut channel,
+                posts_key,
+                ts::ctx(scenario)
+            );
 
             let has_record = posts::has_record(
-                posts,
-                timestamp
+                &posts,
+                timestamp_1
             );
 
             assert!(has_record, ENoPostRecord);
 
-            let length = posts::get_length(posts);
+            let has_record = posts::has_record(
+                &posts,
+                timestamp_2
+            );
 
-            assert!(length == 1, EPostsLengthMismatch);
+            assert!(has_record, ENoPostRecord);
+
+            let length = posts::get_length(&posts);
+
+            assert!(length == 2, EPostsLengthMismatch);
+
+            channel::return_posts(
+                &mut channel,
+                posts,
+                posts_key
+            );
 
             ts::return_shared(channel);
 

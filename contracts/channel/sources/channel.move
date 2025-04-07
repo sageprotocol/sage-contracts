@@ -1,10 +1,14 @@
 module sage_channel::channel {
+    use sui::{
+        dynamic_field::{Self as df}
+    };
+
     use std::string::{String};
 
     use sage_shared::{
         membership::{Membership},
         moderation::{Moderation},
-        posts::{Posts}
+        posts::{Self, Posts}
     };
 
     use sage_utils::{
@@ -36,7 +40,6 @@ module sage_channel::channel {
         key: String,
         moderators: Moderation,
         name: String,
-        posts: Posts,
         updated_at: u64
     }
 
@@ -116,12 +119,6 @@ module sage_channel::channel {
         &mut channel.moderators
     }
 
-    public(package) fun borrow_posts_mut(
-        channel: &mut Channel
-    ): &mut Posts {
-        &mut channel.posts
-    }
-
     public(package) fun create(
         avatar_hash: String,
         banner_hash: String,
@@ -132,7 +129,6 @@ module sage_channel::channel {
         key: String,
         moderators: Moderation,
         name: String,
-        posts: Posts,
         ctx: &mut TxContext
     ): address {
         assert_channel_name(&name);
@@ -149,7 +145,6 @@ module sage_channel::channel {
             key,
             moderators,
             name,
-            posts,
             updated_at: created_at
         };
 
@@ -158,6 +153,38 @@ module sage_channel::channel {
         transfer::share_object(channel);
 
         channel_address
+    }
+
+    public(package) fun return_posts(
+        channel: &mut Channel,
+        posts: Posts,
+        posts_key: String
+    ) {
+        df::add(
+            &mut channel.id,
+            posts_key,
+            posts
+        );
+    }
+
+    public(package) fun take_posts(
+        channel: &mut Channel,
+        posts_key: String,
+        ctx: &mut TxContext
+    ): Posts {
+        let does_exist = df::exists_with_type<String, Posts>(
+            &channel.id,
+            posts_key
+        );
+
+        if (does_exist) {
+            df::remove(
+                &mut channel.id,
+                posts_key
+            )
+        } else {
+            posts::create(ctx)
+        }
     }
 
     public(package) fun update(

@@ -2856,7 +2856,7 @@ module sage_user::test_user_actions {
         let (
             mut scenario_val,
             app,
-            clock,
+            mut clock,
             invite_config,
             owned_user_config,
             mut user_registry,
@@ -2904,7 +2904,7 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        {
+        let timestamp_1 = {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
@@ -2939,18 +2939,95 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let posts = user_shared::borrow_posts_mut(&mut shared_user);
+            clock::increment_for_testing(
+                &mut clock,
+                1
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+
+            timestamp
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let timestamp_2 = {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                timestamp
+            ) = user_actions::post<SUI>(
+                &app,
+                &clock,
+                &owned_user,
+                &owned_user_config,
+                &mut shared_user,
+                &user_fees,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+
+            timestamp
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let posts_key = utf8(b"sage-posts");
+
+            let posts = user_shared::take_posts(
+                &mut shared_user,
+                posts_key,
+                ts::ctx(scenario)
+            );
 
             let has_record = posts::has_record(
-                posts,
-                timestamp
+                &posts,
+                timestamp_1
             );
 
             assert!(has_record, ENoPostsRecord);
 
-            let length = posts::get_length(posts);
+            let has_record = posts::has_record(
+                &posts,
+                timestamp_2
+            );
 
-            assert!(length == 1, EPostsLengthMismatch);
+            assert!(has_record, ENoPostsRecord);
+
+            let length = posts::get_length(&posts);
+
+            assert!(length == 2, EPostsLengthMismatch);
+
+            user_shared::return_posts(
+                &mut shared_user,
+                posts,
+                posts_key
+            );
 
             ts::return_to_sender(scenario, owned_user);
             ts::return_shared(shared_user);

@@ -208,41 +208,6 @@ module sage_user::user_owned {
         )
     }
 
-    // public(package) fun add_favorite_channel_from_favorites<ChannelType: key>(
-    //     app: &App,
-    //     channel: &ChannelType,
-    //     owned_user: &UserOwned,
-    //     favorites: &mut Favorites
-    // ): (String, address, address) {
-    //     let (
-    //         favorites_key,
-    //         app_name
-    //     ) = apps::create_app_specific_string(
-    //         app,
-    //         utf8(b"favorite-channels")
-    //     );
-
-    //     let favorite_channel_address = object::id_address(channel);
-
-    //     let retrieved_favorites = dof::borrow<String, Favorites>(
-    //         &owned_user.id,
-    //         favorites_key
-    //     );
-
-    //     assert!(
-    //         object::id_address(favorites) == object::id_address(retrieved_favorites),
-    //         EFavoritesMismatch
-    //     );
-
-    //     favorites.add(favorite_channel_address);
-
-    //     (
-    //         app_name,
-    //         owned_user.id.to_address(),
-    //         favorite_channel_address
-    //     )
-    // }
-
     public(package) fun add_favorite_user(
         app: &App,
         owned_user: &mut UserOwned,

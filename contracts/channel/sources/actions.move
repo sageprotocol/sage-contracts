@@ -1,5 +1,5 @@
 module sage_channel::channel_actions {
-    use std::string::{String};
+    use std::string::{String, utf8};
 
     use sui::{
         clock::Clock,
@@ -27,8 +27,7 @@ module sage_channel::channel_actions {
 
     use sage_shared::{
         membership::{Self},
-        moderation::{Self},
-        posts::{Self}
+        moderation::{Self}
     };
 
     use sage_user::{
@@ -231,7 +230,6 @@ module sage_channel::channel_actions {
             moderation_message,
             moderation_type
         ) = moderation::create(ctx);
-        let posts = posts::create(ctx);
 
         let (
             membership_message,
@@ -251,7 +249,6 @@ module sage_channel::channel_actions {
             channel_key,
             moderators,
             name,
-            posts,
             ctx
         );
 
@@ -379,7 +376,19 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let posts = channel::borrow_posts_mut(channel);
+        let (
+            posts_key,
+            app_name
+        ) = apps::create_app_specific_string(
+            app,
+            utf8(b"posts")
+        );
+
+        let mut posts = channel::take_posts(
+            channel,
+            posts_key,
+            ctx
+        );
 
         let (
             post_address,
@@ -389,11 +398,17 @@ module sage_channel::channel_actions {
             clock,
             owned_user,
             owned_user_config,
-            posts,
+            &mut posts,
             data,
             description,
             title,
             ctx
+        );
+
+        channel::return_posts(
+            channel,
+            posts,
+            posts_key
         );
 
         fees::collect_payment<CoinType>(
@@ -401,7 +416,6 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let app_name = apps::get_name(app);
         let channel_key = channel::get_key(channel);
 
         event::emit(ChannelPostCreated {

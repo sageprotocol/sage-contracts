@@ -12,8 +12,7 @@ module sage_user::test_user_owned {
     };
 
     use sage_shared::{
-        membership::{Self},
-        posts::{Self}
+        membership::{Self}
     };
 
     use sage_user::{
@@ -471,7 +470,6 @@ module sage_user::test_user_owned {
             );
 
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
@@ -479,7 +477,6 @@ module sage_user::test_user_owned {
                 name,
                 user_address,
                 ADMIN,
-                posts,
                 ts::ctx(scenario)
             );
 
@@ -515,7 +512,6 @@ module sage_user::test_user_owned {
             ts::return_shared(shared_user);
 
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
@@ -523,7 +519,6 @@ module sage_user::test_user_owned {
                 name,
                 user_address,
                 SERVER,
-                posts,
                 ts::ctx(scenario)
             );
 
@@ -591,7 +586,6 @@ module sage_user::test_user_owned {
             );
 
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
@@ -599,7 +593,6 @@ module sage_user::test_user_owned {
                 name,
                 user_address,
                 ADMIN,
-                posts,
                 ts::ctx(scenario)
             );
 
@@ -671,7 +664,6 @@ module sage_user::test_user_owned {
             );
 
             let follows = membership::create(ts::ctx(scenario));
-            let posts = posts::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
@@ -679,7 +671,6 @@ module sage_user::test_user_owned {
                 name,
                 user_address,
                 ADMIN,
-                posts,
                 ts::ctx(scenario)
             );
 
