@@ -22,6 +22,8 @@ module sage_user::user_shared {
         id: UID,
         created_at: u64,
         follows: Membership,
+        friend_requests: Membership,
+        friends: Membership,
         key: String,
         owned_user: address,
         owner: address,
@@ -60,9 +62,23 @@ module sage_user::user_shared {
         &mut shared_user.follows
     }
 
+    public(package) fun borrow_friend_requests_mut(
+        shared_user: &mut UserShared
+    ): &mut Membership {
+        &mut shared_user.friend_requests
+    }
+
+    public(package) fun borrow_friends_mut(
+        shared_user: &mut UserShared
+    ): &mut Membership {
+        &mut shared_user.friends
+    }
+
     public(package) fun create(
         created_at: u64,
         follows: Membership,
+        friend_requests: Membership,
+        friends: Membership,
         key: String,
         owned_user: address,
         owner: address,
@@ -72,6 +88,8 @@ module sage_user::user_shared {
             id: object::new(ctx),
             created_at,
             follows,
+            friend_requests,
+            friends,
             key,
             owned_user,
             owner,

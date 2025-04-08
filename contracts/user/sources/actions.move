@@ -56,7 +56,8 @@ module sage_user::user_actions {
     const EInvalidUsername: u64 = 371;
     const EInviteRequired: u64 = 372;
     const ENoSelfJoin: u64 = 373;
-    const EUserNameMismatch: u64 = 374;
+    const ENotSelf: u64 = 374;
+    const EUserNameMismatch: u64 = 375;
 
     // --------------- Name Tag ---------------
 
@@ -100,6 +101,22 @@ module sage_user::user_actions {
     public struct UserFollowsUpdate has copy, drop {
         account_type: u8,
         followed_user: address,
+        message: u8,
+        updated_at: u64,
+        user: address
+    }
+
+    public struct UserFriendUpdate has copy, drop {
+        account_type: u8,
+        friended_user: address,
+        message: u8,
+        updated_at: u64,
+        user: address
+    }
+
+    public struct UserFriendRequestUpdate has copy, drop {
+        account_type: u8,
+        friended_user: address,
         message: u8,
         updated_at: u64,
         user: address
@@ -295,6 +312,8 @@ module sage_user::user_actions {
         );
 
         let follows = membership::create(ctx);
+        let friend_requests = membership::create(ctx);
+        let friends = membership::create(ctx);
 
         let (
             owned_user,
@@ -313,6 +332,8 @@ module sage_user::user_actions {
         let shared_user_address = user_shared::create(
             created_at,
             follows,
+            friend_requests,
+            friends,
             user_key,
             owned_user_address,
             self,
@@ -428,7 +449,7 @@ module sage_user::user_actions {
         let (
             custom_payment,
             sui_payment
-        ) = user_fees::assert_join_user_payment<CoinType>(
+        ) = user_fees::assert_follow_user_payment<CoinType>(
             user_fees,
             custom_payment,
             sui_payment
@@ -465,10 +486,11 @@ module sage_user::user_actions {
         );
     }
 
-    public fun unfollow<CoinType> (
+    public fun friend_user<CoinType> (
         clock: &Clock,
-        shared_user: &mut UserShared,
         user_fees: &UserFees,
+        user_friend: &mut UserShared,
+        user_shared: &mut UserShared,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -476,34 +498,83 @@ module sage_user::user_actions {
         let (
             custom_payment,
             sui_payment
-        ) = user_fees::assert_leave_user_payment<CoinType>(
+        ) = user_fees::assert_friend_user_payment<CoinType>(
             user_fees,
             custom_payment,
             sui_payment
         );
 
+        let friend_address = user_shared::get_owner(user_friend);
+        let user_address = user_shared::get_owner(user_shared);
+
         let self = tx_context::sender(ctx);
-        let user_address = user_shared::get_owner(shared_user);
 
-        let follows = user_shared::borrow_follows_mut(shared_user);
+        assert!(self == user_address, ENotSelf);
 
-        let (
-            membership_message,
-            membership_type
-        ) = membership::wallet_leave(
-            follows,
-            self
+        let friend_requests = user_shared::borrow_friend_requests_mut(
+            user_shared
+        );
+
+        let already_requested = membership::is_member(
+            friend_requests,
+            friend_address
         );
 
         let updated_at = clock.timestamp_ms();
 
-        event::emit(UserFollowsUpdate {
-            account_type: membership_type,
-            followed_user: user_address,
-            message: membership_message,
-            updated_at,
-            user: self
-        });
+        if (already_requested) {
+            membership::wallet_leave(
+                friend_requests,
+                friend_address
+            );
+
+            let friends = user_shared::borrow_friends_mut(
+                user_shared
+            );
+            let friends_friends = user_shared::borrow_friends_mut(
+                user_friend
+            );
+
+            membership::wallet_join(
+                friends,
+                friend_address
+            );
+            let (
+                membership_message,
+                membership_type
+            ) = membership::wallet_join(
+                friends_friends,
+                user_address
+            );
+
+            event::emit(UserFriendUpdate {
+                account_type: membership_type,
+                friended_user: friend_address,
+                message: membership_message,
+                updated_at,
+                user: user_address
+            });
+        } else {
+            let friends_friend_requests = user_shared::borrow_friend_requests_mut(
+                user_friend
+            );
+
+            let (
+                membership_message,
+                membership_type
+            ) = membership::wallet_join(
+                friends_friend_requests,
+                user_address
+            );
+
+            event::emit(UserFriendRequestUpdate {
+                account_type: membership_type,
+                friended_user: friend_address,
+                message: membership_message,
+                updated_at,
+                user: user_address
+            });
+        };
 
         fees::collect_payment<CoinType>(
             custom_payment,
@@ -648,6 +719,146 @@ module sage_user::user_actions {
             updated_at: timestamp,
             user: self
         });
+    }
+
+    public fun remove_friend_request(
+        clock: &Clock,
+        shared_user: &mut UserShared,
+        removed_request: address,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+        let user_address = user_shared::get_owner(shared_user);
+
+        assert!(self == user_address || self == removed_request, ENotSelf);
+
+        let friend_requests = user_shared::borrow_friend_requests_mut(
+            shared_user
+        );
+
+        let (
+            membership_message,
+            membership_type
+        ) = membership::wallet_leave(
+            friend_requests,
+            removed_request
+        );
+
+        let updated_at = clock.timestamp_ms();
+
+        event::emit(UserFriendRequestUpdate {
+            account_type: membership_type,
+            friended_user: removed_request,
+            message: membership_message,
+            updated_at,
+            user: user_address
+        });
+    }
+
+    public fun unfollow<CoinType> (
+        clock: &Clock,
+        shared_user: &mut UserShared,
+        user_fees: &UserFees,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let (
+            custom_payment,
+            sui_payment
+        ) = user_fees::assert_unfollow_user_payment<CoinType>(
+            user_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        let self = tx_context::sender(ctx);
+        let user_address = user_shared::get_owner(shared_user);
+
+        let follows = user_shared::borrow_follows_mut(shared_user);
+
+        let (
+            membership_message,
+            membership_type
+        ) = membership::wallet_leave(
+            follows,
+            self
+        );
+
+        let updated_at = clock.timestamp_ms();
+
+        event::emit(UserFollowsUpdate {
+            account_type: membership_type,
+            followed_user: user_address,
+            message: membership_message,
+            updated_at,
+            user: self
+        });
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
+    }
+
+    public fun unfriend_user<CoinType> (
+        clock: &Clock,
+        user_fees: &UserFees,
+        user_friend: &mut UserShared,
+        user_shared: &mut UserShared,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let (
+            custom_payment,
+            sui_payment
+        ) = user_fees::assert_unfriend_user_payment<CoinType>(
+            user_fees,
+            custom_payment,
+            sui_payment
+        );
+
+        let friend_address = user_shared::get_owner(user_friend);
+        let user_address = user_shared::get_owner(user_shared);
+
+        let self = tx_context::sender(ctx);
+
+        assert!(self == friend_address || self == user_address, ENotSelf);
+
+        let friends = user_shared::borrow_friends_mut(
+            user_shared
+        );
+        let friends_friends = user_shared::borrow_friends_mut(
+            user_friend
+        );
+
+        membership::wallet_leave(
+            friends,
+            friend_address
+        );
+        let (
+            membership_message,
+            membership_type
+        ) = membership::wallet_leave(
+            friends_friends,
+            user_address
+        );
+
+        let updated_at = clock.timestamp_ms();
+
+        event::emit(UserFriendUpdate {
+            account_type: membership_type,
+            friended_user: friend_address,
+            message: membership_message,
+            updated_at,
+            user: user_address
+        });
+
+        fees::collect_payment<CoinType>(
+            custom_payment,
+            sui_payment
+        );
     }
 
     public fun update<CoinType> (

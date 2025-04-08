@@ -38,14 +38,19 @@ module sage_user::test_user_fees {
     const CREATE_INVITE_SUI_FEE: u64 = 2;
     const CREATE_USER_CUSTOM_FEE: u64 = 3;
     const CREATE_USER_SUI_FEE: u64 = 4;
-    const JOIN_USER_CUSTOM_FEE: u64 = 5;
-    const JOIN_USER_SUI_FEE: u64 = 6;
-    const LEAVE_USER_CUSTOM_FEE: u64 = 7;
-    const LEAVE_USER_SUI_FEE: u64 = 8;
+    const FOLLOW_USER_CUSTOM_FEE: u64 = 5;
+    const FOLLOW_USER_SUI_FEE: u64 = 6;
+    const FRIEND_USER_CUSTOM_FEE: u64 = 7;
+    const FRIEND_USER_SUI_FEE: u64 = 8;
     const POST_TO_USER_CUSTOM_FEE: u64 = 9;
     const POST_TO_USER_SUI_FEE: u64 = 10;
-    const UPDATE_USER_CUSTOM_FEE: u64 = 11;
-    const UPDATE_USER_SUI_FEE: u64 = 12;
+    const UNFOLLOW_USER_CUSTOM_FEE: u64 = 11;
+    const UNFOLLOW_USER_SUI_FEE: u64 = 12;
+    const UNFRIEND_USER_CUSTOM_FEE: u64 = 13;
+    const UNFRIEND_USER_SUI_FEE: u64 = 14;
+    const UPDATE_USER_CUSTOM_FEE: u64 = 15;
+    const UPDATE_USER_SUI_FEE: u64 = 16;
+    
     const INCORRECT_FEE: u64 = 100;
 
     // --------------- Errors ---------------
@@ -90,12 +95,16 @@ module sage_user::test_user_fees {
                 CREATE_INVITE_SUI_FEE,
                 CREATE_USER_CUSTOM_FEE,
                 CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
+                FOLLOW_USER_SUI_FEE,
+                FRIEND_USER_CUSTOM_FEE,
+                FRIEND_USER_SUI_FEE,
                 POST_TO_USER_CUSTOM_FEE,
                 POST_TO_USER_SUI_FEE,
+                UNFOLLOW_USER_CUSTOM_FEE,
+                UNFOLLOW_USER_SUI_FEE,
+                UNFRIEND_USER_CUSTOM_FEE,
+                UNFRIEND_USER_SUI_FEE,
                 UPDATE_USER_CUSTOM_FEE,
                 UPDATE_USER_SUI_FEE,
                 ts::ctx(scenario)
@@ -190,15 +199,15 @@ module sage_user::test_user_fees {
             burn_for_testing(sui_payment);
 
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_join_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_follow_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
@@ -208,15 +217,15 @@ module sage_user::test_user_fees {
             burn_for_testing(sui_payment);
 
             let custom_payment = mint_for_testing<SUI>(
-                LEAVE_USER_CUSTOM_FEE,
+                UNFOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                LEAVE_USER_SUI_FEE,
+                UNFOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_leave_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_unfollow_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
@@ -414,7 +423,7 @@ module sage_user::test_user_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_join_user_custom_fail() {
+    fun test_follow_user_custom_fail() {
         let (
             mut scenario_val,
             fee_cap,
@@ -430,11 +439,11 @@ module sage_user::test_user_fees {
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_join_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_follow_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
@@ -454,7 +463,7 @@ module sage_user::test_user_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_join_user_sui_fail() {
+    fun test_follow_user_sui_fail() {
         let (
             mut scenario_val,
             fee_cap,
@@ -466,7 +475,7 @@ module sage_user::test_user_fees {
         ts::next_tx(scenario, ADMIN);
         {
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
@@ -474,7 +483,7 @@ module sage_user::test_user_fees {
                 ts::ctx(scenario)
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_join_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_follow_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
@@ -494,7 +503,7 @@ module sage_user::test_user_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectCustomPayment)]
-    fun test_leave_user_custom_fail() {
+    fun test_friend_user_custom_fail() {
         let (
             mut scenario_val,
             fee_cap,
@@ -510,11 +519,11 @@ module sage_user::test_user_fees {
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                LEAVE_USER_SUI_FEE,
+                FRIEND_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_leave_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_friend_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
@@ -534,7 +543,7 @@ module sage_user::test_user_fees {
 
     #[test]
     #[expected_failure(abort_code = EIncorrectSuiPayment)]
-    fun test_leave_user_sui_fail() {
+    fun test_friend_user_sui_fail() {
         let (
             mut scenario_val,
             fee_cap,
@@ -546,7 +555,7 @@ module sage_user::test_user_fees {
         ts::next_tx(scenario, ADMIN);
         {
             let custom_payment = mint_for_testing<SUI>(
-                LEAVE_USER_CUSTOM_FEE,
+                FRIEND_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
@@ -554,7 +563,167 @@ module sage_user::test_user_fees {
                 ts::ctx(scenario)
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_leave_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_friend_user_payment<SUI>(
+                &user_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            destroy_for_testing(
+                fee_cap,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectCustomPayment)]
+    fun test_unfollow_user_custom_fail() {
+        let (
+            mut scenario_val,
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UNFOLLOW_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = user_fees::assert_unfollow_user_payment<SUI>(
+                &user_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            destroy_for_testing(
+                fee_cap,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectSuiPayment)]
+    fun test_unfollow_user_sui_fail() {
+        let (
+            mut scenario_val,
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                UNFOLLOW_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = user_fees::assert_unfollow_user_payment<SUI>(
+                &user_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            destroy_for_testing(
+                fee_cap,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectCustomPayment)]
+    fun test_unfriend_user_custom_fail() {
+        let (
+            mut scenario_val,
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = user_fees::assert_unfriend_user_payment<SUI>(
+                &user_fees,
+                custom_payment,
+                sui_payment
+            );
+
+            burn_for_testing(custom_payment);
+            burn_for_testing(sui_payment);
+
+            destroy_for_testing(
+                fee_cap,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectSuiPayment)]
+    fun test_unfriend_user_sui_fail() {
+        let (
+            mut scenario_val,
+            fee_cap,
+            user_fees
+        ) = setup_for_testing<SUI>();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (custom_payment, sui_payment) = user_fees::assert_unfriend_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
@@ -718,6 +887,10 @@ module sage_user::test_user_fees {
                 INCORRECT_FEE,
                 INCORRECT_FEE,
                 INCORRECT_FEE,
+                INCORRECT_FEE,
+                INCORRECT_FEE,
+                INCORRECT_FEE,
+                INCORRECT_FEE,
                 INCORRECT_FEE
             );
 
@@ -742,13 +915,13 @@ module sage_user::test_user_fees {
                 sui_payment
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_join_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_follow_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment
             );
 
-            let (custom_payment, sui_payment) = user_fees::assert_leave_user_payment<SUI>(
+            let (custom_payment, sui_payment) = user_fees::assert_follow_user_payment<SUI>(
                 &user_fees,
                 custom_payment,
                 sui_payment

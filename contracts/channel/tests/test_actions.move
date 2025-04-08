@@ -81,14 +81,18 @@ module sage_channel::test_channel_actions {
     const CREATE_INVITE_SUI_FEE: u64 = 22;
     const CREATE_USER_CUSTOM_FEE: u64 = 23;
     const CREATE_USER_SUI_FEE: u64 = 24;
-    const JOIN_USER_CUSTOM_FEE: u64 = 25;
-    const JOIN_USER_SUI_FEE: u64 = 26;
-    const LEAVE_USER_CUSTOM_FEE: u64 = 27;
-    const LEAVE_USER_SUI_FEE: u64 = 28;
+    const FOLLOW_USER_CUSTOM_FEE: u64 = 25;
+    const FOLLOW_USER_SUI_FEE: u64 = 26;
+    const FRIEND_USER_CUSTOM_FEE: u64 = 27;
+    const FRIEND_USER_SUI_FEE: u64 = 28;
     const POST_TO_USER_CUSTOM_FEE: u64 = 29;
     const POST_TO_USER_SUI_FEE: u64 = 30;
-    const UPDATE_USER_CUSTOM_FEE: u64 = 31;
-    const UPDATE_USER_SUI_FEE: u64 = 32;
+    const UNFOLLOW_USER_CUSTOM_FEE: u64 = 31;
+    const UNFOLLOW_USER_SUI_FEE: u64 = 32;
+    const UNFRIEND_USER_CUSTOM_FEE: u64 = 33;
+    const UNFRIEND_USER_SUI_FEE: u64 = 34;
+    const UPDATE_USER_CUSTOM_FEE: u64 = 35;
+    const UPDATE_USER_SUI_FEE: u64 = 36;
 
     const INCORRECT_FEE: u64 = 100;
 
@@ -236,12 +240,16 @@ module sage_channel::test_channel_actions {
                 CREATE_INVITE_SUI_FEE,
                 CREATE_USER_CUSTOM_FEE,
                 CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
+                FOLLOW_USER_SUI_FEE,
+                FRIEND_USER_CUSTOM_FEE,
+                FRIEND_USER_SUI_FEE,
                 POST_TO_USER_CUSTOM_FEE,
                 POST_TO_USER_SUI_FEE,
+                UNFOLLOW_USER_CUSTOM_FEE,
+                UNFOLLOW_USER_SUI_FEE,
+                UNFRIEND_USER_CUSTOM_FEE,
+                UNFRIEND_USER_SUI_FEE,
                 UPDATE_USER_CUSTOM_FEE,
                 UPDATE_USER_SUI_FEE,
                 ts::ctx(scenario)

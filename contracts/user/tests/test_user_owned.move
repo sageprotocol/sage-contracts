@@ -470,10 +470,14 @@ module sage_user::test_user_owned {
             );
 
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 name,
                 user_address,
                 ADMIN,
@@ -512,10 +516,14 @@ module sage_user::test_user_owned {
             ts::return_shared(shared_user);
 
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 name,
                 user_address,
                 SERVER,
@@ -586,10 +594,14 @@ module sage_user::test_user_owned {
             );
 
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 name,
                 user_address,
                 ADMIN,
@@ -664,10 +676,14 @@ module sage_user::test_user_owned {
             );
 
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _shared_user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 name,
                 user_address,
                 ADMIN,

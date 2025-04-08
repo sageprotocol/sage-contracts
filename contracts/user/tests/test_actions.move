@@ -39,6 +39,7 @@ module sage_user::test_user_actions {
             EInvalidUsername,
             EInviteRequired,
             ENoSelfJoin,
+            ENotSelf,
             EUserNameMismatch
         },
         user_fees::{
@@ -70,14 +71,18 @@ module sage_user::test_user_actions {
     const CREATE_INVITE_SUI_FEE: u64 = 2;
     const CREATE_USER_CUSTOM_FEE: u64 = 3;
     const CREATE_USER_SUI_FEE: u64 = 4;
-    const JOIN_USER_CUSTOM_FEE: u64 = 5;
-    const JOIN_USER_SUI_FEE: u64 = 6;
-    const LEAVE_USER_CUSTOM_FEE: u64 = 7;
-    const LEAVE_USER_SUI_FEE: u64 = 8;
+    const FOLLOW_USER_CUSTOM_FEE: u64 = 5;
+    const FOLLOW_USER_SUI_FEE: u64 = 6;
+    const FRIEND_USER_CUSTOM_FEE: u64 = 7;
+    const FRIEND_USER_SUI_FEE: u64 = 8;
     const POST_TO_USER_CUSTOM_FEE: u64 = 9;
     const POST_TO_USER_SUI_FEE: u64 = 10;
-    const UPDATE_USER_CUSTOM_FEE: u64 = 11;
-    const UPDATE_USER_SUI_FEE: u64 = 12;
+    const UNFOLLOW_USER_CUSTOM_FEE: u64 = 11;
+    const UNFOLLOW_USER_SUI_FEE: u64 = 12;
+    const UNFRIEND_USER_CUSTOM_FEE: u64 = 13;
+    const UNFRIEND_USER_SUI_FEE: u64 = 14;
+    const UPDATE_USER_CUSTOM_FEE: u64 = 15;
+    const UPDATE_USER_SUI_FEE: u64 = 16;
 
     const INCORRECT_FEE: u64 = 100;
 
@@ -99,7 +104,8 @@ module sage_user::test_user_actions {
     const EUserInviteMismatch: u64 = 13;
     const EUserMembershipCountMismatch: u64 = 14;
     const ETestUserNameMismatch: u64 = 15;
-    const EUserNotMember: u64 = 16;
+    const EUserMember: u64 = 16;
+    const EUserNotMember: u64 = 17;
 
     // --------------- Name Tag ---------------
 
@@ -194,12 +200,16 @@ module sage_user::test_user_actions {
                 CREATE_INVITE_SUI_FEE,
                 CREATE_USER_CUSTOM_FEE,
                 CREATE_USER_SUI_FEE,
-                JOIN_USER_CUSTOM_FEE,
-                JOIN_USER_SUI_FEE,
-                LEAVE_USER_CUSTOM_FEE,
-                LEAVE_USER_SUI_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
+                FOLLOW_USER_SUI_FEE,
+                FRIEND_USER_CUSTOM_FEE,
+                FRIEND_USER_SUI_FEE,
                 POST_TO_USER_CUSTOM_FEE,
                 POST_TO_USER_SUI_FEE,
+                UNFOLLOW_USER_CUSTOM_FEE,
+                UNFOLLOW_USER_SUI_FEE,
+                UNFRIEND_USER_CUSTOM_FEE,
+                UNFRIEND_USER_SUI_FEE,
                 UPDATE_USER_CUSTOM_FEE,
                 UPDATE_USER_SUI_FEE,
                 ts::ctx(scenario)
@@ -2112,11 +2122,11 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
@@ -2148,11 +2158,11 @@ module sage_user::test_user_actions {
             assert!(member_length == 1, EUserMembershipCountMismatch);
 
             let custom_payment = mint_for_testing<SUI>(
-                LEAVE_USER_CUSTOM_FEE,
+                UNFOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                LEAVE_USER_SUI_FEE,
+                UNFOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
@@ -2292,7 +2302,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
             
@@ -2420,7 +2430,7 @@ module sage_user::test_user_actions {
             let mut other_shared_user = ts::take_shared<UserShared>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
@@ -2516,11 +2526,11 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
@@ -2648,11 +2658,11 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
@@ -2671,7 +2681,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                LEAVE_USER_SUI_FEE,
+                UNFOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
@@ -2798,11 +2808,11 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
-                JOIN_USER_CUSTOM_FEE,
+                FOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
-                JOIN_USER_SUI_FEE,
+                FOLLOW_USER_SUI_FEE,
                 ts::ctx(scenario)
             );
 
@@ -2817,7 +2827,7 @@ module sage_user::test_user_actions {
             );
 
             let custom_payment = mint_for_testing<SUI>(
-                LEAVE_USER_CUSTOM_FEE,
+                UNFOLLOW_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
             );
             let sui_payment = mint_for_testing<SUI>(
@@ -2843,6 +2853,1727 @@ module sage_user::test_user_actions {
                 invite_config,
         
         owned_user_config,        user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_friend_request() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            mut shared_user,
+            mut other_shared_user
+        ) = {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let friends = user_shared::borrow_friend_requests_mut(
+                &mut shared_user
+            );
+            let friend_friends = user_shared::borrow_friend_requests_mut(
+                &mut other_shared_user
+            );
+
+            let is_member = membership::is_member(
+                friends,
+                OTHER
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let is_member = membership::is_member(
+                friend_friends,
+                ADMIN
+            );
+
+            assert!(is_member, EUserNotMember);
+
+            let member_length = membership::get_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            let member_length = membership::get_length(
+                friend_friends
+            );
+
+            assert!(member_length == 1, EUserMembershipCountMismatch);
+
+            (
+                shared_user,
+                other_shared_user
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_actions::remove_friend_request(
+                &clock,
+                &mut other_shared_user,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let friends = user_shared::borrow_friend_requests_mut(
+                &mut shared_user
+            );
+            let friend_friends = user_shared::borrow_friend_requests_mut(
+                &mut other_shared_user
+            );
+
+            let is_member = membership::is_member(
+                friends,
+                OTHER
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let is_member = membership::is_member(
+                friend_friends,
+                ADMIN
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let member_length = membership::get_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            let member_length = membership::get_length(
+                friend_friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            user_actions::remove_friend_request(
+                &clock,
+                &mut other_shared_user,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let friends = user_shared::borrow_friend_requests_mut(
+                &mut shared_user
+            );
+            let friend_friends = user_shared::borrow_friend_requests_mut(
+                &mut other_shared_user
+            );
+
+            let is_member = membership::is_member(
+                friends,
+                ADMIN
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let is_member = membership::is_member(
+                friend_friends,
+                ADMIN
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let member_length = membership::get_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            let member_length = membership::get_length(
+                friend_friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            ts::return_shared(shared_user);
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotSelf)]
+    fun test_user_actions_friend_request_remove_not_self() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(shared_user);
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            user_actions::remove_friend_request(
+                &clock,
+                &mut other_shared_user,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_friend() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut shared_user = {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            shared_user
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut shared_user,
+                &mut other_shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let friends = user_shared::borrow_friends_mut(
+                &mut shared_user
+            );
+            let friend_friends = user_shared::borrow_friends_mut(
+                &mut other_shared_user
+            );
+
+            let is_member = membership::is_member(
+                friends,
+                OTHER
+            );
+
+            assert!(is_member, EUserNotMember);
+
+            let is_member = membership::is_member(
+                friend_friends,
+                ADMIN
+            );
+
+            assert!(is_member, EUserNotMember);
+
+            let member_length = membership::get_length(
+                friends
+            );
+
+            assert!(member_length == 1, EUserMembershipCountMismatch);
+
+            let member_length = membership::get_length(
+                friend_friends
+            );
+
+            assert!(member_length == 1, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::unfriend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let friends = user_shared::borrow_friends_mut(
+                &mut shared_user
+            );
+            let friend_friends = user_shared::borrow_friends_mut(
+                &mut other_shared_user
+            );
+
+            let is_member = membership::is_member(
+                friends,
+                OTHER
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let is_member = membership::is_member(
+                friend_friends,
+                ADMIN
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let member_length = membership::get_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            let member_length = membership::get_length(
+                friend_friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut shared_user,
+                &mut other_shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::unfriend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let friends = user_shared::borrow_friends_mut(
+                &mut shared_user
+            );
+            let friend_friends = user_shared::borrow_friends_mut(
+                &mut other_shared_user
+            );
+
+            let is_member = membership::is_member(
+                friends,
+                OTHER
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let is_member = membership::is_member(
+                friend_friends,
+                ADMIN
+            );
+
+            assert!(!is_member, EUserMember);
+
+            let member_length = membership::get_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+
+            let member_length = membership::get_length(
+                friend_friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(shared_user);
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotSelf)]
+    fun test_user_actions_friend_add_not_self() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut shared_user,
+                &mut other_shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(shared_user);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectCustomPayment)]
+    fun test_user_actions_friend_incorrect_custom_payment() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(shared_user);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectSuiPayment)]
+    fun test_user_actions_friend_incorrect_sui_payment() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(shared_user);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENotSelf)]
+    fun test_user_actions_unfriend_not_self() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut shared_user = {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            shared_user
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut shared_user,
+                &mut other_shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::unfriend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(shared_user);
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectCustomPayment)]
+    fun test_user_actions_unfriend_incorrect_custom_payment() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut shared_user = {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            shared_user
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut shared_user,
+                &mut other_shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::unfriend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(shared_user);
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
+                user_invite_registry,
+                user_fees
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIncorrectSuiPayment)]
+    fun test_user_actions_unfriend_incorrect_sui_payment() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            invite_config,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let name = utf8(b"other-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut other_shared_user = {
+            let other_shared_user = ts::take_shared<UserShared>(scenario);
+
+            let name = utf8(b"user-name");
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            other_shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut shared_user = {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            shared_user
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                FRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                FRIEND_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::friend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut shared_user,
+                &mut other_shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                UNFRIEND_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                INCORRECT_FEE,
+                ts::ctx(scenario)
+            );
+
+            user_actions::unfriend_user<SUI>(
+                &clock,
+                &user_fees,
+                &mut other_shared_user,
+                &mut shared_user,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            ts::return_shared(shared_user);
+            ts::return_shared(other_shared_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                user_registry,
                 user_invite_registry,
                 user_fees
             );

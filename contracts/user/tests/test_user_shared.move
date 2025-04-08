@@ -41,10 +41,14 @@ module sage_user::test_user_shared {
         ts::next_tx(scenario, ADMIN);
         {
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -82,10 +86,14 @@ module sage_user::test_user_shared {
         ts::next_tx(scenario, ADMIN);
         {
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -106,6 +114,86 @@ module sage_user::test_user_shared {
     }
 
     #[test]
+    fun test_user_friend_requests() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let created_at: u64 = 999;
+        let key = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
+
+            let _user_address = user_shared::create(
+                created_at,
+                follows,
+                friend_requests,
+                friends,
+                key,
+                USER_OWNED,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut user = ts::take_shared<UserShared>(scenario);
+
+            let _friend_requests = user_shared::borrow_friend_requests_mut(
+                &mut user
+            );
+
+            ts::return_shared(user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_friends() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let created_at: u64 = 999;
+        let key = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
+
+            let _user_address = user_shared::create(
+                created_at,
+                follows,
+                friend_requests,
+                friends,
+                key,
+                USER_OWNED,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut user = ts::take_shared<UserShared>(scenario);
+
+            let _friends = user_shared::borrow_friends_mut(
+                &mut user
+            );
+
+            ts::return_shared(user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     fun test_user_posts() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -118,10 +206,14 @@ module sage_user::test_user_shared {
         ts::next_tx(scenario, ADMIN);
         {
             let follows = membership::create(ts::ctx(scenario));
+            let friend_requests = membership::create(ts::ctx(scenario));
+            let friends = membership::create(ts::ctx(scenario));
 
             let _user_address = user_shared::create(
                 created_at,
                 follows,
+                friend_requests,
+                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
