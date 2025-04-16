@@ -5,12 +5,12 @@ module sage_admin::admin_actions {
 
     use sage_admin::{
         admin::{AdminCap, FeeCap},
-        apps::{Self, App, AppRegistry},
-        fees::{Self, Royalties},
-        types::{
+        access::{
             Self,
             UserOwnedConfig
-        }
+        },
+        apps::{Self, App, AppRegistry},
+        fees::{Self, Royalties}
     };
 
     use sage_utils::{
@@ -41,7 +41,7 @@ module sage_admin::admin_actions {
         owned_user_config: &UserOwnedConfig,
         ctx: &mut TxContext
     ): address {
-        types::assert_owned_user<OwnedUserType>(
+        access::assert_owned_user<OwnedUserType>(
             owned_user_config,
             owned_user
         );

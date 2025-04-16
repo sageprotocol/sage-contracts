@@ -11,6 +11,11 @@ module sage_admin::test_actions {
     };
 
     use sage_admin::{
+        access::{
+            Self,
+            UserOwnedConfig,
+            ValidType
+        },
         admin::{
             Self,
             AdminCap,
@@ -18,12 +23,7 @@ module sage_admin::test_actions {
         },
         admin_actions::{Self},
         apps::{Self, AppRegistry},
-        fees::{Royalties},
-        types::{
-            Self,
-            UserOwnedConfig,
-            ValidType
-        }
+        fees::{Royalties}
     };
 
     #[test_only]
@@ -91,7 +91,7 @@ module sage_admin::test_actions {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            types::create_owned_user_config<ValidType>(
+            access::create_owned_user_config<ValidType>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -102,7 +102,7 @@ module sage_admin::test_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let owned_user_config = scenario.take_shared<UserOwnedConfig>();
-            let valid_type = types::create_valid_type_for_testing(ts::ctx(scenario));
+            let valid_type = access::create_valid_type_for_testing(ts::ctx(scenario));
 
             let _app_address = admin_actions::create_app<ValidType>(
                 &mut app_registry,

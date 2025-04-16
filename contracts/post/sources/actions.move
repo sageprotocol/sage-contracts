@@ -9,9 +9,9 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
+        access::{Self, UserOwnedConfig},
         apps::{Self, App},
-        fees::{Self, Royalties},
-        types::{Self, UserOwnedConfig}
+        fees::{Self, Royalties}
     };
 
     use sage_post::{
@@ -67,7 +67,7 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        types::assert_owned_user(
+        access::assert_owned_user(
             owned_user_config,
             owned_user
         );
@@ -131,7 +131,7 @@ module sage_post::post_actions {
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        types::assert_owned_user(
+        access::assert_owned_user(
             owned_user_config,
             owned_user
         );
@@ -166,7 +166,7 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        types::assert_owned_user(
+        access::assert_owned_user(
             owned_user_config,
             owned_user
         );

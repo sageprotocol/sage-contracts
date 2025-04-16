@@ -11,20 +11,20 @@ module sage_post::test_post_actions {
     };
 
     use sage_admin::{
+        access::{
+            Self,
+            UserOwnedConfig,
+            InvalidType,
+            ValidType,
+            ETypeMismatch
+        },
         admin::{
             Self,
             AdminCap,
             FeeCap
         },
         apps::{Self, App},
-        fees::{Self, Royalties},
-        types::{
-            Self,
-            UserOwnedConfig,
-            InvalidType,
-            ValidType,
-            ETypeMismatch
-        }
+        fees::{Self, Royalties}
     };
 
     use sage_post::{
@@ -103,7 +103,7 @@ module sage_post::test_post_actions {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            types::create_owned_user_config<ValidType>(
+            access::create_owned_user_config<ValidType>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -146,7 +146,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let valid_type = types::create_valid_type_for_testing(
+            let valid_type = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -234,7 +234,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let timestamp = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -321,7 +321,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = types::create_invalid_type_for_testing(
+            let owned_user = access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -378,7 +378,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -512,7 +512,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -549,7 +549,7 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let owned_user = types::create_invalid_type_for_testing(
+            let owned_user = access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -615,7 +615,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -715,7 +715,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -814,7 +814,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -916,7 +916,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -958,7 +958,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let owned_user = types::create_invalid_type_for_testing(
+            let owned_user = access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1008,7 +1008,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1097,7 +1097,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = types::create_valid_type_for_testing(
+            let owned_user = access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
