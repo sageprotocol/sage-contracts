@@ -9,14 +9,14 @@ module sage_user::user_actions {
     };
 
     use sage_admin::{
-        admin::{InviteCap},
-        apps::{Self, App},
-        fees::{Self},
-        types::{
+        access::{
             Self,
             ChannelConfig,
             UserOwnedConfig
-        }
+        },
+        admin::{InviteCap},
+        apps::{Self, App},
+        fees::{Self}
     };
 
     use sage_post::{
@@ -156,7 +156,7 @@ module sage_user::user_actions {
         owned_user: &mut UserOwned,
         ctx: &mut TxContext
     ) {
-        types::assert_channel(
+        access::assert_channel(
             channel_config,
             channel
         );

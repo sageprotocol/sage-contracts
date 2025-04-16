@@ -11,19 +11,19 @@ module sage_user::test_user_actions {
     };
 
     use sage_admin::{
+        access::{
+            Self,
+            ChannelConfig,
+            UserOwnedConfig,
+            ETypeMismatch
+        },
         admin::{
             Self,
             AdminCap,
             FeeCap,
             InviteCap
         },
-        apps::{Self, App},
-        types::{
-            Self,
-            ChannelConfig,
-            UserOwnedConfig,
-            ETypeMismatch
-        }
+        apps::{Self, App}
     };
 
     use sage_shared::{
@@ -188,7 +188,7 @@ module sage_user::test_user_actions {
 
             let clock = ts::take_shared<Clock>(scenario);
 
-            types::create_owned_user_config<UserOwned>(
+            access::create_owned_user_config<UserOwned>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -1668,7 +1668,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            types::create_channel_config<ValidChannel>(
+            access::create_channel_config<ValidChannel>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -1792,7 +1792,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            types::create_channel_config<ValidChannel>(
+            access::create_channel_config<ValidChannel>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
