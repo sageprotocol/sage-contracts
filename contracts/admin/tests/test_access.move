@@ -16,7 +16,10 @@ module sage_admin::test_access {
             UserWitnessConfig,
             InvalidType,
             ValidType,
-            ETypeMismatch
+            InvalidWitness,
+            ValidWitness,
+            ETypeMismatch,
+            EWitnessMismatch
         },
         admin::{
             Self,
@@ -81,12 +84,12 @@ module sage_admin::test_access {
                 ts::ctx(scenario)
             );
 
-            access::create_channel_witness_config<ValidType>(
+            access::create_channel_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_group_witness_config<ValidType>(
+            access::create_group_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -101,7 +104,7 @@ module sage_admin::test_access {
                 ts::ctx(scenario)
             );
 
-            access::create_user_witness_config<ValidType>(
+            access::create_user_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -208,20 +211,6 @@ module sage_admin::test_access {
 
             assert!(!is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_channel_witness<InvalidType>(
-                &channel_witness_config,
-                &invalid_type
-            );
-
-            assert!(!is_verified, ETestTypeMismatch);
-
-            let is_verified = access::verify_group_witness<InvalidType>(
-                &group_witness_config,
-                &invalid_type
-            );
-
-            assert!(!is_verified, ETestTypeMismatch);
-
             let is_verified = access::verify_owned_user<InvalidType>(
                 &owned_user_config,
                 &invalid_type
@@ -231,13 +220,6 @@ module sage_admin::test_access {
 
             let is_verified = access::verify_shared_user<InvalidType>(
                 &shared_user_config,
-                &invalid_type
-            );
-
-            assert!(!is_verified, ETestTypeMismatch);
-
-            let is_verified = access::verify_user_witness<InvalidType>(
-                &user_witness_config,
                 &invalid_type
             );
 
@@ -256,20 +238,6 @@ module sage_admin::test_access {
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_channel_witness<ValidType>(
-                &channel_witness_config,
-                &valid_type
-            );
-
-            assert!(is_verified, ETestTypeMismatch);
-
-            let is_verified = access::verify_group_witness<ValidType>(
-                &group_witness_config,
-                &valid_type
-            );
-
-            assert!(is_verified, ETestTypeMismatch);
-
             let is_verified = access::verify_owned_user<ValidType>(
                 &owned_user_config,
                 &valid_type
@@ -279,13 +247,6 @@ module sage_admin::test_access {
 
             let is_verified = access::verify_shared_user<ValidType>(
                 &shared_user_config,
-                &valid_type
-            );
-
-            assert!(is_verified, ETestTypeMismatch);
-
-            let is_verified = access::verify_user_witness<ValidType>(
-                &user_witness_config,
                 &valid_type
             );
 
@@ -356,6 +317,92 @@ module sage_admin::test_access {
     }
 
     #[test]
+    fun test_verify_witness() {
+        let (
+            mut scenario_val,
+            admin_cap,
+            channel_config,
+            channel_witness_config,
+            group_witness_config,
+            owned_user_config,
+            shared_user_config,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let invalid_witness = access::create_invalid_witness_for_testing();
+
+            // assert invalid return
+
+            let is_verified = access::verify_channel_witness<InvalidWitness>(
+                &channel_witness_config,
+                &invalid_witness
+            );
+
+            assert!(!is_verified, ETestTypeMismatch);
+
+            let is_verified = access::verify_group_witness<InvalidWitness>(
+                &group_witness_config,
+                &invalid_witness
+            );
+
+            assert!(!is_verified, ETestTypeMismatch);
+
+            let is_verified = access::verify_user_witness<InvalidWitness>(
+                &user_witness_config,
+                &invalid_witness
+            );
+
+            assert!(!is_verified, ETestTypeMismatch);
+
+            // assert valid return
+
+            let valid_witness = access::create_valid_witness_for_testing();
+
+            let is_verified = access::verify_channel_witness<ValidWitness>(
+                &channel_witness_config,
+                &valid_witness
+            );
+
+            assert!(is_verified, ETestTypeMismatch);
+
+            let is_verified = access::verify_group_witness<ValidWitness>(
+                &group_witness_config,
+                &valid_witness
+            );
+
+            assert!(is_verified, ETestTypeMismatch);
+
+            let is_verified = access::verify_user_witness<ValidWitness>(
+                &user_witness_config,
+                &valid_witness
+            );
+
+            assert!(is_verified, ETestTypeMismatch);
+
+            destroy(valid_witness);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            destroy_for_testing(
+                admin_cap,
+                channel_config,
+                channel_witness_config,
+                group_witness_config,
+                owned_user_config,
+                shared_user_config,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     #[expected_failure(abort_code = ETypeMismatch)]
     fun test_assert_channel_type() {
         let (
@@ -402,8 +449,8 @@ module sage_admin::test_access {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_assert_channel_witness_type() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_assert_channel_witness() {
         let (
             mut scenario_val,
             admin_cap,
@@ -419,16 +466,14 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_type = access::create_invalid_type_for_testing(
-                ts::ctx(scenario)
-            );
+            let invalid_witness = access::create_invalid_witness_for_testing();
 
-            access::assert_channel_witness<InvalidType>(
+            access::assert_channel_witness<InvalidWitness>(
                 &channel_witness_config,
-                &invalid_type
+                &invalid_witness
             );
 
-            destroy(invalid_type);
+            destroy(invalid_witness);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -448,8 +493,8 @@ module sage_admin::test_access {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_assert_group_witness_type() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_assert_group_witness() {
         let (
             mut scenario_val,
             admin_cap,
@@ -465,16 +510,14 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_type = access::create_invalid_type_for_testing(
-                ts::ctx(scenario)
-            );
+            let invalid_witness = access::create_invalid_witness_for_testing();
 
-            access::assert_group_witness<InvalidType>(
+            access::assert_group_witness<InvalidWitness>(
                 &group_witness_config,
-                &invalid_type
+                &invalid_witness
             );
 
-            destroy(invalid_type);
+            destroy(invalid_witness);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -586,8 +629,8 @@ module sage_admin::test_access {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_assert_user_witness_type() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_assert_user_witness() {
         let (
             mut scenario_val,
             admin_cap,
@@ -603,16 +646,14 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_type = access::create_invalid_type_for_testing(
-                ts::ctx(scenario)
-            );
+            let invalid_witness = access::create_invalid_witness_for_testing();
 
-            access::assert_user_witness<InvalidType>(
+            access::assert_user_witness<InvalidWitness>(
                 &user_witness_config,
-                &invalid_type
+                &invalid_witness
             );
 
-            destroy(invalid_type);
+            destroy(invalid_witness);
         };
 
         ts::next_tx(scenario, ADMIN);

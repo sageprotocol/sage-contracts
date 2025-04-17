@@ -12,6 +12,7 @@ module sage_admin::access {
     // --------------- Errors ---------------
 
     const ETypeMismatch: u64 = 370;
+    const EWitnessMismatch: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -55,6 +56,12 @@ module sage_admin::access {
         id: UID
     }
 
+    #[test_only]
+    public struct InvalidWitness has drop {}
+
+    #[test_only]
+    public struct ValidWitness has drop {}
+
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
@@ -73,7 +80,7 @@ module sage_admin::access {
         assert!(is_auth, ETypeMismatch);
     }
 
-    public fun assert_channel_witness<ChannelWitnessType: key> (
+    public fun assert_channel_witness<ChannelWitnessType: drop> (
         channel_witness_config: &ChannelWitnessConfig,
         channel_witness: &ChannelWitnessType
     ) {
@@ -82,10 +89,10 @@ module sage_admin::access {
             channel_witness
         );
 
-        assert!(is_auth, ETypeMismatch);
+        assert!(is_auth, EWitnessMismatch);
     }
 
-    public fun assert_group_witness<GroupWitnessType: key> (
+    public fun assert_group_witness<GroupWitnessType: drop> (
         group_witness_config: &GroupWitnessConfig,
         group_witness: &GroupWitnessType
     ) {
@@ -94,7 +101,7 @@ module sage_admin::access {
             group_witness
         );
 
-        assert!(is_auth, ETypeMismatch);
+        assert!(is_auth, EWitnessMismatch);
     }
 
     public fun assert_owned_user<UserOwnedType: key> (
@@ -121,7 +128,7 @@ module sage_admin::access {
         assert!(is_auth, ETypeMismatch);
     }
 
-    public fun assert_user_witness<UserWitnessType: key> (
+    public fun assert_user_witness<UserWitnessType: drop> (
         user_witness_config: &UserWitnessConfig,
         user_witness: &UserWitnessType
     ) {
@@ -130,7 +137,7 @@ module sage_admin::access {
             user_witness
         );
 
-        assert!(is_auth, ETypeMismatch);
+        assert!(is_auth, EWitnessMismatch);
     }
 
     public fun create_channel_config<ChannelType: key> (
@@ -147,7 +154,7 @@ module sage_admin::access {
         transfer::share_object(channel_config);
     }
 
-    public fun create_channel_witness_config<ChannelWitnessType: key> (
+    public fun create_channel_witness_config<ChannelWitnessType: drop> (
         _: &AdminCap,
         ctx: &mut TxContext
     ) {
@@ -161,7 +168,7 @@ module sage_admin::access {
         transfer::share_object(channel_witness_config);
     }
 
-    public fun create_group_witness_config<GroupWitnessType: key> (
+    public fun create_group_witness_config<GroupWitnessType: drop> (
         _: &AdminCap,
         ctx: &mut TxContext
     ) {
@@ -203,7 +210,7 @@ module sage_admin::access {
         transfer::share_object(shared_user_config);
     }
 
-    public fun create_user_witness_config<UserWitnessType: key> (
+    public fun create_user_witness_config<UserWitnessType: drop> (
         _: &AdminCap,
         ctx: &mut TxContext
     ) {
@@ -253,7 +260,7 @@ module sage_admin::access {
         type_name == channel_config.type_name
     }
 
-    public fun verify_channel_witness<ChannelWitnessType: key> (
+    public fun verify_channel_witness<ChannelWitnessType: drop> (
         channel_witness_config: &ChannelWitnessConfig,
         _: &ChannelWitnessType
     ): bool {
@@ -262,7 +269,7 @@ module sage_admin::access {
         type_name == channel_witness_config.type_name
     }
 
-    public fun verify_group_witness<GroupWitnessType: key> (
+    public fun verify_group_witness<GroupWitnessType: drop> (
         group_witness_config: &GroupWitnessConfig,
         _: &GroupWitnessType
     ): bool {
@@ -289,7 +296,7 @@ module sage_admin::access {
         type_name == shared_user_config.type_name
     }
 
-    public fun verify_user_witness<UserWitnessType: key> (
+    public fun verify_user_witness<UserWitnessType: drop> (
         user_witness_config: &UserWitnessConfig,
         _: &UserWitnessType
     ): bool {
@@ -320,5 +327,15 @@ module sage_admin::access {
         ValidType {
             id: object::new(ctx)
         }
+    }
+
+    #[test_only]
+    public fun create_invalid_witness_for_testing(): InvalidWitness {
+        InvalidWitness {}
+    }
+
+    #[test_only]
+    public fun create_valid_witness_for_testing(): ValidWitness {
+        ValidWitness {}
     }
 }
