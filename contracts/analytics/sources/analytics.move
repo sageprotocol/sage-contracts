@@ -17,6 +17,10 @@ module sage_analytics::analytics {
         id: UID
     }
 
+    public struct AnalyticsMetric has copy, drop, store {
+        metric: String
+    }
+
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
@@ -25,17 +29,21 @@ module sage_analytics::analytics {
 
     public fun borrow_field(
         analytics: &Analytics,
-        key: String
+        metric: String
     ): u64 {
         let does_exist = field_exists(
             analytics,
-            key
+            metric
         );
 
         if (does_exist) {
-            *df::borrow<String, u64>(
+            let analytics_metric = AnalyticsMetric {
+                metric
+            };
+
+            *df::borrow<AnalyticsMetric, u64>(
                 &analytics.id,
-                key
+                analytics_metric
             )
         } else {
             0
@@ -44,11 +52,15 @@ module sage_analytics::analytics {
 
     public fun field_exists(
         analytics: &Analytics,
-        key: String
+        metric: String
     ): bool {
-        df::exists_with_type<String, u64>(
+        let analytics_metric = AnalyticsMetric {
+            metric
+        };
+
+        df::exists_with_type<AnalyticsMetric, u64>(
             &analytics.id,
-            key
+            analytics_metric
         )
     }
 
@@ -56,12 +68,16 @@ module sage_analytics::analytics {
 
     public(package) fun add_field(
         analytics: &mut Analytics,
-        key: String,
+        metric: String,
         value: u64
     ) {
+        let analytics_metric = AnalyticsMetric {
+            metric
+        };
+
         df::add(
             &mut analytics.id,
-            key,
+            analytics_metric,
             value
         );
     }
@@ -76,11 +92,15 @@ module sage_analytics::analytics {
 
     public(package) fun remove_field(
         analytics: &mut Analytics,
-        key: String
+        metric: String
     ): u64 {
-        df::remove<String, u64>(
+        let analytics_metric = AnalyticsMetric {
+            metric
+        };
+
+        df::remove<AnalyticsMetric, u64>(
             &mut analytics.id,
-            key
+            analytics_metric
         )
     }
 
