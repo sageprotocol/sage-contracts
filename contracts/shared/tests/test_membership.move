@@ -6,7 +6,11 @@ module sage_shared::test_membership {
     };
 
     use sage_shared::{
-        membership::{Self, EIsNotMember}
+        membership::{
+            Self,
+            EIsMember,
+            EIsNotMember
+        }
     };
 
     // --------------- Constants ---------------
@@ -114,6 +118,43 @@ module sage_shared::test_membership {
     }
 
     #[test]
+    #[expected_failure(abort_code = EIsMember)]
+    fun test_membership_object_join_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        let mut membership = {
+            let membership = membership::create(
+                ts::ctx(scenario)
+            );
+
+            membership
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let timestamp: u64 = 333;
+
+            membership::object_join(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            membership::object_join(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            destroy(membership);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     fun test_membership_object_leave() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -173,6 +214,49 @@ module sage_shared::test_membership {
             let length = membership::get_follower_count(&membership);
 
             assert!(length == 0);
+
+            destroy(membership);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIsNotMember)]
+    fun test_membership_object_leave_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        let mut membership = {
+            let membership = membership::create(
+                ts::ctx(scenario)
+            );
+
+            membership
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let timestamp: u64 = 999;
+
+            membership::object_join(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            membership::object_leave(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            membership::object_leave(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
 
             destroy(membership);
         };
@@ -255,6 +339,43 @@ module sage_shared::test_membership {
     }
 
     #[test]
+    #[expected_failure(abort_code = EIsMember)]
+    fun test_membership_wallet_join_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        let mut membership = {
+            let membership = membership::create(
+                ts::ctx(scenario)
+            );
+
+            membership
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let timestamp: u64 = 333;
+
+            membership::wallet_join(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            membership::wallet_join(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            destroy(membership);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     fun test_membership_wallet_leave() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -314,6 +435,49 @@ module sage_shared::test_membership {
             let length = membership::get_follower_count(&membership);
 
             assert!(length == 0);
+
+            destroy(membership);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIsNotMember)]
+    fun test_membership_wallet_leave_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        let mut membership = {
+            let membership = membership::create(
+                ts::ctx(scenario)
+            );
+
+            membership
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let timestamp: u64 = 999;
+
+            membership::wallet_join(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            membership::wallet_leave(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
+
+            membership::wallet_leave(
+                &mut membership,
+                SERVER,
+                timestamp
+            );
 
             destroy(membership);
         };
