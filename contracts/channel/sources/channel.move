@@ -43,6 +43,10 @@ module sage_channel::channel {
         updated_at: u64
     }
 
+    public struct PostsKey has copy, drop, store {
+        app: String
+    }
+
     // --------------- Events ---------------
 
     // --------------- Constructor ---------------
@@ -158,8 +162,12 @@ module sage_channel::channel {
     public(package) fun return_posts(
         channel: &mut Channel,
         posts: Posts,
-        posts_key: String
+        app_name: String
     ) {
+        let posts_key = PostsKey {
+            app: app_name
+        };
+
         df::add(
             &mut channel.id,
             posts_key,
@@ -169,10 +177,14 @@ module sage_channel::channel {
 
     public(package) fun take_posts(
         channel: &mut Channel,
-        posts_key: String,
+        app_name: String,
         ctx: &mut TxContext
     ): Posts {
-        let does_exist = df::exists_with_type<String, Posts>(
+        let posts_key = PostsKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<PostsKey, Posts>(
             &channel.id,
             posts_key
         );

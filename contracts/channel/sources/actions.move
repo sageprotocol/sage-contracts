@@ -9,10 +9,10 @@ module sage_channel::channel_actions {
     };
 
     use sage_admin::{
+        access::{UserOwnedConfig},
         admin::{AdminCap},
         apps::{Self, App},
-        fees::{Self},
-        types::{UserOwnedConfig}
+        fees::{Self}
     };
 
     use sage_channel::{
