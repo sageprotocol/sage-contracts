@@ -1,5 +1,8 @@
 module sage_user::user_actions {
-    use std::string::{String, utf8};
+    use std::string::{
+        String,
+        utf8
+    };
 
     use sui::{
         clock::Clock,
@@ -12,15 +15,25 @@ module sage_user::user_actions {
         access::{
             Self,
             ChannelConfig,
-            UserOwnedConfig
+            UserOwnedConfig,
+            UserWitnessConfig
         },
         admin::{InviteCap},
         apps::{Self, App},
         fees::{Self}
     };
 
+    use sage_analytics::{
+        analytics_actions::{Self}
+    };
+
     use sage_post::{
         post_actions::{Self}
+    };
+
+    use sage_reward::{
+        reward_actions::{Self},
+        reward_registry::{Self, RewardWeightsRegistry}
     };
 
     use sage_shared::{
@@ -36,7 +49,8 @@ module sage_user::user_actions {
         },
         user_owned::{Self, UserOwned},
         user_registry::{Self, UserRegistry},
-        user_shared::{Self, UserShared}
+        user_shared::{Self, UserShared},
+        user_witness::{Self, UserWitness}
     };
 
     use sage_utils::{
@@ -60,6 +74,10 @@ module sage_user::user_actions {
     const EUserNameMismatch: u64 = 375;
 
     // --------------- Name Tag ---------------
+
+    public struct AppPosts {
+        app: String
+    }
 
     // --------------- Events ---------------
 
@@ -438,10 +456,13 @@ module sage_user::user_actions {
     }
 
     public fun follow<CoinType> (
+        app: &App,
         clock: &Clock,
-        _: &UserOwned,
+        owned_user: &mut UserOwned,
+        reward_weights_registry: &RewardWeightsRegistry,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
+        user_witness_config: &UserWitnessConfig,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -461,36 +482,85 @@ module sage_user::user_actions {
         assert!(self != user_address, ENoSelfJoin);
 
         let follows = user_shared::borrow_follows_mut(shared_user);
+        
+        let timestamp = clock.timestamp_ms();
 
         let (
             membership_message,
             membership_type
         ) = membership::wallet_join(
             follows,
-            self
+            self,
+            timestamp
         );
-
-        let updated_at = clock.timestamp_ms();
-
-        event::emit(UserFollowsUpdate {
-            account_type: membership_type,
-            followed_user: user_address,
-            message: membership_message,
-            updated_at,
-            user: self
-        });
 
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
+
+        let has_rewards_enabled = apps::has_rewards_enabled(
+            app
+        );
+
+        if (has_rewards_enabled) {
+            let app_name = apps::get_name(app);
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics = user_owned::borrow_analytics_mut(
+                owned_user,
+                user_witness_config,
+                app_name,
+                current_epoch,
+                ctx
+            );
+
+            let user_witness = user_witness::create_witness();
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics,
+                user_witness,
+                user_witness_config,
+                utf8(b"user-followed")
+            );
+
+            let friend_analytics = user_shared::borrow_analytics_mut(
+                shared_user,
+                user_witness_config,
+                app_name,
+                current_epoch,
+                ctx
+            );
+
+            let user_witness = user_witness::create_witness();
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                friend_analytics,
+                user_witness,
+                user_witness_config,
+                utf8(b"user-follows")
+            );
+        };
+
+        event::emit(UserFollowsUpdate {
+            account_type: membership_type,
+            followed_user: user_address,
+            message: membership_message,
+            updated_at: timestamp,
+            user: self
+        });
     }
 
     public fun friend_user<CoinType> (
+        app: &App,
         clock: &Clock,
+        reward_weights_registry: &RewardWeightsRegistry,
         user_fees: &UserFees,
         user_friend: &mut UserShared,
         user_shared: &mut UserShared,
+        user_witness_config: &UserWitnessConfig,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -520,12 +590,13 @@ module sage_user::user_actions {
             friend_address
         );
 
-        let updated_at = clock.timestamp_ms();
+        let timestamp = clock.timestamp_ms();
 
         if (already_requested) {
             membership::wallet_leave(
                 friend_requests,
-                friend_address
+                friend_address,
+                timestamp
             );
 
             let friends = user_shared::borrow_friends_mut(
@@ -537,21 +608,68 @@ module sage_user::user_actions {
 
             membership::wallet_join(
                 friends,
-                friend_address
+                friend_address,
+                timestamp
             );
             let (
                 membership_message,
                 membership_type
             ) = membership::wallet_join(
                 friends_friends,
-                user_address
+                user_address,
+                timestamp
             );
+
+            let has_rewards_enabled = apps::has_rewards_enabled(
+                app
+            );
+
+            if (has_rewards_enabled) {
+                let app_name = apps::get_name(app);
+                let current_epoch = reward_registry::get_current(
+                    reward_weights_registry
+                );
+
+                let analytics = user_shared::borrow_analytics_mut(
+                    user_shared,
+                    user_witness_config,
+                    app_name,
+                    current_epoch,
+                    ctx
+                );
+
+                let user_witness = user_witness::create_witness();
+
+                analytics_actions::increment_analytics_for_user<UserWitness>(
+                    analytics,
+                    user_witness,
+                    user_witness_config,
+                    utf8(b"user-friends")
+                );
+
+                let friend_analytics = user_shared::borrow_analytics_mut(
+                    user_friend,
+                    user_witness_config,
+                    app_name,
+                    current_epoch,
+                    ctx
+                );
+
+                let user_witness = user_witness::create_witness();
+
+                analytics_actions::increment_analytics_for_user<UserWitness>(
+                    friend_analytics,
+                    user_witness,
+                    user_witness_config,
+                    utf8(b"user-friends")
+                );
+            };
 
             event::emit(UserFriendUpdate {
                 account_type: membership_type,
                 friended_user: friend_address,
                 message: membership_message,
-                updated_at,
+                updated_at: timestamp,
                 user: user_address
             });
         } else {
@@ -564,14 +682,15 @@ module sage_user::user_actions {
                 membership_type
             ) = membership::wallet_join(
                 friends_friend_requests,
-                user_address
+                user_address,
+                timestamp
             );
 
             event::emit(UserFriendRequestUpdate {
                 account_type: membership_type,
                 friended_user: friend_address,
                 message: membership_message,
-                updated_at,
+                updated_at: timestamp,
                 user: user_address
             });
         };
@@ -585,10 +704,12 @@ module sage_user::user_actions {
     public fun post<CoinType> (
         app: &App,
         clock: &Clock,
-        owned_user: &UserOwned,
+        owned_user: &mut UserOwned,
         owned_user_config: &UserOwnedConfig,
+        reward_weights_registry: &RewardWeightsRegistry,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
+        user_witness_config: &UserWitnessConfig,
         data: String,
         description: String,
         title: String,
@@ -605,17 +726,13 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let (
-            posts_key,
-            app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"posts")
+        let app_name = apps::get_name(
+            app
         );
 
         let mut posts = user_shared::take_posts(
             shared_user,
-            posts_key,
+            app_name,
             ctx
         );
 
@@ -636,14 +753,41 @@ module sage_user::user_actions {
 
         user_shared::return_posts(
             shared_user,
-            posts,
-            posts_key
+            app_name,
+            posts
         );
 
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
+
+        let has_rewards_enabled = apps::has_rewards_enabled(
+            app
+        );
+
+        if (has_rewards_enabled) {
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics = user_owned::borrow_analytics_mut(
+                owned_user,
+                user_witness_config,
+                app_name,
+                current_epoch,
+                ctx
+            );
+
+            let user_witness = user_witness::create_witness();
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics,
+                user_witness,
+                user_witness_config,
+                utf8(b"user-text-posts")
+            );
+        };
 
         let user_key = user_shared::get_key(shared_user);
 
@@ -735,22 +879,23 @@ module sage_user::user_actions {
         let friend_requests = user_shared::borrow_friend_requests_mut(
             shared_user
         );
+        
+        let timestamp = clock.timestamp_ms();
 
         let (
             membership_message,
             membership_type
         ) = membership::wallet_leave(
             friend_requests,
-            removed_request
+            removed_request,
+            timestamp
         );
-
-        let updated_at = clock.timestamp_ms();
 
         event::emit(UserFriendRequestUpdate {
             account_type: membership_type,
             friended_user: removed_request,
             message: membership_message,
-            updated_at,
+            updated_at: timestamp,
             user: user_address
         });
     }
@@ -776,29 +921,30 @@ module sage_user::user_actions {
         let user_address = user_shared::get_owner(shared_user);
 
         let follows = user_shared::borrow_follows_mut(shared_user);
+        
+        let timestamp = clock.timestamp_ms();
 
         let (
             membership_message,
             membership_type
         ) = membership::wallet_leave(
             follows,
-            self
+            self,
+            timestamp
         );
-
-        let updated_at = clock.timestamp_ms();
-
-        event::emit(UserFollowsUpdate {
-            account_type: membership_type,
-            followed_user: user_address,
-            message: membership_message,
-            updated_at,
-            user: self
-        });
 
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
+
+        event::emit(UserFollowsUpdate {
+            account_type: membership_type,
+            followed_user: user_address,
+            message: membership_message,
+            updated_at: timestamp,
+            user: self
+        });
     }
 
     public fun unfriend_user<CoinType> (
@@ -832,33 +978,35 @@ module sage_user::user_actions {
         let friends_friends = user_shared::borrow_friends_mut(
             user_friend
         );
+        
+        let timestamp = clock.timestamp_ms();
 
         membership::wallet_leave(
             friends,
-            friend_address
+            friend_address,
+            timestamp
         );
         let (
             membership_message,
             membership_type
         ) = membership::wallet_leave(
             friends_friends,
-            user_address
+            user_address,
+            timestamp
         );
-
-        let updated_at = clock.timestamp_ms();
-
-        event::emit(UserFriendUpdate {
-            account_type: membership_type,
-            friended_user: friend_address,
-            message: membership_message,
-            updated_at,
-            user: user_address
-        });
 
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
+
+        event::emit(UserFriendUpdate {
+            account_type: membership_type,
+            friended_user: friend_address,
+            message: membership_message,
+            updated_at: timestamp,
+            user: user_address
+        });
     }
 
     public fun update<CoinType> (
