@@ -4,7 +4,11 @@ module sage_admin::admin_actions {
     use sui::{event};
 
     use sage_admin::{
-        admin::{AdminCap, FeeCap},
+        admin::{
+            AdminCap,
+            FeeCap,
+            RewardCap
+        },
         access::{
             Self,
             UserOwnedConfig
@@ -83,6 +87,17 @@ module sage_admin::admin_actions {
             protocol_fee,
             protocol_treasury,
             ctx
+        );
+    }
+
+    public fun update_app_rewards(
+        _: &RewardCap,
+        app: &mut App,
+        rewards_enabled: bool
+    ) {
+        apps::update_rewards(
+            app,
+            rewards_enabled
         );
     }
 
