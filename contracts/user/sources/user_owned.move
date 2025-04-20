@@ -1,18 +1,26 @@
 module sage_user::user_owned {
     use std::{
-        string::{String, utf8}
+        string::{String}
     };
 
     use sui::{
-        dynamic_field::{Self as df}
+        dynamic_field::{Self as df},
+        dynamic_object_field::{Self as dof}
     };
 
     use sage_admin::{
+        access::{UserWitnessConfig},
         apps::{Self, App}
     };
 
+    use sage_reward::{
+        analytics::{Analytics},
+        analytics_actions::{Self}
+    };
+
     use sage_user::{
-        user_shared::{UserShared}
+        user_shared::{UserShared},
+        user_witness::{Self}
     };
 
     use sage_shared::{
@@ -29,6 +37,19 @@ module sage_user::user_owned {
     const ENoAppFavorites: u64 = 370;
 
     // --------------- Name Tag ---------------
+
+    public struct AnalyticsKey has copy, drop, store {
+        app: String,
+        epoch: u64
+    }
+
+    public struct ChannelFavoritesKey has copy, drop, store {
+        app: String
+    }
+
+    public struct UserFavoritesKey has copy, drop, store {
+        app: String
+    }
 
     public struct UserOwned has key {
         id: UID,
@@ -96,21 +117,21 @@ module sage_user::user_owned {
         app: &App,
         user: &UserOwned
     ): u64 {
-        let (
-            favorites_key,
-            _app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"favorite-channels")
+        let app_name = apps::get_name(
+            app
         );
 
-        let does_exist = df::exists_with_type<String, Favorites>(
+        let favorites_key = ChannelFavoritesKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<ChannelFavoritesKey, Favorites>(
             &user.id,
             favorites_key
         );
 
         if (does_exist) {
-            let favorites = df::borrow<String, Favorites>(
+            let favorites = df::borrow<ChannelFavoritesKey, Favorites>(
                 &user.id,
                 favorites_key
             );
@@ -125,21 +146,21 @@ module sage_user::user_owned {
         app: &App,
         user: &UserOwned
     ): u64 {
-        let (
-            favorites_key,
-            _app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"favorite-users")
+        let app_name = apps::get_name(
+            app
         );
 
-        let does_exist = df::exists_with_type<String, Favorites>(
+        let favorites_key = UserFavoritesKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<UserFavoritesKey, Favorites>(
             &user.id,
             favorites_key
         );
 
         if (does_exist) {
-            let favorites = df::borrow<String, Favorites>(
+            let favorites = df::borrow<UserFavoritesKey, Favorites>(
                 &user.id,
                 favorites_key
             );
@@ -163,15 +184,15 @@ module sage_user::user_owned {
         address,
         address
     ) {
-        let (
-            favorites_key,
-            _app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"favorite-channels")
+        let app_name = apps::get_name(
+            app
         );
 
-        let does_exist = df::exists_with_type<String, Favorites>(
+        let favorites_key = ChannelFavoritesKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<ChannelFavoritesKey, Favorites>(
             &owned_user.id,
             favorites_key
         );
@@ -179,7 +200,7 @@ module sage_user::user_owned {
         let favorite_channel_address = object::id_address(channel);
 
         if (does_exist) {
-            let favorites = df::borrow_mut<String, Favorites>(
+            let favorites = df::borrow_mut<ChannelFavoritesKey, Favorites>(
                 &mut owned_user.id,
                 favorites_key
             );
@@ -219,15 +240,15 @@ module sage_user::user_owned {
         address,
         address
     ) {
-        let (
-            favorites_key,
-            _app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"favorite-users")
+        let app_name = apps::get_name(
+            app
         );
 
-        let does_exist = df::exists_with_type<String, Favorites>(
+        let favorites_key = UserFavoritesKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<UserFavoritesKey, Favorites>(
             &owned_user.id,
             favorites_key
         );
@@ -235,7 +256,7 @@ module sage_user::user_owned {
         let favorite_user_wallet_address = user.get_owner();
 
         if (does_exist) {
-            let favorites = df::borrow_mut<String, Favorites>(
+            let favorites = df::borrow_mut<UserFavoritesKey, Favorites>(
                 &mut owned_user.id,
                 favorites_key
             );
@@ -261,6 +282,45 @@ module sage_user::user_owned {
             FAVORITE_ADD,
             self,
             favorite_user_wallet_address
+        )
+    }
+
+    public(package) fun borrow_analytics_mut(
+        owned_user: &mut UserOwned,
+        user_witness_config: &UserWitnessConfig,
+        app_name: String,
+        epoch: u64,
+        ctx: &mut TxContext
+    ): &mut Analytics {
+        let analytics_key = AnalyticsKey {
+            app: app_name,
+            epoch
+        };
+
+        let does_exist = dof::exists_with_type<AnalyticsKey, Analytics>(
+            &owned_user.id,
+            analytics_key
+        );
+
+        if (!does_exist) {
+            let user_witness = user_witness::create_witness();
+
+            let analytics = analytics_actions::create_analytics_for_user(
+                user_witness,
+                user_witness_config,
+                ctx
+            );
+
+            dof::add(
+                &mut owned_user.id,
+                analytics_key,
+                analytics
+            );
+        };
+
+        dof::borrow_mut<AnalyticsKey, Analytics>(
+            &mut owned_user.id,
+            analytics_key
         )
     }
 
@@ -307,15 +367,15 @@ module sage_user::user_owned {
         address,
         address
     ) {
-        let (
-            favorites_key,
-            _app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"favorite-channels")
+        let app_name = apps::get_name(
+            app
         );
 
-        let does_exist = df::exists_with_type<String, Favorites>(
+        let favorites_key = ChannelFavoritesKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<ChannelFavoritesKey, Favorites>(
             &owned_user.id,
             favorites_key
         );
@@ -324,7 +384,7 @@ module sage_user::user_owned {
 
         let favorite_channel_address = object::id_address(channel);
 
-        let favorites = df::borrow_mut<String, Favorites>(
+        let favorites = df::borrow_mut<ChannelFavoritesKey, Favorites>(
             &mut owned_user.id,
             favorites_key
         );
@@ -353,15 +413,15 @@ module sage_user::user_owned {
         address,
         address
     ) {
-        let (
-            favorites_key,
-            _app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"favorite-users")
+        let app_name = apps::get_name(
+            app
         );
 
-        let does_exist = df::exists_with_type<String, Favorites>(
+        let favorites_key = UserFavoritesKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<UserFavoritesKey, Favorites>(
             &owned_user.id,
             favorites_key
         );
@@ -370,7 +430,7 @@ module sage_user::user_owned {
 
         let favorite_user_wallet_address = user.get_owner();
 
-        let favorites = df::borrow_mut<String, Favorites>(
+        let favorites = df::borrow_mut<UserFavoritesKey, Favorites>(
             &mut owned_user.id,
             favorites_key
         );

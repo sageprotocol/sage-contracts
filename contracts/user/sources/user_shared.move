@@ -1,10 +1,20 @@
 module sage_user::user_shared {
     use sui::{
-        dynamic_field::{Self as df}
+        dynamic_field::{Self as df},
+        dynamic_object_field::{Self as dof}
     };
 
     use std::{
         string::{String}
+    };
+
+    use sage_admin::{
+        access::{UserWitnessConfig}
+    };
+
+    use sage_reward::{
+        analytics::{Analytics},
+        analytics_actions::{Self}
     };
 
     use sage_shared::{
@@ -12,11 +22,24 @@ module sage_user::user_shared {
         posts::{Self, Posts}
     };
 
+    use sage_user::{
+        user_witness::{Self}
+    };
+
     // --------------- Constants ---------------
 
     // --------------- Errors ---------------
 
     // --------------- Name Tag ---------------
+
+    public struct AnalyticsKey has copy, drop, store {
+        app: String,
+        epoch: u64
+    }
+
+    public struct PostsKey has copy, drop, store {
+        app: String
+    }
 
     public struct UserShared has key {
         id: UID,
@@ -55,6 +78,45 @@ module sage_user::user_shared {
     }
 
     // --------------- Friend Functions ---------------
+
+    public(package) fun borrow_analytics_mut(
+        shared_user: &mut UserShared,
+        user_witness_config: &UserWitnessConfig,
+        app_name: String,
+        epoch: u64,
+        ctx: &mut TxContext
+    ): &mut Analytics {
+        let analytics_key = AnalyticsKey {
+            app: app_name,
+            epoch
+        };
+
+        let does_exist = dof::exists_with_type<AnalyticsKey, Analytics>(
+            &shared_user.id,
+            analytics_key
+        );
+
+        if (!does_exist) {
+            let user_witness = user_witness::create_witness();
+
+            let analytics = analytics_actions::create_analytics_for_user(
+                user_witness,
+                user_witness_config,
+                ctx
+            );
+
+            dof::add(
+                &mut shared_user.id,
+                analytics_key,
+                analytics
+            );
+        };
+
+        dof::borrow_mut<AnalyticsKey, Analytics>(
+            &mut shared_user.id,
+            analytics_key
+        )
+    }
 
     public(package) fun borrow_follows_mut(
         shared_user: &mut UserShared
@@ -105,9 +167,13 @@ module sage_user::user_shared {
 
     public(package) fun return_posts(
         shared_user: &mut UserShared,
-        posts: Posts,
-        posts_key: String
+        app_name: String,
+        posts: Posts
     ) {
+        let posts_key = PostsKey {
+            app: app_name
+        };
+
         df::add(
             &mut shared_user.id,
             posts_key,
@@ -117,10 +183,14 @@ module sage_user::user_shared {
 
     public(package) fun take_posts(
         shared_user: &mut UserShared,
-        posts_key: String,
+        app_name: String,
         ctx: &mut TxContext
     ): Posts {
-        let does_exist = df::exists_with_type<String, Posts>(
+        let posts_key = PostsKey {
+            app: app_name
+        };
+
+        let does_exist = df::exists_with_type<PostsKey, Posts>(
             &shared_user.id,
             posts_key
         );
@@ -142,9 +212,13 @@ module sage_user::user_shared {
     #[test_only]
     public fun posts_exists(
         shared_user: &UserShared,
-        posts_key: String
+        app_name: String
     ): bool {
-        df::exists_with_type<String, Posts>(
+        let posts_key = PostsKey {
+            app: app_name
+        };
+
+        df::exists_with_type<PostsKey, Posts>(
             &shared_user.id,
             posts_key
         )
