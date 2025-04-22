@@ -15,6 +15,7 @@ module sage_user::test_user_actions {
             Self,
             ChannelConfig,
             UserOwnedConfig,
+            UserWitnessConfig,
             ETypeMismatch
         },
         admin::{
@@ -24,6 +25,10 @@ module sage_user::test_user_actions {
             InviteCap
         },
         apps::{Self, App}
+    };
+
+    use sage_reward::{
+        reward_registry::{Self, RewardWeightsRegistry}
     };
 
     use sage_shared::{
@@ -58,7 +63,8 @@ module sage_user::test_user_actions {
         },
         user_owned::{Self, UserOwned},
         user_registry::{Self, UserRegistry},
-        user_shared::{Self, UserShared}
+        user_shared::{Self, UserShared},
+        user_witness::{UserWitness}
     };
 
     // --------------- Constants ---------------
@@ -125,17 +131,21 @@ module sage_user::test_user_actions {
         clock: Clock,
         invite_config: InviteConfig,
         owned_user_config: UserOwnedConfig,
+        reward_weights_registry: RewardWeightsRegistry,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry,
-        user_fees: UserFees
+        user_fees: UserFees,
+        user_witness_config: UserWitnessConfig
     ) {
         destroy(app);
         ts::return_shared(clock);
         destroy(invite_config);
         destroy(owned_user_config);
+        destroy(reward_weights_registry);
         destroy(user_registry);
         destroy(user_invite_registry);
         destroy(user_fees);
+        destroy(user_witness_config);
     }
 
     #[test_only]
@@ -144,16 +154,19 @@ module sage_user::test_user_actions {
         App,
         Clock,
         InviteConfig,
+        RewardWeightsRegistry,
         UserOwnedConfig,
         UserRegistry,
         UserInviteRegistry,
-        UserFees
+        UserFees,
+        UserWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
+            reward_registry::init_for_testing(ts::ctx(scenario));
             user_invite::init_for_testing(ts::ctx(scenario));
             user_registry::init_for_testing(ts::ctx(scenario));
         };
@@ -171,10 +184,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             user_registry,
             user_invite_registry
         ) = {
             let invite_config = scenario.take_shared<InviteConfig>();
+            let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
             let user_registry = scenario.take_shared<UserRegistry>();
             let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
 
@@ -189,6 +204,11 @@ module sage_user::test_user_actions {
             let clock = ts::take_shared<Clock>(scenario);
 
             access::create_owned_user_config<UserOwned>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
+            access::create_user_witness_config<UserWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -222,6 +242,7 @@ module sage_user::test_user_actions {
                 app,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry
             )
@@ -230,14 +251,17 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             owned_user_config,
-            user_fees
+            user_fees,
+            user_witness_config
          ) = {
             let owned_user_config = ts::take_shared<UserOwnedConfig>(scenario);
             let user_fees = ts::take_shared<UserFees>(scenario);
+            let user_witness_config = ts::take_shared<UserWitnessConfig>(scenario);
 
             (
                 owned_user_config,
-                user_fees
+                user_fees,
+                user_witness_config
             )
         };
 
@@ -246,10 +270,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             user_registry,
             user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         )
     }
 
@@ -260,10 +286,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             user_registry,
             user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -275,9 +303,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -385,10 +415,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -510,9 +542,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -526,10 +560,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -667,9 +703,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -684,10 +722,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -733,9 +773,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -750,10 +792,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -799,9 +843,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -816,10 +862,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -878,9 +926,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -895,10 +945,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -944,9 +996,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -961,10 +1015,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1026,9 +1082,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1043,10 +1101,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1092,9 +1152,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1109,10 +1171,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1158,9 +1222,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1174,10 +1240,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1269,9 +1337,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1286,10 +1356,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1363,9 +1435,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1380,10 +1454,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1457,9 +1533,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1474,10 +1552,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1567,9 +1647,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1583,10 +1665,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1631,9 +1715,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1647,10 +1733,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1754,9 +1842,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1771,10 +1861,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1856,9 +1948,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -1872,10 +1966,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2019,9 +2115,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2035,10 +2133,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2130,19 +2230,26 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::follow<SUI>(
+                &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
+                &reward_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            let follows = user_shared::borrow_follows_mut(&mut other_shared_user);
+            let follows = user_shared::borrow_follows_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
 
             let is_member = membership::is_member(
                 follows,
@@ -2151,7 +2258,7 @@ module sage_user::test_user_actions {
 
             assert!(is_member, EUserNotMember);
 
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 follows
             );
 
@@ -2167,6 +2274,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfollow<SUI>(
+                &app,
                 &clock,
                 &mut other_shared_user,
                 &user_fees,
@@ -2175,7 +2283,11 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let membership = user_shared::borrow_follows_mut(&mut other_shared_user);
+            let membership = user_shared::borrow_follows_mut(
+                &mut other_shared_user,
+                ADMIN,
+                ts::ctx(scenario)
+            );
 
             let is_member = membership::is_member(
                 membership,
@@ -2184,7 +2296,7 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserNotMember);
 
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 membership
             );
 
@@ -2198,9 +2310,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2215,10 +2329,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2306,14 +2422,17 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
             
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut other_shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::follow<SUI>(
+                &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
+                &reward_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2327,9 +2446,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2344,10 +2465,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2426,7 +2549,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut other_shared_user = ts::take_shared<UserShared>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
@@ -2439,10 +2562,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
+                &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
+                &reward_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2456,9 +2582,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2473,10 +2601,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2522,7 +2652,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
@@ -2535,10 +2665,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
+                &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
+                &reward_weights_registry,
                 &mut shared_user,
                 &user_fees,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2552,9 +2685,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2569,10 +2704,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2655,7 +2792,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 FOLLOW_USER_CUSTOM_FEE,
@@ -2667,10 +2804,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
+                &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
+                &reward_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2686,6 +2826,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfollow<SUI>(
+                &app,
                 &clock,
                 &mut other_shared_user,
                 &user_fees,
@@ -2702,9 +2843,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2719,10 +2862,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2805,7 +2950,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {  
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let custom_payment = mint_for_testing<SUI>(
                 FOLLOW_USER_CUSTOM_FEE,
@@ -2817,10 +2962,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::follow<SUI>(
+                &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
+                &reward_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -2836,6 +2984,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfollow<SUI>(
+                &app,
                 &clock,
                 &mut other_shared_user,
                 &user_fees,
@@ -2851,10 +3000,12 @@ module sage_user::test_user_actions {
                 app,
                 clock,
                 invite_config,
-        
-        owned_user_config,        user_registry,
+                owned_user_config,
+                reward_weights_registry,
+                user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -2868,10 +3019,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2953,10 +3106,7 @@ module sage_user::test_user_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let (
-            mut shared_user,
-            mut other_shared_user
-        ) = {
+        let mut shared_user = {
             let custom_payment = mint_for_testing<SUI>(
                 FRIEND_USER_CUSTOM_FEE,
                 ts::ctx(scenario)
@@ -2969,20 +3119,22 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             let friends = user_shared::borrow_friend_requests_mut(
-                &mut shared_user
-            );
-            let friend_friends = user_shared::borrow_friend_requests_mut(
-                &mut other_shared_user
+                &mut shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
             );
 
             let is_member = membership::is_member(
@@ -2991,6 +3143,23 @@ module sage_user::test_user_actions {
             );
 
             assert!(!is_member, EUserMember);
+
+            let member_length = membership::get_member_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+            
+            shared_user
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let friend_friends = user_shared::borrow_friend_requests_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
 
             let is_member = membership::is_member(
                 friend_friends,
@@ -2999,27 +3168,17 @@ module sage_user::test_user_actions {
 
             assert!(is_member, EUserNotMember);
 
-            let member_length = membership::get_length(
-                friends
-            );
-
-            assert!(member_length == 0, EUserMembershipCountMismatch);
-
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 friend_friends
             );
 
             assert!(member_length == 1, EUserMembershipCountMismatch);
-
-            (
-                shared_user,
-                other_shared_user
-            )
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             user_actions::remove_friend_request(
+                &app,
                 &clock,
                 &mut other_shared_user,
                 ADMIN,
@@ -3027,10 +3186,9 @@ module sage_user::test_user_actions {
             );
 
             let friends = user_shared::borrow_friend_requests_mut(
-                &mut shared_user
-            );
-            let friend_friends = user_shared::borrow_friend_requests_mut(
-                &mut other_shared_user
+                &mut shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
             );
 
             let is_member = membership::is_member(
@@ -3040,6 +3198,21 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
+            let member_length = membership::get_member_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let friend_friends = user_shared::borrow_friend_requests_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
+
             let is_member = membership::is_member(
                 friend_friends,
                 ADMIN
@@ -3047,13 +3220,7 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
-            let member_length = membership::get_length(
-                friends
-            );
-
-            assert!(member_length == 0, EUserMembershipCountMismatch);
-
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 friend_friends
             );
 
@@ -3072,10 +3239,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3085,6 +3255,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, OTHER);
         {
             user_actions::remove_friend_request(
+                &app,
                 &clock,
                 &mut other_shared_user,
                 ADMIN,
@@ -3092,10 +3263,9 @@ module sage_user::test_user_actions {
             );
 
             let friends = user_shared::borrow_friend_requests_mut(
-                &mut shared_user
-            );
-            let friend_friends = user_shared::borrow_friend_requests_mut(
-                &mut other_shared_user
+                &mut shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
             );
 
             let is_member = membership::is_member(
@@ -3105,6 +3275,21 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
+            let member_length = membership::get_member_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let friend_friends = user_shared::borrow_friend_requests_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
+
             let is_member = membership::is_member(
                 friend_friends,
                 ADMIN
@@ -3112,13 +3297,7 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
-            let member_length = membership::get_length(
-                friends
-            );
-
-            assert!(member_length == 0, EUserMembershipCountMismatch);
-
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 friend_friends
             );
 
@@ -3132,9 +3311,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -3149,10 +3330,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3247,10 +3430,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3264,6 +3450,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, SERVER);
         {
             user_actions::remove_friend_request(
+                &app,
                 &clock,
                 &mut other_shared_user,
                 ADMIN,
@@ -3277,9 +3464,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -3293,10 +3482,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3391,10 +3582,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3415,20 +3609,22 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
             let friends = user_shared::borrow_friends_mut(
-                &mut shared_user
-            );
-            let friend_friends = user_shared::borrow_friends_mut(
-                &mut other_shared_user
+                &mut shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
             );
 
             let is_member = membership::is_member(
@@ -3438,6 +3634,21 @@ module sage_user::test_user_actions {
 
             assert!(is_member, EUserNotMember);
 
+            let member_length = membership::get_member_length(
+                friends
+            );
+
+            assert!(member_length == 1, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let friend_friends = user_shared::borrow_friends_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
+
             let is_member = membership::is_member(
                 friend_friends,
                 ADMIN
@@ -3445,13 +3656,7 @@ module sage_user::test_user_actions {
 
             assert!(is_member, EUserNotMember);
 
-            let member_length = membership::get_length(
-                friends
-            );
-
-            assert!(member_length == 1, EUserMembershipCountMismatch);
-
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 friend_friends
             );
 
@@ -3470,6 +3675,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfriend_user<SUI>(
+                &app,
                 &clock,
                 &user_fees,
                 &mut other_shared_user,
@@ -3480,10 +3686,9 @@ module sage_user::test_user_actions {
             );
 
             let friends = user_shared::borrow_friends_mut(
-                &mut shared_user
-            );
-            let friend_friends = user_shared::borrow_friends_mut(
-                &mut other_shared_user
+                &mut shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
             );
 
             let is_member = membership::is_member(
@@ -3493,6 +3698,21 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
+            let member_length = membership::get_member_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let friend_friends = user_shared::borrow_friends_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
+
             let is_member = membership::is_member(
                 friend_friends,
                 ADMIN
@@ -3500,13 +3720,7 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
-            let member_length = membership::get_length(
-                friends
-            );
-
-            assert!(member_length == 0, EUserMembershipCountMismatch);
-
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 friend_friends
             );
 
@@ -3525,10 +3739,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3547,10 +3764,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3569,6 +3789,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfriend_user<SUI>(
+                &app,
                 &clock,
                 &user_fees,
                 &mut other_shared_user,
@@ -3579,10 +3800,9 @@ module sage_user::test_user_actions {
             );
 
             let friends = user_shared::borrow_friends_mut(
-                &mut shared_user
-            );
-            let friend_friends = user_shared::borrow_friends_mut(
-                &mut other_shared_user
+                &mut shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
             );
 
             let is_member = membership::is_member(
@@ -3592,6 +3812,21 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
+            let member_length = membership::get_member_length(
+                friends
+            );
+
+            assert!(member_length == 0, EUserMembershipCountMismatch);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let friend_friends = user_shared::borrow_friends_mut(
+                &mut other_shared_user,
+                object::id_address(&app),
+                ts::ctx(scenario)
+            );
+
             let is_member = membership::is_member(
                 friend_friends,
                 ADMIN
@@ -3599,13 +3834,7 @@ module sage_user::test_user_actions {
 
             assert!(!is_member, EUserMember);
 
-            let member_length = membership::get_length(
-                friends
-            );
-
-            assert!(member_length == 0, EUserMembershipCountMismatch);
-
-            let member_length = membership::get_length(
+            let member_length = membership::get_member_length(
                 friend_friends
             );
 
@@ -3622,9 +3851,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -3639,10 +3870,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3737,10 +3970,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3758,9 +3994,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -3775,10 +4013,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3873,10 +4113,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -3894,9 +4137,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -3911,10 +4156,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4009,10 +4256,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4030,9 +4280,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4047,10 +4299,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4145,10 +4399,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4169,10 +4426,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4191,6 +4451,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfriend_user<SUI>(
+                &app,
                 &clock,
                 &user_fees,
                 &mut other_shared_user,
@@ -4211,9 +4472,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4228,10 +4491,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4326,10 +4591,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4350,10 +4618,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4372,6 +4643,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfriend_user<SUI>(
+                &app,
                 &clock,
                 &user_fees,
                 &mut other_shared_user,
@@ -4392,9 +4664,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4409,10 +4683,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4507,10 +4783,13 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4531,10 +4810,13 @@ module sage_user::test_user_actions {
             );
 
             user_actions::friend_user<SUI>(
+                &app,
                 &clock,
+                &reward_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -4553,6 +4835,7 @@ module sage_user::test_user_actions {
             );
 
             user_actions::unfriend_user<SUI>(
+                &app,
                 &clock,
                 &user_fees,
                 &mut other_shared_user,
@@ -4573,9 +4856,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4589,10 +4874,12 @@ module sage_user::test_user_actions {
             app,
             mut clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4636,7 +4923,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         let timestamp_1 = {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
@@ -4658,10 +4945,12 @@ module sage_user::test_user_actions {
             ) = user_actions::post<SUI>(
                 &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
                 &owned_user_config,
+                &reward_weights_registry,
                 &mut shared_user,
                 &user_fees,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -4683,7 +4972,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         let timestamp_2 = {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
@@ -4705,10 +4994,12 @@ module sage_user::test_user_actions {
             ) = user_actions::post<SUI>(
                 &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
                 &owned_user_config,
+                &reward_weights_registry,
                 &mut shared_user,
                 &user_fees,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -4728,11 +5019,9 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
-            let posts_key = utf8(b"sage-posts");
-
             let posts = user_shared::take_posts(
                 &mut shared_user,
-                posts_key,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -4756,8 +5045,8 @@ module sage_user::test_user_actions {
 
             user_shared::return_posts(
                 &mut shared_user,
-                posts,
-                posts_key
+                object::id_address(&app),
+                posts
             );
 
             ts::return_to_sender(scenario, owned_user);
@@ -4768,9 +5057,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4785,10 +5076,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4832,7 +5125,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
@@ -4854,10 +5147,12 @@ module sage_user::test_user_actions {
             ) = user_actions::post<SUI>(
                 &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
                 &owned_user_config,
+                &reward_weights_registry,
                 &mut shared_user,
                 &user_fees,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -4874,9 +5169,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4891,10 +5188,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -4938,7 +5237,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
@@ -4960,10 +5259,12 @@ module sage_user::test_user_actions {
             ) = user_actions::post<SUI>(
                 &app,
                 &clock,
-                &owned_user,
+                &mut owned_user,
                 &owned_user_config,
+                &reward_weights_registry,
                 &mut shared_user,
                 &user_fees,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -4980,9 +5281,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -4996,10 +5299,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -5108,9 +5413,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -5125,10 +5432,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -5224,9 +5533,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -5241,10 +5552,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -5340,9 +5653,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -5357,10 +5672,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -5456,9 +5773,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 
@@ -5473,10 +5792,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             mut invite_config,
+            reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
-            user_fees
+            user_fees,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -5609,9 +5930,11 @@ module sage_user::test_user_actions {
                 clock,
                 invite_config,
                 owned_user_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry,
-                user_fees
+                user_fees,
+                user_witness_config
             );
         };
 

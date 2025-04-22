@@ -6,10 +6,6 @@ module sage_user::test_user_shared {
         test_scenario::{Self as ts}
     };
 
-    use sage_shared::{
-        membership::{Self}
-    };
-
     use sage_user::{
         user_shared::{
             Self,
@@ -40,15 +36,8 @@ module sage_user::test_user_shared {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -85,15 +74,8 @@ module sage_user::test_user_shared {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -105,7 +87,11 @@ module sage_user::test_user_shared {
         {
             let mut user = ts::take_shared<UserShared>(scenario);
 
-            let _follows = user_shared::borrow_follows_mut(&mut user);
+            let _follows = user_shared::borrow_follows_mut(
+                &mut user,
+                ADMIN,
+                ts::ctx(scenario)
+            );
 
             ts::return_shared(user);
         };
@@ -123,15 +109,8 @@ module sage_user::test_user_shared {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -144,7 +123,9 @@ module sage_user::test_user_shared {
             let mut user = ts::take_shared<UserShared>(scenario);
 
             let _friend_requests = user_shared::borrow_friend_requests_mut(
-                &mut user
+                &mut user,
+                ADMIN,
+                ts::ctx(scenario)
             );
 
             ts::return_shared(user);
@@ -163,15 +144,8 @@ module sage_user::test_user_shared {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -184,7 +158,9 @@ module sage_user::test_user_shared {
             let mut user = ts::take_shared<UserShared>(scenario);
 
             let _friends = user_shared::borrow_friends_mut(
-                &mut user
+                &mut user,
+                ADMIN,
+                ts::ctx(scenario)
             );
 
             ts::return_shared(user);
@@ -201,19 +177,10 @@ module sage_user::test_user_shared {
         let created_at: u64 = 999;
         let key = utf8(b"user-name");
 
-        let posts_key = utf8(b"sage-posts");
-
         ts::next_tx(scenario, ADMIN);
         {
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 key,
                 USER_OWNED,
                 ADMIN,
@@ -227,19 +194,19 @@ module sage_user::test_user_shared {
 
             let posts = user_shared::take_posts(
                 &mut user,
-                posts_key,
+                ADMIN,
                 ts::ctx(scenario)
             );
 
             user_shared::return_posts(
                 &mut user,
-                posts,
-                posts_key
+                ADMIN,
+                posts
             );
 
             let does_exist = user_shared::posts_exists(
                 &user,
-                posts_key
+                ADMIN
             );
 
             assert!(does_exist, EPostsMismatch);

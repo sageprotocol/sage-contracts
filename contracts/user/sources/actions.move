@@ -32,7 +32,7 @@ module sage_user::user_actions {
     };
 
     use sage_reward::{
-        reward_actions::{Self},
+        // reward_actions::{Self},
         reward_registry::{Self, RewardWeightsRegistry}
     };
 
@@ -75,10 +75,6 @@ module sage_user::user_actions {
 
     // --------------- Name Tag ---------------
 
-    public struct AppPosts {
-        app: String
-    }
-
     // --------------- Events ---------------
 
     public struct ChannelFavoritesUpdate has copy, drop {
@@ -118,6 +114,7 @@ module sage_user::user_actions {
 
     public struct UserFollowsUpdate has copy, drop {
         account_type: u8,
+        app: address,
         followed_user: address,
         message: u8,
         updated_at: u64,
@@ -126,6 +123,7 @@ module sage_user::user_actions {
 
     public struct UserFriendUpdate has copy, drop {
         account_type: u8,
+        app: address,
         friended_user: address,
         message: u8,
         updated_at: u64,
@@ -134,6 +132,7 @@ module sage_user::user_actions {
 
     public struct UserFriendRequestUpdate has copy, drop {
         account_type: u8,
+        app: address,
         friended_user: address,
         message: u8,
         updated_at: u64,
@@ -142,7 +141,7 @@ module sage_user::user_actions {
 
     public struct UserPostCreated has copy, drop {
         id: address,
-        app: String,
+        app: address,
         created_at: u64,
         created_by: address,
         data: String,
@@ -179,15 +178,16 @@ module sage_user::user_actions {
             channel
         );
 
+        let app_address = object::id_address(app);
+
         let (
-            app_address,
             message,
             self,
             favorited_channel
         ) = user_owned::add_favorite_channel(
-            app,
             channel,
             owned_user,
+            app_address,
             ctx
         );
 
@@ -209,15 +209,16 @@ module sage_user::user_actions {
         user: &UserShared,
         ctx: &mut TxContext
     ) {
+        let app_address = object::id_address(app);
+
         let (
-            app_address,
             message,
             self,
             favorited_user
         ) = user_owned::add_favorite_user(
-            app,
             owned_user,
             user,
+            app_address,
             ctx
         );
 
@@ -329,10 +330,6 @@ module sage_user::user_actions {
             &name
         );
 
-        let follows = membership::create(ctx);
-        let friend_requests = membership::create(ctx);
-        let friends = membership::create(ctx);
-
         let (
             owned_user,
             owned_user_address
@@ -349,9 +346,6 @@ module sage_user::user_actions {
 
         let shared_user_address = user_shared::create(
             created_at,
-            follows,
-            friend_requests,
-            friends,
             user_key,
             owned_user_address,
             self,
@@ -481,13 +475,20 @@ module sage_user::user_actions {
 
         assert!(self != user_address, ENoSelfJoin);
 
-        let follows = user_shared::borrow_follows_mut(shared_user);
+        let app_address = object::id_address(app);
+
+        let follows = user_shared::borrow_follows_mut(
+            shared_user,
+            app_address,
+            ctx
+        );
         
         let timestamp = clock.timestamp_ms();
 
         let (
             membership_message,
-            membership_type
+            membership_type,
+            membership_count
         ) = membership::wallet_join(
             follows,
             self,
@@ -503,8 +504,7 @@ module sage_user::user_actions {
             app
         );
 
-        if (has_rewards_enabled) {
-            let app_name = apps::get_name(app);
+        if (has_rewards_enabled && membership_count == 1) {
             let current_epoch = reward_registry::get_current(
                 reward_weights_registry
             );
@@ -512,7 +512,7 @@ module sage_user::user_actions {
             let analytics = user_owned::borrow_analytics_mut(
                 owned_user,
                 user_witness_config,
-                app_name,
+                app_address,
                 current_epoch,
                 ctx
             );
@@ -529,7 +529,7 @@ module sage_user::user_actions {
             let friend_analytics = user_shared::borrow_analytics_mut(
                 shared_user,
                 user_witness_config,
-                app_name,
+                app_address,
                 current_epoch,
                 ctx
             );
@@ -546,6 +546,7 @@ module sage_user::user_actions {
 
         event::emit(UserFollowsUpdate {
             account_type: membership_type,
+            app: app_address,
             followed_user: user_address,
             message: membership_message,
             updated_at: timestamp,
@@ -581,8 +582,12 @@ module sage_user::user_actions {
 
         assert!(self == user_address, ENotSelf);
 
+        let app_address = object::id_address(app);
+
         let friend_requests = user_shared::borrow_friend_requests_mut(
-            user_shared
+            user_shared,
+            app_address,
+            ctx
         );
 
         let already_requested = membership::is_member(
@@ -600,20 +605,25 @@ module sage_user::user_actions {
             );
 
             let friends = user_shared::borrow_friends_mut(
-                user_shared
+                user_shared,
+                app_address,
+                ctx
             );
-            let friends_friends = user_shared::borrow_friends_mut(
-                user_friend
-            );
-
             membership::wallet_join(
                 friends,
                 friend_address,
                 timestamp
             );
+
+            let friends_friends = user_shared::borrow_friends_mut(
+                user_friend,
+                app_address,
+                ctx
+            );
             let (
                 membership_message,
-                membership_type
+                membership_type,
+                membership_count
             ) = membership::wallet_join(
                 friends_friends,
                 user_address,
@@ -624,8 +634,7 @@ module sage_user::user_actions {
                 app
             );
 
-            if (has_rewards_enabled) {
-                let app_name = apps::get_name(app);
+            if (has_rewards_enabled && membership_count == 1) {
                 let current_epoch = reward_registry::get_current(
                     reward_weights_registry
                 );
@@ -633,7 +642,7 @@ module sage_user::user_actions {
                 let analytics = user_shared::borrow_analytics_mut(
                     user_shared,
                     user_witness_config,
-                    app_name,
+                    app_address,
                     current_epoch,
                     ctx
                 );
@@ -650,7 +659,7 @@ module sage_user::user_actions {
                 let friend_analytics = user_shared::borrow_analytics_mut(
                     user_friend,
                     user_witness_config,
-                    app_name,
+                    app_address,
                     current_epoch,
                     ctx
                 );
@@ -667,6 +676,7 @@ module sage_user::user_actions {
 
             event::emit(UserFriendUpdate {
                 account_type: membership_type,
+                app: app_address,
                 friended_user: friend_address,
                 message: membership_message,
                 updated_at: timestamp,
@@ -674,12 +684,15 @@ module sage_user::user_actions {
             });
         } else {
             let friends_friend_requests = user_shared::borrow_friend_requests_mut(
-                user_friend
+                user_friend,
+                app_address,
+                ctx
             );
 
             let (
                 membership_message,
-                membership_type
+                membership_type,
+                _membership_count
             ) = membership::wallet_join(
                 friends_friend_requests,
                 user_address,
@@ -688,6 +701,7 @@ module sage_user::user_actions {
 
             event::emit(UserFriendRequestUpdate {
                 account_type: membership_type,
+                app: app_address,
                 friended_user: friend_address,
                 message: membership_message,
                 updated_at: timestamp,
@@ -726,13 +740,11 @@ module sage_user::user_actions {
             sui_payment
         );
 
-        let app_name = apps::get_name(
-            app
-        );
+        let app_address = object::id_address(app);
 
         let mut posts = user_shared::take_posts(
             shared_user,
-            app_name,
+            app_address,
             ctx
         );
 
@@ -753,7 +765,7 @@ module sage_user::user_actions {
 
         user_shared::return_posts(
             shared_user,
-            app_name,
+            app_address,
             posts
         );
 
@@ -774,7 +786,7 @@ module sage_user::user_actions {
             let analytics = user_owned::borrow_analytics_mut(
                 owned_user,
                 user_witness_config,
-                app_name,
+                app_address,
                 current_epoch,
                 ctx
             );
@@ -793,7 +805,7 @@ module sage_user::user_actions {
 
         event::emit(UserPostCreated {
             id: post_address,
-            app: app_name,
+            app: app_address,
             created_at: timestamp,
             created_by: self,
             data,
@@ -812,15 +824,16 @@ module sage_user::user_actions {
         owned_user: &mut UserOwned,
         ctx: &mut TxContext
     ) {
+        let app_address = object::id_address(app);
+
         let (
-            app_address,
             message,
             self,
             favorited_channel
         ) = user_owned::remove_favorite_channel(
-            app,
             channel,
             owned_user,
+            app_address,
             ctx
         );
 
@@ -842,15 +855,16 @@ module sage_user::user_actions {
         user: &UserShared,
         ctx: &mut TxContext
     ) {
+        let app_address = object::id_address(app);
+
         let (
-            app_address,
             message,
             self,
             favorited_user
         ) = user_owned::remove_favorite_user(
-            app,
             owned_user,
             user,
+            app_address,
             ctx
         );
 
@@ -866,6 +880,7 @@ module sage_user::user_actions {
     }
 
     public fun remove_friend_request(
+        app: &App,
         clock: &Clock,
         shared_user: &mut UserShared,
         removed_request: address,
@@ -876,15 +891,20 @@ module sage_user::user_actions {
 
         assert!(self == user_address || self == removed_request, ENotSelf);
 
+        let app_address = object::id_address(app);
+
         let friend_requests = user_shared::borrow_friend_requests_mut(
-            shared_user
+            shared_user,
+            app_address,
+            ctx
         );
         
         let timestamp = clock.timestamp_ms();
 
         let (
             membership_message,
-            membership_type
+            membership_type,
+            _membership_count
         ) = membership::wallet_leave(
             friend_requests,
             removed_request,
@@ -893,6 +913,7 @@ module sage_user::user_actions {
 
         event::emit(UserFriendRequestUpdate {
             account_type: membership_type,
+            app: app_address,
             friended_user: removed_request,
             message: membership_message,
             updated_at: timestamp,
@@ -901,6 +922,7 @@ module sage_user::user_actions {
     }
 
     public fun unfollow<CoinType> (
+        app: &App,
         clock: &Clock,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
@@ -920,13 +942,20 @@ module sage_user::user_actions {
         let self = tx_context::sender(ctx);
         let user_address = user_shared::get_owner(shared_user);
 
-        let follows = user_shared::borrow_follows_mut(shared_user);
+        let app_address = object::id_address(app);
+
+        let follows = user_shared::borrow_follows_mut(
+            shared_user,
+            app_address,
+            ctx
+        );
         
         let timestamp = clock.timestamp_ms();
 
         let (
             membership_message,
-            membership_type
+            membership_type,
+            _membership_count
         ) = membership::wallet_leave(
             follows,
             self,
@@ -940,6 +969,7 @@ module sage_user::user_actions {
 
         event::emit(UserFollowsUpdate {
             account_type: membership_type,
+            app: app_address,
             followed_user: user_address,
             message: membership_message,
             updated_at: timestamp,
@@ -948,6 +978,7 @@ module sage_user::user_actions {
     }
 
     public fun unfriend_user<CoinType> (
+        app: &App,
         clock: &Clock,
         user_fees: &UserFees,
         user_friend: &mut UserShared,
@@ -972,23 +1003,29 @@ module sage_user::user_actions {
 
         assert!(self == friend_address || self == user_address, ENotSelf);
 
-        let friends = user_shared::borrow_friends_mut(
-            user_shared
-        );
-        let friends_friends = user_shared::borrow_friends_mut(
-            user_friend
-        );
-        
+        let app_address = object::id_address(app);
         let timestamp = clock.timestamp_ms();
 
+        let friends = user_shared::borrow_friends_mut(
+            user_shared,
+            app_address,
+            ctx
+        );
         membership::wallet_leave(
             friends,
             friend_address,
             timestamp
         );
+
+        let friends_friends = user_shared::borrow_friends_mut(
+            user_friend,
+            app_address,
+            ctx
+        );
         let (
             membership_message,
-            membership_type
+            membership_type,
+            _membership_count
         ) = membership::wallet_leave(
             friends_friends,
             user_address,
@@ -1002,6 +1039,7 @@ module sage_user::user_actions {
 
         event::emit(UserFriendUpdate {
             account_type: membership_type,
+            app: app_address,
             friended_user: friend_address,
             message: membership_message,
             updated_at: timestamp,

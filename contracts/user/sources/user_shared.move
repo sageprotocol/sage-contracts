@@ -18,7 +18,7 @@ module sage_user::user_shared {
     };
 
     use sage_shared::{
-        membership::{Membership},
+        membership::{Self, Membership},
         posts::{Self, Posts}
     };
 
@@ -33,20 +33,29 @@ module sage_user::user_shared {
     // --------------- Name Tag ---------------
 
     public struct AnalyticsKey has copy, drop, store {
-        app: String,
+        app: address,
         epoch: u64
     }
 
+    public struct FollowsKey has copy, drop, store {
+        app: address
+    }
+
+    public struct FriendsKey has copy, drop, store {
+        app: address
+    }
+
+    public struct FriendRequestsKey has copy, drop, store {
+        app: address
+    }
+
     public struct PostsKey has copy, drop, store {
-        app: String
+        app: address
     }
 
     public struct UserShared has key {
         id: UID,
         created_at: u64,
-        follows: Membership,
-        friend_requests: Membership,
-        friends: Membership,
         key: String,
         owned_user: address,
         owner: address,
@@ -82,12 +91,12 @@ module sage_user::user_shared {
     public(package) fun borrow_analytics_mut(
         shared_user: &mut UserShared,
         user_witness_config: &UserWitnessConfig,
-        app_name: String,
+        app_address: address,
         epoch: u64,
         ctx: &mut TxContext
     ): &mut Analytics {
         let analytics_key = AnalyticsKey {
-            app: app_name,
+            app: app_address,
             epoch
         };
 
@@ -119,28 +128,97 @@ module sage_user::user_shared {
     }
 
     public(package) fun borrow_follows_mut(
-        shared_user: &mut UserShared
+        shared_user: &mut UserShared,
+        app_address: address,
+        ctx: &mut TxContext
     ): &mut Membership {
-        &mut shared_user.follows
+        let follows_key = FollowsKey {
+            app: app_address
+        };
+
+        let does_exist = df::exists_with_type<FollowsKey, Membership>(
+            &shared_user.id,
+            follows_key
+        );
+
+        if (!does_exist) {
+            let membership = membership::create(ctx);
+
+            df::add(
+                &mut shared_user.id,
+                follows_key,
+                membership
+            );
+        };
+
+        df::borrow_mut<FollowsKey, Membership>(
+            &mut shared_user.id,
+            follows_key
+        )
     }
 
     public(package) fun borrow_friend_requests_mut(
-        shared_user: &mut UserShared
+        shared_user: &mut UserShared,
+        app_address: address,
+        ctx: &mut TxContext
     ): &mut Membership {
-        &mut shared_user.friend_requests
+        let friend_requests_key = FriendRequestsKey {
+            app: app_address
+        };
+
+        let does_exist = df::exists_with_type<FriendRequestsKey, Membership>(
+            &shared_user.id,
+            friend_requests_key
+        );
+
+        if (!does_exist) {
+            let membership = membership::create(ctx);
+
+            df::add(
+                &mut shared_user.id,
+                friend_requests_key,
+                membership
+            );
+        };
+
+        df::borrow_mut<FriendRequestsKey, Membership>(
+            &mut shared_user.id,
+            friend_requests_key
+        )
     }
 
     public(package) fun borrow_friends_mut(
-        shared_user: &mut UserShared
+        shared_user: &mut UserShared,
+        app_address: address,
+        ctx: &mut TxContext
     ): &mut Membership {
-        &mut shared_user.friends
+        let friends_key = FriendsKey {
+            app: app_address
+        };
+
+        let does_exist = df::exists_with_type<FriendsKey, Membership>(
+            &shared_user.id,
+            friends_key
+        );
+
+        if (!does_exist) {
+            let membership = membership::create(ctx);
+
+            df::add(
+                &mut shared_user.id,
+                friends_key,
+                membership
+            );
+        };
+
+        df::borrow_mut<FriendsKey, Membership>(
+            &mut shared_user.id,
+            friends_key
+        )
     }
 
     public(package) fun create(
         created_at: u64,
-        follows: Membership,
-        friend_requests: Membership,
-        friends: Membership,
         key: String,
         owned_user: address,
         owner: address,
@@ -149,9 +227,6 @@ module sage_user::user_shared {
         let shared_user = UserShared {
             id: object::new(ctx),
             created_at,
-            follows,
-            friend_requests,
-            friends,
             key,
             owned_user,
             owner,
@@ -167,11 +242,11 @@ module sage_user::user_shared {
 
     public(package) fun return_posts(
         shared_user: &mut UserShared,
-        app_name: String,
+        app_address: address,
         posts: Posts
     ) {
         let posts_key = PostsKey {
-            app: app_name
+            app: app_address
         };
 
         df::add(
@@ -183,11 +258,11 @@ module sage_user::user_shared {
 
     public(package) fun take_posts(
         shared_user: &mut UserShared,
-        app_name: String,
+        app_address: address,
         ctx: &mut TxContext
     ): Posts {
         let posts_key = PostsKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<PostsKey, Posts>(
@@ -212,10 +287,10 @@ module sage_user::user_shared {
     #[test_only]
     public fun posts_exists(
         shared_user: &UserShared,
-        app_name: String
+        app_address: address
     ): bool {
         let posts_key = PostsKey {
-            app: app_name
+            app: app_address
         };
 
         df::exists_with_type<PostsKey, Posts>(

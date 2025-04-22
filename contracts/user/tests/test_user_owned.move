@@ -11,10 +11,6 @@ module sage_user::test_user_owned {
         apps::{Self}
     };
 
-    use sage_shared::{
-        membership::{Self}
-    };
-
     use sage_user::{
         user_owned::{Self, UserOwned, ENoAppFavorites},
         user_shared::{Self, UserShared}
@@ -258,9 +254,9 @@ module sage_user::test_user_owned {
             };
 
             user_owned::add_favorite_channel<FakeChannel>(
-                &app,
                 &fake_channel,
                 &mut owned_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -286,9 +282,9 @@ module sage_user::test_user_owned {
             };
 
             user_owned::add_favorite_channel<FakeChannel>(
-                &app,
                 &fake_channel,
                 &mut owned_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -350,9 +346,9 @@ module sage_user::test_user_owned {
             };
 
             user_owned::remove_favorite_channel<FakeChannel>(
-                &app,
                 &fake_channel,
                 &mut owned_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -406,16 +402,16 @@ module sage_user::test_user_owned {
             };
 
             user_owned::add_favorite_channel<FakeChannel>(
-                &app,
                 &fake_channel,
                 &mut owned_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
             user_owned::remove_favorite_channel<FakeChannel>(
-                &app,
                 &fake_channel,
                 &mut owned_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -469,15 +465,8 @@ module sage_user::test_user_owned {
                 ts::ctx(scenario)
             );
 
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _shared_user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 name,
                 user_address,
                 ADMIN,
@@ -500,9 +489,9 @@ module sage_user::test_user_owned {
             let shared_user = ts::take_shared<UserShared>(scenario);
 
             user_owned::add_favorite_user(
-                &app,
                 &mut owned_user,
                 &shared_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -515,15 +504,8 @@ module sage_user::test_user_owned {
 
             ts::return_shared(shared_user);
 
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _shared_user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 name,
                 user_address,
                 SERVER,
@@ -538,9 +520,9 @@ module sage_user::test_user_owned {
             let shared_user = ts::take_shared<UserShared>(scenario);
 
             user_owned::add_favorite_user(
-                &app,
                 &mut owned_user,
                 &shared_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -593,15 +575,8 @@ module sage_user::test_user_owned {
                 ts::ctx(scenario)
             );
 
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _shared_user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 name,
                 user_address,
                 ADMIN,
@@ -621,9 +596,9 @@ module sage_user::test_user_owned {
             let shared_user = ts::take_shared<UserShared>(scenario);
 
             user_owned::remove_favorite_user(
-                &app,
                 &mut owned_user,
                 &shared_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -675,15 +650,8 @@ module sage_user::test_user_owned {
                 ts::ctx(scenario)
             );
 
-            let follows = membership::create(ts::ctx(scenario));
-            let friend_requests = membership::create(ts::ctx(scenario));
-            let friends = membership::create(ts::ctx(scenario));
-
             let _shared_user_address = user_shared::create(
                 created_at,
-                follows,
-                friend_requests,
-                friends,
                 name,
                 user_address,
                 ADMIN,
@@ -703,9 +671,9 @@ module sage_user::test_user_owned {
             let shared_user = ts::take_shared<UserShared>(scenario);
 
             user_owned::add_favorite_user(
-                &app,
                 &mut owned_user,
                 &shared_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 
@@ -719,9 +687,9 @@ module sage_user::test_user_owned {
             let shared_user = ts::take_shared<UserShared>(scenario);
 
             user_owned::remove_favorite_user(
-                &app,
                 &mut owned_user,
                 &shared_user,
+                object::id_address(&app),
                 ts::ctx(scenario)
             );
 

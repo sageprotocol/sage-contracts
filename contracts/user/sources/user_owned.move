@@ -10,7 +10,7 @@ module sage_user::user_owned {
 
     use sage_admin::{
         access::{UserWitnessConfig},
-        apps::{Self, App}
+        apps::{App}
     };
 
     use sage_reward::{
@@ -39,16 +39,16 @@ module sage_user::user_owned {
     // --------------- Name Tag ---------------
 
     public struct AnalyticsKey has copy, drop, store {
-        app: String,
+        app: address,
         epoch: u64
     }
 
     public struct ChannelFavoritesKey has copy, drop, store {
-        app: String
+        app: address
     }
 
     public struct UserFavoritesKey has copy, drop, store {
-        app: String
+        app: address
     }
 
     public struct UserOwned has key {
@@ -117,12 +117,10 @@ module sage_user::user_owned {
         app: &App,
         user: &UserOwned
     ): u64 {
-        let app_name = apps::get_name(
-            app
-        );
+        let app_address = object::id_address(app);
 
         let favorites_key = ChannelFavoritesKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<ChannelFavoritesKey, Favorites>(
@@ -146,12 +144,10 @@ module sage_user::user_owned {
         app: &App,
         user: &UserOwned
     ): u64 {
-        let app_name = apps::get_name(
-            app
-        );
+        let app_address = object::id_address(app);
 
         let favorites_key = UserFavoritesKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<UserFavoritesKey, Favorites>(
@@ -174,22 +170,17 @@ module sage_user::user_owned {
     // --------------- Friend Functions ---------------
 
     public(package) fun add_favorite_channel<ChannelType: key>(
-        app: &App,
         channel: &ChannelType,
         owned_user: &mut UserOwned,
+        app_address: address,
         ctx: &mut TxContext
     ): (
-        address,
         u8,
         address,
         address
     ) {
-        let app_name = apps::get_name(
-            app
-        );
-
         let favorites_key = ChannelFavoritesKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<ChannelFavoritesKey, Favorites>(
@@ -218,11 +209,9 @@ module sage_user::user_owned {
             );
         };
 
-        let app_address = object::id_address(app);
         let self = tx_context::sender(ctx);
 
         (
-            app_address,
             FAVORITE_ADD,
             self,
             favorite_channel_address
@@ -230,22 +219,17 @@ module sage_user::user_owned {
     }
 
     public(package) fun add_favorite_user(
-        app: &App,
         owned_user: &mut UserOwned,
         user: &UserShared,
+        app_address: address,
         ctx: &mut TxContext
     ): (
-        address,
         u8,
         address,
         address
     ) {
-        let app_name = apps::get_name(
-            app
-        );
-
         let favorites_key = UserFavoritesKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<UserFavoritesKey, Favorites>(
@@ -274,11 +258,9 @@ module sage_user::user_owned {
             );
         };
 
-        let app_address = object::id_address(app);
         let self = tx_context::sender(ctx);
 
         (
-            app_address,
             FAVORITE_ADD,
             self,
             favorite_user_wallet_address
@@ -288,12 +270,12 @@ module sage_user::user_owned {
     public(package) fun borrow_analytics_mut(
         owned_user: &mut UserOwned,
         user_witness_config: &UserWitnessConfig,
-        app_name: String,
+        app_address: address,
         epoch: u64,
         ctx: &mut TxContext
     ): &mut Analytics {
         let analytics_key = AnalyticsKey {
-            app: app_name,
+            app: app_address,
             epoch
         };
 
@@ -357,22 +339,17 @@ module sage_user::user_owned {
     }
 
     public(package) fun remove_favorite_channel<ChannelType: key>(
-        app: &App,
         channel: &ChannelType,
         owned_user: &mut UserOwned,
+        app_address: address,
         ctx: &TxContext
     ): (
-        address,
         u8,
         address,
         address
     ) {
-        let app_name = apps::get_name(
-            app
-        );
-
         let favorites_key = ChannelFavoritesKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<ChannelFavoritesKey, Favorites>(
@@ -391,11 +368,9 @@ module sage_user::user_owned {
 
         favorites.remove(favorite_channel_address);
 
-        let app_address = object::id_address(app);
         let self = tx_context::sender(ctx);
 
         (
-            app_address,
             FAVORITE_REMOVE,
             self,
             favorite_channel_address
@@ -403,22 +378,17 @@ module sage_user::user_owned {
     }
 
     public(package) fun remove_favorite_user(
-        app: &App,
         owned_user: &mut UserOwned,
         user: &UserShared,
+        app_address: address,
         ctx: &TxContext
     ): (
-        address,
         u8,
         address,
         address
     ) {
-        let app_name = apps::get_name(
-            app
-        );
-
         let favorites_key = UserFavoritesKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<UserFavoritesKey, Favorites>(
@@ -437,11 +407,9 @@ module sage_user::user_owned {
 
         favorites.remove(favorite_user_wallet_address);
 
-        let app_address = object::id_address(app);
         let self = tx_context::sender(ctx);
 
         (
-            app_address,
             FAVORITE_REMOVE,
             self,
             favorite_user_wallet_address
