@@ -74,7 +74,7 @@ module sage_shared::membership {
         membership.membership[member_address].created_at
     }
 
-    public fun get_follower_count(
+    public fun get_member_length(
         membership: &Membership
     ): u64 {
         membership.current_followers
@@ -106,58 +106,58 @@ module sage_shared::membership {
         membership: &mut Membership,
         obj_address: address,
         timestamp: u64
-    ): (u8, u8) {
-        join(
+    ): (u8, u8, u64) {
+        let count = join(
             membership,
             obj_address,
             OBJECT,
             timestamp
         );
 
-        (MEMBER_ADD, OBJECT)
+        (MEMBER_ADD, OBJECT, count)
     }
 
     public fun object_leave(
         membership: &mut Membership,
         obj_address: address,
         timestamp: u64
-    ): (u8, u8) {
-        leave(
+    ): (u8, u8, u64) {
+        let count = leave(
             membership,
             obj_address,
             timestamp
         );
 
-        (MEMBER_REMOVE, OBJECT)
+        (MEMBER_REMOVE, OBJECT, count)
     }
 
     public fun wallet_join(
         membership: &mut Membership,
         user_address: address,
         timestamp: u64
-    ): (u8, u8) {
-        join(
+    ): (u8, u8, u64) {
+        let count = join(
             membership,
             user_address,
             WALLET,
             timestamp
         );
 
-        (MEMBER_ADD, WALLET)
+        (MEMBER_ADD, WALLET, count)
     }
 
     public fun wallet_leave(
         membership: &mut Membership,
         user_address: address,
         timestamp: u64
-    ): (u8, u8) {
-        leave(
+    ): (u8, u8, u64) {
+        let count = leave(
             membership,
             user_address,
             timestamp
         );
 
-        (MEMBER_REMOVE, WALLET)
+        (MEMBER_REMOVE, WALLET, count)
     }
 
     // --------------- Friend Functions ---------------    
@@ -168,7 +168,7 @@ module sage_shared::membership {
         membership: &mut Membership,
         member_address: address,
         timestamp: u64
-    ) {
+    ): u64 {
         let member = membership.membership.borrow_mut(member_address);
 
         assert!(member.is_following, EIsNotMember);
@@ -177,6 +177,8 @@ module sage_shared::membership {
         member.updated_at = timestamp;
 
         membership.current_followers = membership.current_followers - 1;
+
+        member.count
     }
 
     fun join(
@@ -184,8 +186,9 @@ module sage_shared::membership {
         member_address: address,
         member_type: u8,
         timestamp: u64
-    ) {
+    ): u64 {
         let does_exist = membership.membership.contains(member_address);
+        let mut member_count = 1;
 
         if (does_exist) {
             let member = membership.membership.borrow_mut(member_address);
@@ -195,9 +198,11 @@ module sage_shared::membership {
             member.count = member.count + 1;
             member.is_following = true;
             member.updated_at = timestamp;
+
+            member_count = member.count
         } else {
             let member = Member {
-                count: 1,
+                count: member_count,
                 created_at: timestamp,
                 is_following: true,
                 member_type,
@@ -208,6 +213,8 @@ module sage_shared::membership {
         };
 
         membership.current_followers = membership.current_followers + 1;
+
+        member_count
     }
 
     // --------------- Test Functions ---------------

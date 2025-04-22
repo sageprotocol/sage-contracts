@@ -33,7 +33,7 @@ module sage_shared::test_membership {
                 ts::ctx(scenario)
             );
 
-            let length = membership::get_follower_count(&membership);
+            let length = membership::get_member_length(&membership);
 
             assert!(length == 0);
 
@@ -63,7 +63,11 @@ module sage_shared::test_membership {
             let membership_message: u8 = 1;
             let timestamp: u64 = 333;
 
-            let (retrieved_event, retrieved_message) = membership::object_join(
+            let (
+                retrieved_event,
+                retrieved_message,
+                retrieved_count
+            ) = membership::object_join(
                 &mut membership,
                 SERVER,
                 timestamp
@@ -71,6 +75,7 @@ module sage_shared::test_membership {
 
             assert!(retrieved_event == membership_event);
             assert!(retrieved_message == membership_message);
+            assert!(retrieved_count == 1);
 
             let count = membership::get_count(
                 &membership,
@@ -100,7 +105,7 @@ module sage_shared::test_membership {
 
             assert!(is_member);
 
-            let length = membership::get_follower_count(&membership);
+            let length = membership::get_member_length(&membership);
 
             assert!(length == 1);
 
@@ -181,7 +186,11 @@ module sage_shared::test_membership {
                 created_at
             );
 
-            let (retrieved_event, retrieved_message) = membership::object_leave(
+            let (
+                retrieved_event,
+                retrieved_message,
+                retrieved_count
+            ) = membership::object_leave(
                 &mut membership,
                 SERVER,
                 updated_at
@@ -189,6 +198,7 @@ module sage_shared::test_membership {
 
             assert!(retrieved_event == membership_event);
             assert!(retrieved_message == membership_message);
+            assert!(retrieved_count == 1);
 
             let retrieved_created_at = membership::get_created_at(
                 &membership,
@@ -211,7 +221,7 @@ module sage_shared::test_membership {
 
             assert!(!is_member);
 
-            let length = membership::get_follower_count(&membership);
+            let length = membership::get_member_length(&membership);
 
             assert!(length == 0);
 
@@ -284,7 +294,11 @@ module sage_shared::test_membership {
             let membership_message: u8 = 0;
             let timestamp: u64 = 333;
 
-            let (retrieved_event, retrieved_message) = membership::wallet_join(
+            let (
+                retrieved_event,
+                retrieved_message,
+                retrieved_count
+            ) = membership::wallet_join(
                 &mut membership,
                 SERVER,
                 timestamp
@@ -292,6 +306,7 @@ module sage_shared::test_membership {
 
             assert!(retrieved_event == membership_event);
             assert!(retrieved_message == membership_message);
+            assert!(retrieved_count == 1);
 
             let count = membership::get_count(
                 &membership,
@@ -321,7 +336,7 @@ module sage_shared::test_membership {
 
             assert!(is_member);
 
-            let length = membership::get_follower_count(&membership);
+            let length = membership::get_member_length(&membership);
 
             assert!(length == 1);
 
@@ -402,7 +417,11 @@ module sage_shared::test_membership {
                 created_at
             );
 
-            let (retrieved_event, retrieved_message) = membership::wallet_leave(
+            let (
+                retrieved_event,
+                retrieved_message,
+                retrieved_count
+            ) = membership::wallet_leave(
                 &mut membership,
                 SERVER,
                 updated_at
@@ -410,6 +429,7 @@ module sage_shared::test_membership {
 
             assert!(retrieved_event == membership_event);
             assert!(retrieved_message == membership_message);
+            assert!(retrieved_count == 1);
 
             let retrieved_created_at = membership::get_created_at(
                 &membership,
@@ -432,7 +452,7 @@ module sage_shared::test_membership {
 
             assert!(!is_member);
 
-            let length = membership::get_follower_count(&membership);
+            let length = membership::get_member_length(&membership);
 
             assert!(length == 0);
 
@@ -559,11 +579,13 @@ module sage_shared::test_membership {
         {
             let created_at: u64 = 333;
 
-            membership::wallet_join(
+            let (_, _, retrieved_count) = membership::wallet_join(
                 &mut membership,
                 SERVER,
                 created_at
             );
+
+            assert!(retrieved_count == 1);
 
             membership::wallet_leave(
                 &mut membership,
@@ -571,11 +593,13 @@ module sage_shared::test_membership {
                 1
             );
 
-            membership::wallet_join(
+            let (_, _, retrieved_count) = membership::wallet_join(
                 &mut membership,
                 SERVER,
                 2
             );
+
+            assert!(retrieved_count == 2);
 
             membership::wallet_leave(
                 &mut membership,
@@ -583,11 +607,13 @@ module sage_shared::test_membership {
                 3
             );
 
-            membership::wallet_join(
+            let (_, _, retrieved_count) = membership::wallet_join(
                 &mut membership,
                 SERVER,
                 4
             );
+
+            assert!(retrieved_count == 3);
 
             let count = membership::get_count(
                 &membership,
@@ -617,7 +643,7 @@ module sage_shared::test_membership {
 
             assert!(is_member);
 
-            let length = membership::get_follower_count(&membership);
+            let length = membership::get_member_length(&membership);
 
             assert!(length == 1);
 
