@@ -9,8 +9,13 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
-        access::{Self, UserOwnedConfig},
-        apps::{Self, App},
+        access::{
+            Self,
+            ChannelWitnessConfig,
+            GroupWitnessConfig,
+            UserWitnessConfig
+        },
+        apps::{App},
         fees::{Self, Royalties}
     };
 
@@ -28,13 +33,15 @@ module sage_post::post_actions {
 
     // --------------- Errors ---------------
 
+    const EAppMismatch: u64 = 370;
+
     // --------------- Name Tag ---------------
 
     // --------------- Events ---------------
 
     public struct CommentCreated has copy, drop {
         id: address,
-        app: String,
+        app: address,
         created_at: u64,
         created_by: address,
         data: String,
@@ -53,13 +60,13 @@ module sage_post::post_actions {
 
     // --------------- Public Functions ---------------
 
-    public fun comment<CoinType, UserOwnedType: key>(
+    public fun comment_for_user<CoinType, UserWitnessType: drop> (
         app: &App,
         clock: &Clock,
-        owned_user: &UserOwnedType,
-        owned_user_config: &UserOwnedConfig,
         parent_post: &mut Post,
         post_fees: &PostFees,
+        user_witness: &UserWitnessType,
+        user_witness_config: &UserWitnessConfig,
         data: String,
         description: String,
         title: String,
@@ -67,10 +74,15 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        access::assert_owned_user(
-            owned_user_config,
-            owned_user
+        access::assert_user_witness(
+            user_witness_config,
+            user_witness
         );
+
+        let app_address = object::id_address(app);
+        let parent_app_address = post::get_app(parent_post);
+
+        assert!(app_address == parent_app_address, EAppMismatch);
         
         let (
             custom_payment,
@@ -83,10 +95,13 @@ module sage_post::post_actions {
 
         let timestamp = clock.timestamp_ms();
 
+        let parent_depth = post::get_depth(parent_post);
         let posts = post::borrow_posts_mut(parent_post);
 
         let (post_address, self) = post::create(
+            app_address,
             data,
+            parent_depth + 1,
             description,
             timestamp,
             title,
@@ -104,12 +119,11 @@ module sage_post::post_actions {
             sui_payment
         );
 
-        let app_name = apps::get_name(app);
         let parent_post_address = post::get_address(parent_post);
 
         event::emit(CommentCreated {
             id: post_address,
-            app: app_name,
+            app: app_address,
             created_at: timestamp,
             created_by: self,
             data,
@@ -121,54 +135,110 @@ module sage_post::post_actions {
         (post_address, self, timestamp)
     }
 
-    public fun create<UserOwnedType: key> (
+    public fun create_for_channel<ChannelWitnessType: drop> (
+        app: &App,
+        channel_witness: &ChannelWitnessType,
+        channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        owned_user: &UserOwnedType,
-        owned_user_config: &UserOwnedConfig,
         posts: &mut Posts,
         data: String,
         description: String,
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        access::assert_owned_user(
-            owned_user_config,
-            owned_user
+        access::assert_channel_witness(
+            channel_witness_config,
+            channel_witness
         );
 
-        let timestamp = clock.timestamp_ms();
+        let app_address = object::id_address(app);
 
-        let (post_address, self) = post::create(
+        create(
+            app_address,
+            clock,
+            posts,
             data,
+            1,
             description,
-            timestamp,
             title,
             ctx
-        );
-
-        posts::add(
-            posts,
-            timestamp,
-            post_address
-        );
-
-        (post_address, self, timestamp)
+        )
     }
 
-    public fun like<CoinType, UserOwnedType: key> (
+    public fun create_for_group<GroupWitnessType: drop> (
+        app: &App,
         clock: &Clock,
-        owned_user: &UserOwnedType,
-        owned_user_config: &UserOwnedConfig,
+        group_witness: &GroupWitnessType,
+        group_witness_config: &GroupWitnessConfig,
+        posts: &mut Posts,
+        data: String,
+        description: String,
+        title: String,
+        ctx: &mut TxContext
+    ): (address, address, u64) {
+        access::assert_group_witness(
+            group_witness_config,
+            group_witness
+        );
+
+        let app_address = object::id_address(app);
+
+        create(
+            app_address,
+            clock,
+            posts,
+            data,
+            1,
+            description,
+            title,
+            ctx
+        )
+    }
+
+    public fun create_for_user<UserWitnessType: drop> (
+        app: &App,
+        clock: &Clock,
+        posts: &mut Posts,
+        user_witness: &UserWitnessType,
+        user_witness_config: &UserWitnessConfig,
+        data: String,
+        description: String,
+        title: String,
+        ctx: &mut TxContext
+    ): (address, address, u64) {
+        access::assert_user_witness(
+            user_witness_config,
+            user_witness
+        );
+
+        let app_address = object::id_address(app);
+
+        create(
+            app_address,
+            clock,
+            posts,
+            data,
+            1,
+            description,
+            title,
+            ctx
+        )
+    }
+
+    public fun like_for_user<CoinType, UserWitnessType: drop> (
+        clock: &Clock,
         post: &mut Post,
         post_fees: &PostFees,
         royalties: &Royalties,
+        user_witness: &UserWitnessType,
+        user_witness_config: &UserWitnessConfig,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        access::assert_owned_user(
-            owned_user_config,
-            owned_user
+        access::assert_user_witness(
+            user_witness_config,
+            user_witness
         );
 
         let self = tx_context::sender(ctx);
@@ -213,6 +283,37 @@ module sage_post::post_actions {
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
+
+    fun create (
+        app: address,
+        clock: &Clock,
+        posts: &mut Posts,
+        data: String,
+        depth: u64,
+        description: String,
+        title: String,
+        ctx: &mut TxContext
+    ): (address, address, u64) {
+        let timestamp = clock.timestamp_ms();
+
+        let (post_address, self) = post::create(
+            app,
+            data,
+            depth,
+            description,
+            timestamp,
+            title,
+            ctx
+        );
+
+        posts::add(
+            posts,
+            timestamp,
+            post_address
+        );
+
+        (post_address, self, timestamp)
+    }
 
     // --------------- Test Functions ---------------
 }

@@ -17,10 +17,6 @@ module sage_post::test_post {
 
     // --------------- Errors ---------------
 
-    const EAuthorMismatch: u64 = 0;
-    const EPostMismatch: u64 = 1;
-    const ETimestampMismatch: u64 = 2;
-
     // --------------- Test Functions ---------------
 
     #[test]
@@ -36,7 +32,9 @@ module sage_post::test_post {
             self
         ) = {
             let (post_address, self) = post::create(
+                ADMIN,
                 utf8(b"data"),
+                1,
                 utf8(b"description"),
                 timestamp,
                 utf8(b"title"),
@@ -48,25 +46,33 @@ module sage_post::test_post {
 
         ts::next_tx(scenario, ADMIN);
         {
-            assert!(self == ADMIN, EAuthorMismatch);
+            assert!(self == ADMIN);
 
             let post = ts::take_shared<Post>(scenario);
 
+            let retrieved_app = post::get_app(&post);
+
+            assert!(retrieved_app == ADMIN);
+
             let retrieved_author = post::get_author(&post);
 
-            assert!(retrieved_author == ADMIN, EAuthorMismatch);
+            assert!(retrieved_author == ADMIN);
 
             let retrieved_address = post::get_address(&post);
 
-            assert!(post_address == retrieved_address, EPostMismatch);
+            assert!(post_address == retrieved_address);
 
             let retrieved_created_at = post::get_created_at(&post);
 
-            assert!(retrieved_created_at == timestamp, ETimestampMismatch);
+            assert!(retrieved_created_at == timestamp);
+
+            let retrieved_depth = post::get_depth(&post);
+
+            assert!(retrieved_depth == 1);
 
             let retrieved_updated_at = post::get_updated_at(&post);
 
-            assert!(retrieved_updated_at == timestamp, ETimestampMismatch);
+            assert!(retrieved_updated_at == timestamp);
 
             destroy(post);
         };
@@ -84,7 +90,9 @@ module sage_post::test_post {
             let timestamp: u64 = 999;
 
             let (_post_address, _self) = post::create(
+                ADMIN,
                 utf8(b"data"),
+                1,
                 utf8(b"description"),
                 timestamp,
                 utf8(b"title"),
@@ -114,7 +122,9 @@ module sage_post::test_post {
             let timestamp: u64 = 999;
 
             let (_post_address, _self) = post::create(
+                ADMIN,
                 utf8(b"data"),
+                1,
                 utf8(b"description"),
                 timestamp,
                 utf8(b"title"),

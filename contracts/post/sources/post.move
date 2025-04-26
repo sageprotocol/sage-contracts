@@ -14,9 +14,11 @@ module sage_post::post {
 
     public struct Post has key {
         id: UID,
+        app: address,
         created_at: u64,
         created_by: address,
         data: String,
+        depth: u64,
         description: String,
         likes: Likes,
         posts: Posts,
@@ -38,6 +40,12 @@ module sage_post::post {
         post.id.to_address()
     }
 
+    public fun get_app(
+        post: &Post
+    ): address {
+        post.app
+    }
+
     public fun get_author(
         post: &Post
     ): address {
@@ -48,6 +56,12 @@ module sage_post::post {
         post: &Post
     ): u64 {
         post.created_at
+    }
+
+    public fun get_depth(
+        post: &Post
+    ): u64 {
+        post.depth
     }
 
     public fun get_updated_at(
@@ -71,7 +85,9 @@ module sage_post::post {
     }
 
     public(package) fun create(
+        app: address,
         data: String,
+        depth: u64,
         description: String,
         timestamp: u64,
         title: String,
@@ -84,9 +100,11 @@ module sage_post::post {
 
         let post = Post {
             id: object::new(ctx),
+            app,
             created_at: timestamp,
             created_by: self,
             data,
+            depth,
             description,
             is_deleted: false,
             is_edited: false,

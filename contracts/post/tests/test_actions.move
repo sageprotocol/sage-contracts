@@ -13,10 +13,14 @@ module sage_post::test_post_actions {
     use sage_admin::{
         access::{
             Self,
+            ChannelWitnessConfig,
+            GroupWitnessConfig,
             UserOwnedConfig,
-            InvalidType,
+            UserWitnessConfig,
             ValidType,
-            ETypeMismatch
+            InvalidWitness,
+            ValidWitness,
+            EWitnessMismatch
         },
         admin::{
             Self,
@@ -69,15 +73,21 @@ module sage_post::test_post_actions {
     #[test_only]
     fun destroy_for_testing(
         app: App,
+        channel_witness_config: ChannelWitnessConfig,
         clock: Clock,
+        group_witness_config: GroupWitnessConfig,
         owned_user_config: UserOwnedConfig,
+        user_witness_config: UserWitnessConfig,
         post_fees: PostFees,
         royalties: Royalties,
         valid_type: ValidType
     ) {
         destroy(app);
+        destroy(channel_witness_config);
         ts::return_shared(clock);
+        destroy(group_witness_config);
         destroy(owned_user_config);
+        destroy(user_witness_config);
         destroy(post_fees);
         destroy(royalties);
         destroy(valid_type);
@@ -87,11 +97,15 @@ module sage_post::test_post_actions {
     fun setup_for_testing(): (
         Scenario,
         App,
+        ChannelWitnessConfig,
         Clock,
+        GroupWitnessConfig,
         UserOwnedConfig,
+        UserWitnessConfig,
         PostFees,
         Royalties,
-        ValidType
+        ValidType,
+        ValidWitness
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -108,6 +122,19 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            access::create_channel_witness_config<ValidWitness>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+            access::create_group_witness_config<ValidWitness>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+            access::create_user_witness_config<ValidWitness>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
             let mut clock = clock::create_for_testing(ts::ctx(scenario));
 
             clock::set_for_testing(&mut clock, 0);
@@ -119,10 +146,14 @@ module sage_post::test_post_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = {
             let mut app = apps::create_for_testing(
                 utf8(b"sage"),
@@ -134,6 +165,16 @@ module sage_post::test_post_actions {
             let clock = ts::take_shared<Clock>(scenario);
 
             let owned_user_config = ts::take_shared<UserOwnedConfig>(
+                scenario
+            );
+
+            let channel_witness_config = ts::take_shared<ChannelWitnessConfig>(
+                scenario
+            );
+            let group_witness_config = ts::take_shared<GroupWitnessConfig>(
+                scenario
+            );
+            let user_witness_config = ts::take_shared<UserWitnessConfig>(
                 scenario
             );
 
@@ -150,6 +191,8 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            let valid_witness = access::create_valid_witness_for_testing();
+
             post_fees::create<SUI>(
                 &fee_cap,
                 &mut app,
@@ -164,10 +207,14 @@ module sage_post::test_post_actions {
 
             (
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 royalties,
-                valid_type
+                valid_type,
+                valid_witness
             )
         };
 
@@ -181,11 +228,15 @@ module sage_post::test_post_actions {
         (
             scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         )
     }
 
@@ -194,11 +245,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            _valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -207,8 +262,11 @@ module sage_post::test_post_actions {
         {
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -219,15 +277,19 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    fun test_post_actions_create() {
+    fun test_post_actions_create_for_channel() {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -248,10 +310,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 self,
                 timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -293,8 +356,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -305,16 +371,20 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_post_actions_create_auth_fail() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_post_actions_create_for_channel_witness_fail() {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            _valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -331,14 +401,17 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
+            let invalid_witness = access::create_invalid_witness_for_testing();
+
             let (
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<InvalidType>(
+            ) = post_actions::create_for_channel<InvalidWitness>(
+                &app,
+                &invalid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -351,8 +424,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -367,11 +443,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -392,10 +472,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -432,13 +513,13 @@ module sage_post::test_post_actions {
                 _comment_address,
                 self,
                 timestamp
-            ) = post_actions::comment<SUI, ValidType>(
+            ) = post_actions::comment_for_user<SUI, ValidWitness>(
                 &app,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
+                &valid_witness,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -484,8 +565,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -496,16 +580,20 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_post_actions_comment_auth_fail() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_post_actions_comment_witness_fail() {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -526,10 +614,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -562,17 +651,19 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
+            let invalid_witness = access::create_invalid_witness_for_testing();
+
             let (
                 _comment_address,
                 _self,
                 _timestamp
-            ) = post_actions::comment<SUI, InvalidType>(
+            ) = post_actions::comment_for_user<SUI, InvalidWitness>(
                 &app,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
+                &invalid_witness,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -587,8 +678,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -604,11 +698,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -629,10 +727,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -666,13 +765,13 @@ module sage_post::test_post_actions {
                 _comment_address,
                 _self,
                 _timestamp
-            ) = post_actions::comment<SUI, ValidType>(
+            ) = post_actions::comment_for_user<SUI, ValidWitness>(
                 &app,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
+                &valid_witness,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -687,8 +786,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -704,11 +806,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -729,10 +835,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -766,13 +873,13 @@ module sage_post::test_post_actions {
                 _comment_address,
                 _self,
                 _timestamp
-            ) = post_actions::comment<SUI, ValidType>(
+            ) = post_actions::comment_for_user<SUI, ValidWitness>(
                 &app,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut parent_post,
                 &post_fees,
+                &valid_witness,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -787,8 +894,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -803,11 +913,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -828,10 +942,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -857,13 +972,13 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, ValidType>(
+            post_actions::like_for_user<SUI, ValidWitness>(
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
+                &valid_witness,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -888,8 +1003,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -900,16 +1018,20 @@ module sage_post::test_post_actions {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_post_actions_like_auth_fail() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_post_actions_like_witness_fail() {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -930,10 +1052,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -958,30 +1081,29 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let owned_user = access::create_invalid_type_for_testing(
-                ts::ctx(scenario)
-            );
+            let invalid_witness = access::create_invalid_witness_for_testing();
 
-            post_actions::like<SUI, InvalidType>(
+            post_actions::like_for_user<SUI, InvalidWitness>(
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
+                &invalid_witness,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
 
-            destroy(owned_user);
-
             ts::return_shared(post);
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -997,11 +1119,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1022,10 +1148,11 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
@@ -1051,13 +1178,13 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, ValidType>(
+            post_actions::like_for_user<SUI, ValidWitness>(
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
+                &valid_witness,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1069,8 +1196,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
@@ -1086,11 +1216,15 @@ module sage_post::test_post_actions {
         let (
             mut scenario_val,
             app,
+            channel_witness_config,
             clock,
+            group_witness_config,
             owned_user_config,
+            user_witness_config,
             post_fees,
             royalties,
-            valid_type
+            valid_type,
+            valid_witness
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1111,16 +1245,18 @@ module sage_post::test_post_actions {
                 _post_address,
                 _self,
                 _timestamp
-            ) = post_actions::create<ValidType>(
+            ) = post_actions::create_for_channel<ValidWitness>(
+                &app,
+                &valid_witness,
+                &channel_witness_config,
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut posts,
                 data,
                 description,
                 title,
                 ts::ctx(scenario)
             );
+
 
             destroy(posts);
 
@@ -1140,13 +1276,13 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            post_actions::like<SUI, ValidType>(
+            post_actions::like_for_user<SUI, ValidWitness>(
                 &clock,
-                &owned_user,
-                &owned_user_config,
                 &mut post,
                 &post_fees,
                 &royalties,
+                &valid_witness,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1158,8 +1294,11 @@ module sage_post::test_post_actions {
 
             destroy_for_testing(
                 app,
+                channel_witness_config,
                 clock,
+                group_witness_config,
                 owned_user_config,
+                user_witness_config,
                 post_fees,
                 royalties,
                 valid_type
