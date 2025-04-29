@@ -439,6 +439,330 @@ module sage_post::test_post_actions {
     }
 
     #[test]
+    fun test_post_actions_create_for_group() {
+        let (
+            mut scenario_val,
+            app,
+            channel_witness_config,
+            clock,
+            group_witness_config,
+            owned_user_config,
+            user_witness_config,
+            post_fees,
+            royalties,
+            valid_type,
+            valid_witness
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        let timestamp = {
+            let owned_user = access::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
+            let mut posts = posts::create(ts::ctx(scenario));
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let (
+                _post_address,
+                self,
+                timestamp
+            ) = post_actions::create_for_group<ValidWitness>(
+                &app,
+                &clock,
+                &valid_witness,
+                &group_witness_config,
+                &mut posts,
+                data,
+                description,
+                title,
+                ts::ctx(scenario)
+            );
+
+            let has_record = posts::has_record(
+                &posts,
+                timestamp
+            );
+
+            assert!(has_record, EHasPostsRecord);
+            assert!(self == ADMIN, EAuthorMismatch);
+
+            let length = posts::get_length(&posts);
+
+            assert!(length == 1, EPostsLengthMismatch);
+
+            destroy(owned_user);
+            destroy(posts);
+
+            timestamp
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let post = ts::take_shared<Post>(scenario);
+
+            let retrieved_created_at = post::get_created_at(&post);
+
+            assert!(retrieved_created_at == timestamp, ETimestampMismatch);
+
+            let retrieved_updated_at = post::get_updated_at(&post);
+
+            assert!(retrieved_updated_at == timestamp, ETimestampMismatch);
+
+            ts::return_shared(post);
+
+            destroy_for_testing(
+                app,
+                channel_witness_config,
+                clock,
+                group_witness_config,
+                owned_user_config,
+                user_witness_config,
+                post_fees,
+                royalties,
+                valid_type
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_post_actions_create_for_group_witness_fail() {
+        let (
+            mut scenario_val,
+            app,
+            channel_witness_config,
+            clock,
+            group_witness_config,
+            owned_user_config,
+            user_witness_config,
+            post_fees,
+            royalties,
+            valid_type,
+            _valid_witness
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user = access::create_invalid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
+            let mut posts = posts::create(ts::ctx(scenario));
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let invalid_witness = access::create_invalid_witness_for_testing();
+
+            let (
+                _post_address,
+                _self,
+                _timestamp
+            ) = post_actions::create_for_group<InvalidWitness>(
+                &app,
+                &clock,
+                &invalid_witness,
+                &group_witness_config,
+                &mut posts,
+                data,
+                description,
+                title,
+                ts::ctx(scenario)
+            );
+
+            destroy(owned_user);
+            destroy(posts);
+
+            destroy_for_testing(
+                app,
+                channel_witness_config,
+                clock,
+                group_witness_config,
+                owned_user_config,
+                user_witness_config,
+                post_fees,
+                royalties,
+                valid_type
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_post_actions_create_for_user() {
+        let (
+            mut scenario_val,
+            app,
+            channel_witness_config,
+            clock,
+            group_witness_config,
+            owned_user_config,
+            user_witness_config,
+            post_fees,
+            royalties,
+            valid_type,
+            valid_witness
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        let timestamp = {
+            let owned_user = access::create_valid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
+            let mut posts = posts::create(ts::ctx(scenario));
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let (
+                _post_address,
+                self,
+                timestamp
+            ) = post_actions::create_for_user<ValidWitness>(
+                &app,
+                &clock,
+                &mut posts,
+                &valid_witness,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                ts::ctx(scenario)
+            );
+
+            let has_record = posts::has_record(
+                &posts,
+                timestamp
+            );
+
+            assert!(has_record, EHasPostsRecord);
+            assert!(self == ADMIN, EAuthorMismatch);
+
+            let length = posts::get_length(&posts);
+
+            assert!(length == 1, EPostsLengthMismatch);
+
+            destroy(owned_user);
+            destroy(posts);
+
+            timestamp
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let post = ts::take_shared<Post>(scenario);
+
+            let retrieved_created_at = post::get_created_at(&post);
+
+            assert!(retrieved_created_at == timestamp, ETimestampMismatch);
+
+            let retrieved_updated_at = post::get_updated_at(&post);
+
+            assert!(retrieved_updated_at == timestamp, ETimestampMismatch);
+
+            ts::return_shared(post);
+
+            destroy_for_testing(
+                app,
+                channel_witness_config,
+                clock,
+                group_witness_config,
+                owned_user_config,
+                user_witness_config,
+                post_fees,
+                royalties,
+                valid_type
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_post_actions_create_for_user_witness_fail() {
+        let (
+            mut scenario_val,
+            app,
+            channel_witness_config,
+            clock,
+            group_witness_config,
+            owned_user_config,
+            user_witness_config,
+            post_fees,
+            royalties,
+            valid_type,
+            _valid_witness
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user = access::create_invalid_type_for_testing(
+                ts::ctx(scenario)
+            );
+
+            let mut posts = posts::create(ts::ctx(scenario));
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let invalid_witness = access::create_invalid_witness_for_testing();
+
+            let (
+                _post_address,
+                _self,
+                _timestamp
+            ) = post_actions::create_for_user<InvalidWitness>(
+                &app,
+                &clock,
+                &mut posts,
+                &invalid_witness,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                ts::ctx(scenario)
+            );
+
+            destroy(owned_user);
+            destroy(posts);
+
+            destroy_for_testing(
+                app,
+                channel_witness_config,
+                clock,
+                group_witness_config,
+                owned_user_config,
+                user_witness_config,
+                post_fees,
+                royalties,
+                valid_type
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     fun test_post_actions_comment() {
         let (
             mut scenario_val,
