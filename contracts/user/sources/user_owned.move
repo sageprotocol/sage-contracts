@@ -13,6 +13,10 @@ module sage_user::user_owned {
         apps::{App}
     };
 
+    use sage_post::{
+        post::{Post}
+    };
+
     use sage_reward::{
         analytics::{Analytics},
         analytics_actions::{Self}
@@ -44,6 +48,10 @@ module sage_user::user_owned {
     }
 
     public struct ChannelFavoritesKey has copy, drop, store {
+        app: address
+    }
+
+    public struct PostFavoritesKey has copy, drop, store {
         app: address
     }
 
@@ -173,11 +181,13 @@ module sage_user::user_owned {
         channel: &ChannelType,
         owned_user: &mut UserOwned,
         app_address: address,
+        timestamp: u64,
         ctx: &mut TxContext
     ): (
         u8,
         address,
-        address
+        address,
+        u64
     ) {
         let favorites_key = ChannelFavoritesKey {
             app: app_address
@@ -190,23 +200,31 @@ module sage_user::user_owned {
 
         let favorite_channel_address = object::id_address(channel);
 
-        if (does_exist) {
+        let count = if (does_exist) {
             let favorites = df::borrow_mut<ChannelFavoritesKey, Favorites>(
                 &mut owned_user.id,
                 favorites_key
             );
 
-            favorites.add(favorite_channel_address);
+            favorites.add(
+                favorite_channel_address,
+                timestamp
+            )
         } else {
             let mut favorites = favorites::create(ctx);
 
-            favorites.add(favorite_channel_address);
+            let count = favorites.add(
+                favorite_channel_address,
+                timestamp
+            );
 
             df::add(
                 &mut owned_user.id,
                 favorites_key,
                 favorites
             );
+
+            count
         };
 
         let self = tx_context::sender(ctx);
@@ -214,7 +232,68 @@ module sage_user::user_owned {
         (
             FAVORITE_ADD,
             self,
-            favorite_channel_address
+            favorite_channel_address,
+            count
+        )
+    }
+
+    public(package) fun add_favorite_post(
+        post: &Post,
+        owned_user: &mut UserOwned,
+        app_address: address,
+        timestamp: u64,
+        ctx: &mut TxContext
+    ): (
+        u8,
+        address,
+        address,
+        u64
+    ) {
+        let favorites_key = PostFavoritesKey {
+            app: app_address
+        };
+
+        let does_exist = df::exists_with_type<PostFavoritesKey, Favorites>(
+            &owned_user.id,
+            favorites_key
+        );
+
+        let favorite_post_address = object::id_address(post);
+
+        let count = if (does_exist) {
+            let favorites = df::borrow_mut<PostFavoritesKey, Favorites>(
+                &mut owned_user.id,
+                favorites_key
+            );
+
+            favorites.add(
+                favorite_post_address,
+                timestamp
+            )
+        } else {
+            let mut favorites = favorites::create(ctx);
+
+            let count = favorites.add(
+                favorite_post_address,
+                timestamp
+            );
+
+            df::add(
+                &mut owned_user.id,
+                favorites_key,
+                favorites
+            );
+
+            count
+        };
+
+        let self = tx_context::sender(ctx);
+
+        (
+            FAVORITE_ADD,
+            self,
+            favorite_post_address,
+            count
         )
     }
 
@@ -222,11 +301,13 @@ module sage_user::user_owned {
         owned_user: &mut UserOwned,
         user: &UserShared,
         app_address: address,
+        timestamp: u64,
         ctx: &mut TxContext
     ): (
         u8,
         address,
-        address
+        address,
+        u64
     ) {
         let favorites_key = UserFavoritesKey {
             app: app_address
@@ -239,23 +320,31 @@ module sage_user::user_owned {
 
         let favorite_user_wallet_address = user.get_owner();
 
-        if (does_exist) {
+        let count = if (does_exist) {
             let favorites = df::borrow_mut<UserFavoritesKey, Favorites>(
                 &mut owned_user.id,
                 favorites_key
             );
 
-            favorites.add(favorite_user_wallet_address);
+            favorites.add(
+                favorite_user_wallet_address,
+                timestamp
+            )
         } else {
             let mut favorites = favorites::create(ctx);
 
-            favorites.add(favorite_user_wallet_address);
+            let count = favorites.add(
+                favorite_user_wallet_address,
+                timestamp
+            );
 
             df::add(
                 &mut owned_user.id,
                 favorites_key,
                 favorites
             );
+
+            count
         };
 
         let self = tx_context::sender(ctx);
@@ -263,7 +352,8 @@ module sage_user::user_owned {
         (
             FAVORITE_ADD,
             self,
-            favorite_user_wallet_address
+            favorite_user_wallet_address,
+            count
         )
     }
 
@@ -288,7 +378,7 @@ module sage_user::user_owned {
             let user_witness = user_witness::create_witness();
 
             let analytics = analytics_actions::create_analytics_for_user(
-                user_witness,
+                &user_witness,
                 user_witness_config,
                 ctx
             );
@@ -342,11 +432,13 @@ module sage_user::user_owned {
         channel: &ChannelType,
         owned_user: &mut UserOwned,
         app_address: address,
+        timestamp: u64,
         ctx: &TxContext
     ): (
         u8,
         address,
-        address
+        address,
+        u64
     ) {
         let favorites_key = ChannelFavoritesKey {
             app: app_address
@@ -366,14 +458,63 @@ module sage_user::user_owned {
             favorites_key
         );
 
-        favorites.remove(favorite_channel_address);
+        let count = favorites.remove(
+            favorite_channel_address,
+            timestamp
+        );
 
         let self = tx_context::sender(ctx);
 
         (
             FAVORITE_REMOVE,
             self,
-            favorite_channel_address
+            favorite_channel_address,
+            count
+        )
+    }
+
+    public(package) fun remove_favorite_post(
+        post: &Post,
+        owned_user: &mut UserOwned,
+        app_address: address,
+        timestamp: u64,
+        ctx: &TxContext
+    ): (
+        u8,
+        address,
+        address,
+        u64
+    ) {
+        let favorites_key = PostFavoritesKey {
+            app: app_address
+        };
+
+        let does_exist = df::exists_with_type<PostFavoritesKey, Favorites>(
+            &owned_user.id,
+            favorites_key
+        );
+
+        assert!(does_exist, ENoAppFavorites);
+
+        let favorite_post_address = object::id_address(post);
+
+        let favorites = df::borrow_mut<PostFavoritesKey, Favorites>(
+            &mut owned_user.id,
+            favorites_key
+        );
+
+        let count = favorites.remove(
+            favorite_post_address,
+            timestamp
+        );
+
+        let self = tx_context::sender(ctx);
+
+        (
+            FAVORITE_REMOVE,
+            self,
+            favorite_post_address,
+            count
         )
     }
 
@@ -381,11 +522,13 @@ module sage_user::user_owned {
         owned_user: &mut UserOwned,
         user: &UserShared,
         app_address: address,
+        timestamp: u64,
         ctx: &TxContext
     ): (
         u8,
         address,
-        address
+        address,
+        u64
     ) {
         let favorites_key = UserFavoritesKey {
             app: app_address
@@ -405,14 +548,18 @@ module sage_user::user_owned {
             favorites_key
         );
 
-        favorites.remove(favorite_user_wallet_address);
+        let count = favorites.remove(
+            favorite_user_wallet_address,
+            timestamp
+        );
 
         let self = tx_context::sender(ctx);
 
         (
             FAVORITE_REMOVE,
             self,
-            favorite_user_wallet_address
+            favorite_user_wallet_address,
+            count
         )
     }
 

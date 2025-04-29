@@ -109,7 +109,7 @@ module sage_user::user_shared {
             let user_witness = user_witness::create_witness();
 
             let analytics = analytics_actions::create_analytics_for_user(
-                user_witness,
+                &user_witness,
                 user_witness_config,
                 ctx
             );

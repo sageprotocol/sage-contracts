@@ -257,6 +257,7 @@ module sage_user::test_user_owned {
                 &fake_channel,
                 &mut owned_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -285,6 +286,7 @@ module sage_user::test_user_owned {
                 &fake_channel,
                 &mut owned_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -349,6 +351,7 @@ module sage_user::test_user_owned {
                 &fake_channel,
                 &mut owned_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -405,6 +408,7 @@ module sage_user::test_user_owned {
                 &fake_channel,
                 &mut owned_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -412,6 +416,7 @@ module sage_user::test_user_owned {
                 &fake_channel,
                 &mut owned_user,
                 object::id_address(&app),
+                2,
                 ts::ctx(scenario)
             );
 
@@ -492,6 +497,7 @@ module sage_user::test_user_owned {
                 &mut owned_user,
                 &shared_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -523,6 +529,7 @@ module sage_user::test_user_owned {
                 &mut owned_user,
                 &shared_user,
                 object::id_address(&app),
+                2,
                 ts::ctx(scenario)
             );
 
@@ -599,6 +606,7 @@ module sage_user::test_user_owned {
                 &mut owned_user,
                 &shared_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -674,6 +682,7 @@ module sage_user::test_user_owned {
                 &mut owned_user,
                 &shared_user,
                 object::id_address(&app),
+                1,
                 ts::ctx(scenario)
             );
 
@@ -690,6 +699,7 @@ module sage_user::test_user_owned {
                 &mut owned_user,
                 &shared_user,
                 object::id_address(&app),
+                2,
                 ts::ctx(scenario)
             );
 
