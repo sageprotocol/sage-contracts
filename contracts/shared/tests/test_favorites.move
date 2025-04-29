@@ -49,15 +49,16 @@ module sage_shared::test_favorites {
 
             favorites::add(
                 &mut favorites,
-                ADMIN
+                ADMIN,
+                1
             );
 
-            let has_favorited = favorites::has_favorited(
+            let is_favorite = favorites::is_favorite(
                 &favorites,
                 ADMIN
             );
 
-            assert!(has_favorited, ENoFavoritesRecord);
+            assert!(is_favorite, ENoFavoritesRecord);
 
             let length = favorites::get_length(&favorites);
 
@@ -81,24 +82,79 @@ module sage_shared::test_favorites {
 
             favorites::add(
                 &mut favorites,
-                ADMIN
+                ADMIN,
+                1
             );
 
             favorites::remove(
                 &mut favorites,
-                ADMIN
+                ADMIN,
+                2
             );
 
-            let has_favorited = favorites::has_favorited(
+            let is_favorite = favorites::is_favorite(
                 &favorites,
                 ADMIN
             );
 
-            assert!(!has_favorited, EFavoritesRecord);
+            assert!(!is_favorite, EFavoritesRecord);
 
             let length = favorites::get_length(&favorites);
 
             assert!(length == 0, EFavoritesMismatch);
+
+            destroy(favorites);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_favorites_count() {
+        let mut scenario_val = ts::begin(ADMIN);
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut favorites = favorites::create(ts::ctx(scenario));
+
+            favorites::add(
+                &mut favorites,
+                ADMIN,
+                1
+            );
+
+            favorites::remove(
+                &mut favorites,
+                ADMIN,
+                2
+            );
+
+            favorites::add(
+                &mut favorites,
+                ADMIN,
+                3
+            );
+
+            favorites::remove(
+                &mut favorites,
+                ADMIN,
+                4
+            );
+
+            favorites::add(
+                &mut favorites,
+                ADMIN,
+                5
+            );
+
+            let count = favorites::get_count(
+                &favorites,
+                ADMIN
+            );
+
+            assert!(count == 3);
 
             destroy(favorites);
         };
@@ -140,7 +196,8 @@ module sage_shared::test_favorites {
 
             favorites::add(
                 &mut favorites,
-                ADMIN
+                ADMIN,
+                1
             );
 
             favorites::assert_has_not_favorited(

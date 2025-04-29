@@ -99,7 +99,7 @@ module sage_shared::membership {
         member_address: address
     ): bool {
         membership.membership.contains(member_address) &&
-        membership.membership[member_address].is_following == true
+        membership.membership[member_address].is_following
     }
 
     public fun object_join(
