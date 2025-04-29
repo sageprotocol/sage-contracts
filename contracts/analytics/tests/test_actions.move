@@ -120,27 +120,23 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 ts::ctx(scenario)
             );
 
             destroy(analytics);
 
-            let valid_witness = access::create_valid_witness_for_testing();
-
             let analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 ts::ctx(scenario)
             );
 
             destroy(analytics);
 
-            let valid_witness = access::create_valid_witness_for_testing();
-
             let analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
@@ -174,7 +170,7 @@ module sage_analytics::test_analytics_actions {
             let invalid_witness = access::create_invalid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_channel<InvalidWitness>(
-                invalid_witness,
+                &invalid_witness,
                 &channel_witness_config,
                 ts::ctx(scenario)
             );
@@ -208,7 +204,7 @@ module sage_analytics::test_analytics_actions {
             let invalid_witness = access::create_invalid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_group<InvalidWitness>(
-                invalid_witness,
+                &invalid_witness,
                 &group_witness_config,
                 ts::ctx(scenario)
             );
@@ -242,7 +238,7 @@ module sage_analytics::test_analytics_actions {
             let invalid_witness = access::create_invalid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_user<InvalidWitness>(
-                invalid_witness,
+                &invalid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
@@ -347,18 +343,16 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_channel<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 key
             );
@@ -399,7 +393,7 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 ts::ctx(scenario)
             );
@@ -410,7 +404,7 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_channel<InvalidWitness>(
                 &mut analytics,
-                invalid_witness,
+                &invalid_witness,
                 &channel_witness_config,
                 key
             );
@@ -443,18 +437,16 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_group<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 key
             );
@@ -495,7 +487,7 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 ts::ctx(scenario)
             );
@@ -506,7 +498,7 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_group<InvalidWitness>(
                 &mut analytics,
-                invalid_witness,
+                &invalid_witness,
                 &group_witness_config,
                 key
             );
@@ -539,18 +531,16 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_user<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 key
             );
@@ -591,7 +581,7 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
@@ -602,7 +592,7 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_user<InvalidWitness>(
                 &mut analytics,
-                invalid_witness,
+                &invalid_witness,
                 &user_witness_config,
                 key
             );
@@ -736,27 +726,23 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_channel<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 key
             );
 
-            let valid_witness = access::create_valid_witness_for_testing();
-
             analytics_actions::decrement_analytics_for_channel<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 key
             );
@@ -797,18 +783,16 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_channel<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &channel_witness_config,
                 key
             );
@@ -817,7 +801,7 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::decrement_analytics_for_channel<InvalidWitness>(
                 &mut analytics,
-                invalid_witness,
+                &invalid_witness,
                 &channel_witness_config,
                 key
             );
@@ -850,27 +834,23 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_group<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 key
             );
 
-            let valid_witness = access::create_valid_witness_for_testing();
-
             analytics_actions::decrement_analytics_for_group<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 key
             );
@@ -911,18 +891,16 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_group<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &group_witness_config,
                 key
             );
@@ -931,7 +909,7 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::decrement_analytics_for_group<InvalidWitness>(
                 &mut analytics,
-                invalid_witness,
+                &invalid_witness,
                 &group_witness_config,
                 key
             );
@@ -964,27 +942,23 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_user<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 key
             );
 
-            let valid_witness = access::create_valid_witness_for_testing();
-
             analytics_actions::decrement_analytics_for_user<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 key
             );
@@ -1025,18 +999,16 @@ module sage_analytics::test_analytics_actions {
             let valid_witness = access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
-
-            let valid_witness = access::create_valid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
             analytics_actions::increment_analytics_for_user<ValidWitness>(
                 &mut analytics,
-                valid_witness,
+                &valid_witness,
                 &user_witness_config,
                 key
             );
@@ -1045,7 +1017,7 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::decrement_analytics_for_user<InvalidWitness>(
                 &mut analytics,
-                invalid_witness,
+                &invalid_witness,
                 &user_witness_config,
                 key
             );

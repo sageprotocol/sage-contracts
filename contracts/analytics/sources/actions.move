@@ -29,39 +29,39 @@ module sage_analytics::analytics_actions {
     // --------------- Public Functions ---------------
 
     public fun create_analytics_for_channel<ChannelWitness: drop>(
-        channel_witness: ChannelWitness,
+        channel_witness: &ChannelWitness,
         channel_witness_config: &ChannelWitnessConfig,
         ctx: &mut TxContext
     ): Analytics {
         access::assert_channel_witness<ChannelWitness>(
             channel_witness_config,
-            &channel_witness
+            channel_witness
         );
 
         analytics::create(ctx)
     }
 
     public fun create_analytics_for_group<GroupWitness: drop>(
-        group_witness: GroupWitness,
+        group_witness: &GroupWitness,
         group_witness_config: &GroupWitnessConfig,
         ctx: &mut TxContext
     ): Analytics {
         access::assert_group_witness<GroupWitness>(
             group_witness_config,
-            &group_witness
+            group_witness
         );
 
         analytics::create(ctx)
     }
 
     public fun create_analytics_for_user<UserWitness: drop>(
-        user_witness: UserWitness,
+        user_witness: &UserWitness,
         user_witness_config: &UserWitnessConfig,
         ctx: &mut TxContext
     ): Analytics {
         access::assert_user_witness<UserWitness>(
             user_witness_config,
-            &user_witness
+            user_witness
         );
 
         analytics::create(ctx)
@@ -69,13 +69,13 @@ module sage_analytics::analytics_actions {
 
     public fun decrement_analytics_for_channel<ChannelWitness: drop>(
         analytics: &mut Analytics,
-        channel_witness: ChannelWitness,
+        channel_witness: &ChannelWitness,
         channel_witness_config: &ChannelWitnessConfig,
         key: String
     ) {
         access::assert_channel_witness<ChannelWitness>(
             channel_witness_config,
-            &channel_witness
+            channel_witness
         );
 
         decrement_analytics(
@@ -86,13 +86,13 @@ module sage_analytics::analytics_actions {
 
     public fun decrement_analytics_for_group<GroupWitness: drop>(
         analytics: &mut Analytics,
-        group_witness: GroupWitness,
+        group_witness: &GroupWitness,
         group_witness_config: &GroupWitnessConfig,
         key: String
     ) {
         access::assert_group_witness<GroupWitness>(
             group_witness_config,
-            &group_witness
+            group_witness
         );
 
         decrement_analytics(
@@ -103,13 +103,13 @@ module sage_analytics::analytics_actions {
 
     public fun decrement_analytics_for_user<UserWitness: drop>(
         analytics: &mut Analytics,
-        user_witness: UserWitness,
+        user_witness: &UserWitness,
         user_witness_config: &UserWitnessConfig,
         key: String
     ) {
         access::assert_user_witness<UserWitness>(
             user_witness_config,
-            &user_witness
+            user_witness
         );
 
         decrement_analytics(
@@ -120,13 +120,13 @@ module sage_analytics::analytics_actions {
 
     public fun increment_analytics_for_channel<ChannelWitness: drop>(
         analytics: &mut Analytics,
-        channel_witness: ChannelWitness,
+        channel_witness: &ChannelWitness,
         channel_witness_config: &ChannelWitnessConfig,
         key: String
     ) {
         access::assert_channel_witness<ChannelWitness>(
             channel_witness_config,
-            &channel_witness
+            channel_witness
         );
 
         increment_analytics(
@@ -137,13 +137,13 @@ module sage_analytics::analytics_actions {
 
     public fun increment_analytics_for_group<GroupWitness: drop>(
         analytics: &mut Analytics,
-        group_witness: GroupWitness,
+        group_witness: &GroupWitness,
         group_witness_config: &GroupWitnessConfig,
         key: String
     ) {
         access::assert_group_witness<GroupWitness>(
             group_witness_config,
-            &group_witness
+            group_witness
         );
 
         increment_analytics(
@@ -154,13 +154,13 @@ module sage_analytics::analytics_actions {
 
     public fun increment_analytics_for_user<UserWitness: drop>(
         analytics: &mut Analytics,
-        user_witness: UserWitness,
+        user_witness: &UserWitness,
         user_witness_config: &UserWitnessConfig,
         key: String
     ) {
         access::assert_user_witness<UserWitness>(
             user_witness_config,
-            &user_witness
+            user_witness
         );
 
         increment_analytics(
