@@ -62,6 +62,10 @@ module sage_post::test_post {
 
             assert!(post_address == retrieved_address);
 
+            let retrieved_comments = post::get_comments_count(&post);
+
+            assert!(retrieved_comments == 0);
+
             let retrieved_created_at = post::get_created_at(&post);
 
             assert!(retrieved_created_at == timestamp);
@@ -69,6 +73,10 @@ module sage_post::test_post {
             let retrieved_depth = post::get_depth(&post);
 
             assert!(retrieved_depth == 1);
+
+            let retrieved_likes = post::get_likes_count(&post);
+
+            assert!(retrieved_likes == 0);
 
             let retrieved_updated_at = post::get_updated_at(&post);
 

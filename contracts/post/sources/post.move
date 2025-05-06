@@ -64,6 +64,18 @@ module sage_post::post {
         post.depth
     }
 
+    public fun get_comments_count(
+        post: &Post
+    ): u64 {
+        post.posts.get_length()
+    }
+
+    public fun get_likes_count(
+        post: &Post
+    ): u64 {
+        post.likes.get_length()
+    }
+
     public fun get_updated_at(
         post: &Post
     ): u64 {
