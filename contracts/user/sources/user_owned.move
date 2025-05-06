@@ -148,6 +148,33 @@ module sage_user::user_owned {
         }
     }
 
+    public fun get_post_favorites_length(
+        app: &App,
+        user: &UserOwned
+    ): u64 {
+        let app_address = object::id_address(app);
+
+        let favorites_key = PostFavoritesKey {
+            app: app_address
+        };
+
+        let does_exist = df::exists_with_type<PostFavoritesKey, Favorites>(
+            &user.id,
+            favorites_key
+        );
+
+        if (does_exist) {
+            let favorites = df::borrow<PostFavoritesKey, Favorites>(
+                &user.id,
+                favorites_key
+            );
+
+            favorites.get_length()
+        } else {
+            0
+        }
+    }
+
     public fun get_user_favorites_length(
         app: &App,
         user: &UserOwned

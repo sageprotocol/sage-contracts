@@ -15,12 +15,11 @@ module sage_user::user_actions {
         access::{
             Self,
             ChannelConfig,
-            UserOwnedConfig,
             UserWitnessConfig
         },
         admin::{InviteCap},
         apps::{Self, App},
-        fees::{Self}
+        fees::{Self, Royalties}
     };
 
     use sage_analytics::{
@@ -28,7 +27,9 @@ module sage_user::user_actions {
     };
 
     use sage_post::{
-        post_actions::{Self}
+        post_actions::{Self},
+        post_fees::{PostFees},
+        post::{Post}
     };
 
     use sage_reward::{
@@ -71,7 +72,8 @@ module sage_user::user_actions {
     const EInviteRequired: u64 = 372;
     const ENoSelfJoin: u64 = 373;
     const ENotSelf: u64 = 374;
-    const EUserNameMismatch: u64 = 375;
+    const ESuppliedAuthorMismatch: u64 = 375;
+    const EUserNameMismatch: u64 = 376;
 
     // --------------- Name Tag ---------------
 
@@ -88,6 +90,14 @@ module sage_user::user_actions {
     public struct InviteCreated has copy, drop {
         invite_code: String,
         invite_key: String,
+        user: address
+    }
+
+    public struct PostFavoritesUpdate has copy, drop {
+        app: address,
+        favorited_post: address,
+        message: u8,
+        updated_at: u64,
         user: address
     }
 
@@ -179,19 +189,20 @@ module sage_user::user_actions {
         );
 
         let app_address = object::id_address(app);
+        let timestamp = clock.timestamp_ms();
 
         let (
             message,
             self,
-            favorited_channel
+            favorited_channel,
+            _count
         ) = user_owned::add_favorite_channel(
             channel,
             owned_user,
             app_address,
+            timestamp,
             ctx
         );
-
-        let timestamp = clock.timestamp_ms();
 
         event::emit(ChannelFavoritesUpdate {
             app: app_address,
@@ -202,7 +213,91 @@ module sage_user::user_actions {
         });
     }
 
-    public fun add_favorite_user (
+    public fun add_favorite_post(
+        app: &App,
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        post: &Post,
+        reward_weights_registry: &RewardWeightsRegistry,
+        user: &mut UserShared,
+        user_witness_config: &UserWitnessConfig,
+        ctx: &mut TxContext
+    ) {
+        let favorite_post_author = post.get_author();
+        let supplied_author_address = user.get_owner();
+
+        assert!(favorite_post_author == supplied_author_address, ESuppliedAuthorMismatch);
+
+        let app_address = object::id_address(app);
+        let timestamp = clock.timestamp_ms();
+
+        let (
+            message,
+            self,
+            favorited_post,
+            count
+        ) = user_owned::add_favorite_post(
+            post,
+            owned_user,
+            app_address,
+            timestamp,
+            ctx
+        );
+
+        let has_rewards_enabled = app.has_rewards_enabled();
+
+        if (
+            has_rewards_enabled &&
+            favorite_post_author != self &&
+            count == 1
+        ) {
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics_self = user_owned::borrow_analytics_mut(
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            let user_witness = user_witness::create_witness();
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics_self,
+                &user_witness,
+                user_witness_config,
+                utf8(b"favorited-post")
+            );
+
+            let analytics_author = user_shared::borrow_analytics_mut(
+                user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics_author,
+                &user_witness,
+                user_witness_config,
+                utf8(b"post-favorited")
+            );
+        };
+
+        event::emit(PostFavoritesUpdate {
+            app: app_address,
+            favorited_post,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
+    }
+
+    public fun add_favorite_user(
         app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
@@ -210,19 +305,20 @@ module sage_user::user_actions {
         ctx: &mut TxContext
     ) {
         let app_address = object::id_address(app);
+        let timestamp = clock.timestamp_ms();
 
         let (
             message,
             self,
-            favorited_user
+            favorited_user,
+            _count
         ) = user_owned::add_favorite_user(
             owned_user,
             user,
             app_address,
+            timestamp,
             ctx
         );
-
-        let timestamp = clock.timestamp_ms();
 
         event::emit(UserFavoritesUpdate {
             app: app_address,
@@ -251,6 +347,93 @@ module sage_user::user_actions {
         );
 
         assert!(is_valid_name, EInvalidUsername);
+    }
+
+    public fun comment<CoinType> (
+        app: &App,
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        parent_post: &mut Post,
+        post_fees: &PostFees,
+        reward_weights_registry: &RewardWeightsRegistry,
+        shared_user: &mut UserShared,
+        user_witness_config: &UserWitnessConfig,
+        data: String,
+        description: String,
+        title: String,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ): (
+        address,
+        address,
+        u64
+    ) {
+        let has_rewards_enabled = app.has_rewards_enabled();
+
+        let parent_author = parent_post.get_author();
+        let self = tx_context::sender(ctx);
+
+        let user_witness = user_witness::create_witness();
+
+        if (
+            has_rewards_enabled &&
+            parent_author != self
+        ) {
+            let supplied_author = shared_user.get_owner();
+
+            assert!(parent_author == supplied_author, ESuppliedAuthorMismatch);
+
+            let app_address = object::id_address(app);
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics_self = user_owned::borrow_analytics_mut(
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics_self,
+                &user_witness,
+                user_witness_config,
+                utf8(b"comment-given")
+            );
+
+            let analytics_parent = user_shared::borrow_analytics_mut(
+                shared_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics_parent,
+                &user_witness,
+                user_witness_config,
+                utf8(b"comment-received")
+            );
+        };
+
+        post_actions::comment_for_user<CoinType, UserWitness>(
+            app,
+            clock,
+            parent_post,
+            post_fees,
+            &user_witness,
+            user_witness_config,
+            data,
+            description,
+            title,
+            custom_payment,
+            sui_payment,
+            ctx
+        )
     }
 
     public fun create<CoinType> (
@@ -521,7 +704,7 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics,
-                user_witness,
+                &user_witness,
                 user_witness_config,
                 utf8(b"user-followed")
             );
@@ -534,11 +717,9 @@ module sage_user::user_actions {
                 ctx
             );
 
-            let user_witness = user_witness::create_witness();
-
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 friend_analytics,
-                user_witness,
+                &user_witness,
                 user_witness_config,
                 utf8(b"user-follows")
             );
@@ -651,7 +832,7 @@ module sage_user::user_actions {
 
                 analytics_actions::increment_analytics_for_user<UserWitness>(
                     analytics,
-                    user_witness,
+                    &user_witness,
                     user_witness_config,
                     utf8(b"user-friends")
                 );
@@ -664,11 +845,9 @@ module sage_user::user_actions {
                     ctx
                 );
 
-                let user_witness = user_witness::create_witness();
-
                 analytics_actions::increment_analytics_for_user<UserWitness>(
                     friend_analytics,
-                    user_witness,
+                    &user_witness,
                     user_witness_config,
                     utf8(b"user-friends")
                 );
@@ -715,11 +894,89 @@ module sage_user::user_actions {
         );
     }
 
+    public fun like_post<CoinType> (
+        app: &App,
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        post: &mut Post,
+        post_fees: &PostFees,
+        reward_weights_registry: &RewardWeightsRegistry,
+        royalties: &Royalties,
+        shared_user: &mut UserShared,
+        user_witness_config: &UserWitnessConfig,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>,
+        ctx: &mut TxContext
+    ) {
+        let author_address = post.get_author();
+        let shared_user_address = shared_user.get_owner();
+
+        assert!(author_address == shared_user_address, ESuppliedAuthorMismatch);
+
+        let user_witness = user_witness::create_witness();
+
+        post_actions::like_for_user<CoinType, UserWitness>(
+            clock,
+            post,
+            post_fees,
+            royalties,
+            &user_witness,
+            user_witness_config,
+            custom_payment,
+            sui_payment,
+            ctx
+        );
+
+        let has_rewards_enabled = app.has_rewards_enabled();
+        let self = tx_context::sender(ctx);
+
+        if (
+            has_rewards_enabled &&
+            author_address != self
+        ) {
+            let app_address = object::id_address(app);
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics_self = user_owned::borrow_analytics_mut(
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            let user_witness = user_witness::create_witness();
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics_self,
+                &user_witness,
+                user_witness_config,
+                utf8(b"liked-post")
+            );
+
+            let analytics_author = user_shared::borrow_analytics_mut(
+                shared_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics_author,
+                &user_witness,
+                user_witness_config,
+                utf8(b"post-liked")
+            );
+        };
+    }
+
     public fun post<CoinType> (
         app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
-        owned_user_config: &UserOwnedConfig,
         reward_weights_registry: &RewardWeightsRegistry,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
@@ -748,15 +1005,18 @@ module sage_user::user_actions {
             ctx
         );
 
+        let user_witness = user_witness::create_witness();
+
         let (
             post_address,
             self,
             timestamp
-        ) = post_actions::create<UserOwned>(
+        ) = post_actions::create_for_user<UserWitness>(
+            app,
             clock,
-            owned_user,
-            owned_user_config,
             &mut posts,
+            &user_witness,
+            user_witness_config,
             data,
             description,
             title,
@@ -795,7 +1055,7 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics,
-                user_witness,
+                &user_witness,
                 user_witness_config,
                 utf8(b"user-text-posts")
             );
@@ -825,19 +1085,20 @@ module sage_user::user_actions {
         ctx: &mut TxContext
     ) {
         let app_address = object::id_address(app);
+        let timestamp = clock.timestamp_ms();
 
         let (
             message,
             self,
-            favorited_channel
+            favorited_channel,
+            _count
         ) = user_owned::remove_favorite_channel(
             channel,
             owned_user,
             app_address,
+            timestamp,
             ctx
         );
-
-        let timestamp = clock.timestamp_ms();
 
         event::emit(ChannelFavoritesUpdate {
             app: app_address,
@@ -848,7 +1109,39 @@ module sage_user::user_actions {
         });
     }
 
-    public fun remove_favorite_user (
+    public fun remove_favorite_post(
+        app: &App,
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        post: &Post,
+        ctx: &mut TxContext
+    ) {
+        let app_address = object::id_address(app);
+        let timestamp = clock.timestamp_ms();
+
+        let (
+            message,
+            self,
+            favorited_post,
+            _count
+        ) = user_owned::remove_favorite_post(
+            post,
+            owned_user,
+            app_address,
+            timestamp,
+            ctx
+        );
+
+        event::emit(PostFavoritesUpdate {
+            app: app_address,
+            favorited_post,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
+    }
+
+    public fun remove_favorite_user(
         app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
@@ -856,19 +1149,20 @@ module sage_user::user_actions {
         ctx: &mut TxContext
     ) {
         let app_address = object::id_address(app);
+        let timestamp = clock.timestamp_ms();
 
         let (
             message,
             self,
-            favorited_user
+            favorited_user,
+            _count
         ) = user_owned::remove_favorite_user(
             owned_user,
             user,
             app_address,
+            timestamp,
             ctx
         );
-
-        let timestamp = clock.timestamp_ms();
 
         event::emit(UserFavoritesUpdate {
             app: app_address,
