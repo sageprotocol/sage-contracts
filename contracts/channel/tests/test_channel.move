@@ -7,13 +7,19 @@ module sage_channel::test_channel {
         test_utils::{destroy}
     };
 
+    use sage_admin::{
+        access::{Self, ChannelWitnessConfig},
+        admin::{Self, AdminCap}
+    };
+
     use sage_channel::{
         channel::{
             Self,
             Channel,
             EInvalidChannelDescription,
             EInvalidChannelName
-        }
+        },
+        channel_witness::{ChannelWitness}
     };
 
     use sage_shared::{
@@ -25,6 +31,7 @@ module sage_channel::test_channel {
     // --------------- Constants ---------------
 
     const ADMIN: address = @admin;
+    const APP_ADDRESS: address = @0xCAFE;
 
     // --------------- Errors ---------------
 
@@ -79,6 +86,7 @@ module sage_channel::test_channel {
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
 
             let _channel = channel::create(
+                APP_ADDRESS,
                 utf8(b"avatar"),
                 utf8(b"banner"),
                 utf8(b"description"),
@@ -90,6 +98,72 @@ module sage_channel::test_channel {
                 channel_name,
                 ts::ctx(scenario)
             );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun channel_borrow_analytics() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            admin::init_for_testing(ts::ctx(scenario));
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            access::create_channel_witness_config<ChannelWitness>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let avatar = utf8(b"avatar");
+            let channel_name = utf8(b"channel-name");
+            let created_at: u64 = 999;
+
+            let follows = membership::create(ts::ctx(scenario));
+            let (moderators, _, _) = moderation::create(ts::ctx(scenario));
+
+            let _channel_address = channel::create(
+                APP_ADDRESS,
+                avatar,
+                utf8(b"banner"),
+                utf8(b"description"),
+                created_at,
+                ADMIN,
+                follows,
+                channel_name,
+                moderators,
+                channel_name,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut channel= ts::take_shared<Channel>(scenario);
+            let channel_witness_config = ts::take_shared<ChannelWitnessConfig>(scenario);
+
+            let _analytics = channel::borrow_analytics_mut(
+                &mut channel,
+                &channel_witness_config,
+                @0x002,
+                1,
+                ts::ctx(scenario)
+            );
+
+            destroy(channel);
+            destroy(channel_witness_config);
         };
 
         ts::end(scenario_val);
@@ -110,6 +184,7 @@ module sage_channel::test_channel {
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
+                APP_ADDRESS,
                 avatar,
                 utf8(b"banner"),
                 utf8(b"description"),
@@ -150,6 +225,7 @@ module sage_channel::test_channel {
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
+                APP_ADDRESS,
                 avatar,
                 utf8(b"banner"),
                 utf8(b"description"),
@@ -190,6 +266,7 @@ module sage_channel::test_channel {
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
+                APP_ADDRESS,
                 avatar,
                 utf8(b"banner"),
                 utf8(b"description"),
@@ -203,8 +280,8 @@ module sage_channel::test_channel {
             );
         };
 
+        let app_address = @0x002;
         let post_address = @0xfff;
-        let posts_key = utf8(b"test");
         let post_timestamp = 0;
 
         ts::next_tx(scenario, ADMIN);
@@ -213,7 +290,7 @@ module sage_channel::test_channel {
 
             let mut posts = channel::take_posts(
                 &mut channel,
-                posts_key,
+                app_address,
                 ts::ctx(scenario)
             );
 
@@ -225,8 +302,8 @@ module sage_channel::test_channel {
 
             channel::return_posts(
                 &mut channel,
-                posts,
-                posts_key
+                app_address,
+                posts
             );
 
             channel
@@ -236,7 +313,7 @@ module sage_channel::test_channel {
         {
             let posts = channel::take_posts(
                 &mut channel,
-                posts_key,
+                app_address,
                 ts::ctx(scenario)
             );
 
@@ -253,8 +330,8 @@ module sage_channel::test_channel {
 
             channel::return_posts(
                 &mut channel,
-                posts,
-                posts_key
+                app_address,
+                posts
             );
 
             destroy(channel);
@@ -278,6 +355,7 @@ module sage_channel::test_channel {
             let (moderators, _, _) = moderation::create(ts::ctx(scenario));
 
             let _channel_address = channel::create(
+                APP_ADDRESS,
                 avatar,
                 utf8(b"banner"),
                 utf8(b"description"),

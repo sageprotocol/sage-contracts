@@ -9,20 +9,34 @@ module sage_channel::channel_actions {
     };
 
     use sage_admin::{
-        access::{UserOwnedConfig},
+        access::{ChannelWitnessConfig, UserWitnessConfig},
         admin::{AdminCap},
         apps::{Self, App},
         fees::{Self}
     };
 
+    use sage_analytics::{
+        analytics_actions::{Self}
+    };
+
     use sage_channel::{
         channel::{Self, Channel},
         channel_fees::{Self, ChannelFees},
-        channel_registry::{Self, ChannelRegistry}
+        channel_registry::{
+            Self,
+            AppChannelRegistry,
+            ChannelRegistry
+        },
+        channel_witness::{Self, ChannelWitness}
     };
 
     use sage_post::{
         post_actions::{Self}
+    };
+
+    use sage_reward::{
+        // reward_actions::{Self},
+        reward_registry::{Self, RewardWeightsRegistry}
     };
 
     use sage_shared::{
@@ -31,7 +45,7 @@ module sage_channel::channel_actions {
     };
 
     use sage_user::{
-        user_owned::{UserOwned},
+        user_owned::{Self, UserOwned},
         user_registry::{Self, UserRegistry},
         user_shared::{Self, UserShared}
     };
@@ -52,6 +66,7 @@ module sage_channel::channel_actions {
 
     public struct ChannelCreated has copy, drop {
         id: address,
+        app: address,
         avatar: String,
         banner: String,
         channel_key: String,
@@ -79,7 +94,7 @@ module sage_channel::channel_actions {
 
     public struct ChannelPostCreated has copy, drop {
         id: address,
-        app: String,
+        app: address,
         channel_key: String,
         created_at: u64,
         created_by: address,
@@ -196,10 +211,14 @@ module sage_channel::channel_actions {
     }
 
     public fun create<CoinType> (
+        app: &App,
         channel_fees: &ChannelFees,
         channel_registry: &mut ChannelRegistry,
+        channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        _: &UserOwned,
+        reward_weights_registry: &RewardWeightsRegistry,
+        owned_user: &mut UserOwned,
+        user_witness_config: &UserWitnessConfig,
         avatar: String,
         banner: String,
         description: String,
@@ -208,6 +227,13 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext,
     ): address {
+        let app_address = object::id_address(app);
+
+        channel_registry::assert_app_channel_registry_match(
+            channel_registry,
+            app_address
+        );
+
         let (
             custom_payment,
             sui_payment
@@ -217,7 +243,7 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let created_at = clock.timestamp_ms();
+        let timestamp = clock.timestamp_ms();
         let self = tx_context::sender(ctx);
 
         let channel_key = string_helpers::to_lowercase(
@@ -233,17 +259,20 @@ module sage_channel::channel_actions {
 
         let (
             membership_message,
-            membership_type
+            membership_type,
+            _membership_count
         ) = membership::wallet_join(
             &mut follows,
-            self
+            self,
+            timestamp
         );
 
         let channel_address = channel::create(
+            app_address,
             avatar,
             banner,
             description,
-            created_at,
+            timestamp,
             self,
             follows,
             channel_key,
@@ -263,13 +292,42 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
+        let has_rewards_enabled = apps::has_rewards_enabled(
+            app
+        );
+
+        if (has_rewards_enabled) {
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                channel_witness_config,
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_channel<ChannelWitness>(
+                analytics,
+                &channel_witness,
+                channel_witness_config,
+                utf8(b"channel-created")
+            );
+        };
+
         event::emit(ChannelCreated {
             id: channel_address,
+            app: app_address,
             avatar,
             banner,
             channel_key,
             channel_name: name,
-            created_at,
+            created_at: timestamp,
             created_by: self,
             description
         });
@@ -278,7 +336,7 @@ module sage_channel::channel_actions {
             account_type: membership_type,
             channel_key,
             message: membership_message,
-            updated_at: created_at,
+            updated_at: timestamp,
             user: self
         });
 
@@ -286,23 +344,56 @@ module sage_channel::channel_actions {
             channel_key,
             message: moderation_message,
             moderator_type: moderation_type,
-            updated_at: created_at,
+            updated_at: timestamp,
             user: self
         });
 
         channel_address
     }
 
+    public fun create_registry (
+        app_channel_registry: &mut AppChannelRegistry,
+        app: &App,
+        ctx: &mut TxContext
+    ) {
+        let app_address = object::id_address(app);
+
+        let channel_registry = channel_registry::create(
+            app_address,
+            ctx
+        );
+
+        let channel_registry_address = object::id_address(&channel_registry);
+
+        channel_registry::add_registry(
+            app_channel_registry,
+            app_address,
+            channel_registry_address
+        );
+
+        channel_registry::share_registry(channel_registry);
+    }
+
+    // test app and channel match
     public fun follow<CoinType> (
+        app: &App,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
+        channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        _: &UserOwned,
+        reward_weights_registry: &RewardWeightsRegistry,
+        owned_user: &mut UserOwned,
+        user_witness_config: &UserWitnessConfig,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        let self = tx_context::sender(ctx);
+        let app_address = object::id_address(app);
+
+        channel::assert_app_channel_match(
+            channel,
+            app_address
+        );
 
         let (
             custom_payment,
@@ -316,39 +407,87 @@ module sage_channel::channel_actions {
         let membership = channel::borrow_follows_mut(
             channel
         );
+        let self = tx_context::sender(ctx);
+        let timestamp = clock.timestamp_ms();
 
         let (
             message,
-            account_type
+            account_type,
+            count
         ) = membership::wallet_join(
             membership,
-            self
+            self,
+            timestamp
         );
-
-        let channel_key = channel::get_key(channel);
-        let updated_at = clock.timestamp_ms();
-
-        event::emit(ChannelFollowsUpdate {
-            account_type,
-            channel_key,
-            message,
-            updated_at,
-            user: self
-        });
 
         fees::collect_payment<CoinType>(
             custom_payment,
             sui_payment
         );
+
+        let has_rewards_enabled = apps::has_rewards_enabled(
+            app
+        );
+
+        if (has_rewards_enabled && count == 1) {
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics_channel = channel::borrow_analytics_mut(
+                channel,
+                channel_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_channel<ChannelWitness>(
+                analytics_channel,
+                &channel_witness,
+                channel_witness_config,
+                utf8(b"channel-followed")
+            );
+
+            let analytics_user = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                channel_witness_config,
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_channel<ChannelWitness>(
+                analytics_user,
+                &channel_witness,
+                channel_witness_config,
+                utf8(b"followed-channel")
+            );
+        };
+        
+        let channel_key = channel::get_key(channel);
+
+        event::emit(ChannelFollowsUpdate {
+            account_type,
+            channel_key,
+            message,
+            updated_at: timestamp,
+            user: self
+        });
     }
 
     public fun post<CoinType> (
         app: &App,
         channel: &mut Channel,
         channel_fees: &ChannelFees,
+        channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        owned_user: &UserOwned,
-        owned_user_config: &UserOwnedConfig,
+        reward_weights_registry: &RewardWeightsRegistry,
+        owned_user: &mut UserOwned,
+        user_witness_config: &UserWitnessConfig,
         data: String,
         description: String,
         title: String,
@@ -376,17 +515,12 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let (
-            posts_key,
-            app_name
-        ) = apps::create_app_specific_string(
-            app,
-            utf8(b"posts")
-        );
+        let app_address = object::id_address(app);
+        let channel_witness = channel_witness::create_witness();
 
         let mut posts = channel::take_posts(
             channel,
-            posts_key,
+            app_address,
             ctx
         );
 
@@ -394,10 +528,11 @@ module sage_channel::channel_actions {
             post_address,
             _self,
             timestamp
-        ) = post_actions::create<UserOwned>(
+        ) = post_actions::create_for_channel<ChannelWitness>(
+            app,
+            &channel_witness,
+            channel_witness_config,
             clock,
-            owned_user,
-            owned_user_config,
             &mut posts,
             data,
             description,
@@ -407,8 +542,8 @@ module sage_channel::channel_actions {
 
         channel::return_posts(
             channel,
-            posts,
-            posts_key
+            app_address,
+            posts
         );
 
         fees::collect_payment<CoinType>(
@@ -416,11 +551,40 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
+        let has_rewards_enabled = apps::has_rewards_enabled(
+            app
+        );
+
+        if (has_rewards_enabled) {
+            let app_address = object::id_address(app);
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(
+                reward_weights_registry
+            );
+
+            let analytics_user = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                channel_witness_config,
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            analytics_actions::increment_analytics_for_channel<ChannelWitness>(
+                analytics_user,
+                &channel_witness,
+                channel_witness_config,
+                utf8(b"channel-text-posts")
+            );
+        };
+
         let channel_key = channel::get_key(channel);
 
         event::emit(ChannelPostCreated {
             id: post_address,
-            app: app_name,
+            app: app_address,
             channel_key,
             created_at: timestamp,
             created_by: self,
@@ -548,23 +712,25 @@ module sage_channel::channel_actions {
         let membership = channel::borrow_follows_mut(
             channel
         );
+        let timestamp = clock.timestamp_ms();
 
         let (
             message,
-            account_type
+            account_type,
+            _count
         ) = membership::wallet_leave(
             membership,
-            self
+            self,
+            timestamp
         );
 
         let channel_key = channel::get_key(channel);
-        let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelFollowsUpdate {
             account_type,
             channel_key,
             message,
-            updated_at,
+            updated_at: timestamp,
             user: self
         });
 

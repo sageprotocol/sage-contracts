@@ -5,26 +5,38 @@ module sage_channel::test_channel_actions {
     use sui::{
         clock::{Self, Clock},
         coin::{mint_for_testing},
+        dynamic_field::{EFieldAlreadyExists},
         sui::{SUI},
         test_scenario::{Self as ts, Scenario},
         test_utils::{destroy}
     };
 
     use sage_admin::{
+        access::{
+            Self,
+            ChannelWitnessConfig,
+            UserWitnessConfig
+        },
         admin::{
             Self,
             AdminCap,
-            FeeCap
+            FeeCap,
+            RewardCap
         },
-        apps::{Self, App},
-        types::{
-            Self,
-            UserOwnedConfig
-        }
+        admin_actions::{Self},
+        apps::{Self, App}
+    };
+
+    use sage_analytics::{
+        analytics::{Self}
     };
 
     use sage_channel::{
-        channel::{Self, Channel},
+        channel::{
+            Self,
+            Channel,
+            EAppChannelMismatch
+        },
         channel_actions::{
             Self,
             EChannelNameMismatch
@@ -35,7 +47,18 @@ module sage_channel::test_channel_actions {
             EIncorrectCustomPayment,
             EIncorrectSuiPayment
         },
-        channel_registry::{Self, ChannelRegistry},
+        channel_registry::{
+            Self,
+            AppChannelRegistry,
+            ChannelRegistry,
+            EAppChannelRegistryMismatch
+        },
+        channel_witness::{Self, ChannelWitness}
+    };
+
+    use sage_reward::{
+        // reward_actions::{Self},
+        reward_registry::{Self, RewardWeightsRegistry}
     };
 
     use sage_shared::{
@@ -50,7 +73,9 @@ module sage_channel::test_channel_actions {
         user_invite::{Self, InviteConfig, UserInviteRegistry},
         user_owned::{UserOwned},
         user_registry::{Self, UserRegistry},
-        user_shared::{UserShared}
+        user_owned::{Self},
+        user_shared::{UserShared},
+        user_witness::{UserWitness}
     };
 
     use sage_utils::{
@@ -123,30 +148,34 @@ module sage_channel::test_channel_actions {
         app: App,
         channel_fees: ChannelFees,
         channel_registry: ChannelRegistry,
+        channel_witness_config: ChannelWitnessConfig,
         clock: Clock,
         invite_config: InviteConfig,
+        reward_weights_registry: RewardWeightsRegistry,
         owned_user_admin: UserOwned,
         owned_user_server: UserOwned,
-        owned_user_config: UserOwnedConfig,
         shared_user_admin: UserShared,
         shared_user_server: UserShared,
         user_fees: UserFees,
         user_registry: UserRegistry,
-        user_invite_registry: UserInviteRegistry
+        user_invite_registry: UserInviteRegistry,
+        user_witness_config: UserWitnessConfig
     ) {
         destroy(app);
         destroy(channel_fees);
         destroy(channel_registry);
+        destroy(channel_witness_config);
         ts::return_shared(clock);
         destroy(invite_config);
+        destroy(reward_weights_registry);
         destroy(owned_user_admin);
         destroy(owned_user_server);
-        destroy(owned_user_config);
         destroy(shared_user_admin);
         destroy(shared_user_server);
         destroy(user_fees);
         destroy(user_registry);
         destroy(user_invite_registry);
+        destroy(user_witness_config);
     }
 
     #[test_only]
@@ -155,16 +184,18 @@ module sage_channel::test_channel_actions {
         App,
         ChannelFees,
         ChannelRegistry,
+        ChannelWitnessConfig,
         Clock,
         InviteConfig,
+        RewardWeightsRegistry,
         UserOwned,
         UserOwned,
-        UserOwnedConfig,
         UserShared,
         UserShared,
         UserFees,
         UserRegistry,
-        UserInviteRegistry
+        UserInviteRegistry,
+        UserWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -172,6 +203,7 @@ module sage_channel::test_channel_actions {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
             channel_registry::init_for_testing(ts::ctx(scenario));
+            reward_registry::init_for_testing(ts::ctx(scenario));
             user_invite::init_for_testing(ts::ctx(scenario));
             user_registry::init_for_testing(ts::ctx(scenario));
         };
@@ -187,14 +219,16 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             app,
-            channel_registry,
             clock,
             invite_config,
+            reward_weights_registry,
             mut user_registry,
             mut user_invite_registry
         ) = {
-            let channel_registry = scenario.take_shared<ChannelRegistry>();
+            let mut app_channel_registry = scenario.take_shared<AppChannelRegistry>();
+
             let invite_config = scenario.take_shared<InviteConfig>();
+            let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
             let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
             let user_registry = scenario.take_shared<UserRegistry>();
 
@@ -203,12 +237,22 @@ module sage_channel::test_channel_actions {
                 ts::ctx(scenario)
             );
 
+            channel_actions::create_registry(
+                &mut app_channel_registry,
+                &app,
+                ts::ctx(scenario)
+            );
+
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let fee_cap = ts::take_from_sender<FeeCap>(scenario);
 
             let clock = ts::take_shared<Clock>(scenario);
 
-            types::create_owned_user_config<UserOwned>(
+            access::create_channel_witness_config<ChannelWitness>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+            access::create_user_witness_config<UserWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -232,7 +276,6 @@ module sage_channel::test_channel_actions {
                 UPDATE_CHANNEL_SUI_FEE,
                 ts::ctx(scenario)
             );
-
             user_fees::create<SUI>(
                 &fee_cap,
                 &mut app,
@@ -258,11 +301,13 @@ module sage_channel::test_channel_actions {
             ts::return_to_sender(scenario, admin_cap);
             ts::return_to_sender(scenario, fee_cap);
 
+            ts::return_shared(app_channel_registry);
+
             (
                 app,
-                channel_registry,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 user_registry,
                 user_invite_registry
             )
@@ -271,18 +316,23 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         let (
             channel_fees,
+            channel_registry,
+            channel_witness_config,
             user_fees,
-            owned_user_config
+            user_witness_config
          ) = {
             let channel_fees = scenario.take_shared<ChannelFees>();
+            let channel_registry = scenario.take_shared<ChannelRegistry>();
+            let channel_witness_config = ts::take_shared<ChannelWitnessConfig>(scenario);
             let user_fees = scenario.take_shared<UserFees>();
-
-            let owned_user_config = scenario.take_shared<UserOwnedConfig>();
+            let user_witness_config = ts::take_shared<UserWitnessConfig>(scenario);
 
             (
                 channel_fees,
+                channel_registry,
+                channel_witness_config,
                 user_fees,
-                owned_user_config
+                user_witness_config
             )
         };
 
@@ -383,16 +433,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         )
     }
 
@@ -403,16 +455,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
+            reward_weights_registry,
             owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -423,16 +477,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -446,16 +502,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -479,10 +537,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -524,7 +586,7 @@ module sage_channel::test_channel_actions {
 
             assert!(is_member, ETestIsNotMember);
 
-            let length = membership::get_length(
+            let length = membership::get_member_length(
                 follows
             );
 
@@ -543,6 +605,32 @@ module sage_channel::test_channel_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let mut channel = ts::take_shared<Channel>(scenario);
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+
+            let analytics_self = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                &channel_witness_config,
+                &mut owned_user_admin,
+                &user_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics_self,
+                utf8(b"channel-created")
+            );
+
+            assert!(!field_exists);
+
+            let num_created_channels = analytics::borrow_field(
+                analytics_self,
+                utf8(b"channel-created")
+            );
+
+            assert!(num_created_channels == 0);
 
             let moderation = channel::borrow_moderators_mut(&mut channel);
 
@@ -572,16 +660,232 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_create_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            channel_fees,
+            mut channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"CHANNEL-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            ts::return_to_sender(scenario, reward_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _channel_address = channel_actions::create<SUI>(
+                &app,
+                &channel_fees,
+                &mut channel_registry,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+
+            let analytics_self = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                &channel_witness_config,
+                &mut owned_user_admin,
+                &user_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics_self,
+                utf8(b"channel-created")
+            );
+
+            assert!(field_exists);
+
+            let num_created_channels = analytics::borrow_field(
+                analytics_self,
+                utf8(b"channel-created")
+            );
+
+            assert!(num_created_channels == 1);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EAppChannelRegistryMismatch)]
+    fun test_channel_actions_create_app_mismatch() {
+        let (
+            mut scenario_val,
+            app,
+            channel_fees,
+            mut channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"CHANNEL-name");
+
+        ts::next_tx(scenario, ADMIN);
+        let new_app = {
+            let new_app = apps::create_for_testing(
+                utf8(b"new"),
+                ts::ctx(scenario)
+            );
+
+            new_app
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _channel_address = channel_actions::create<SUI>(
+                &new_app,
+                &channel_fees,
+                &mut channel_registry,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy(new_app);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -596,16 +900,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -627,10 +933,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -644,16 +954,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -668,16 +980,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -699,10 +1013,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -716,16 +1034,76 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EFieldAlreadyExists)]
+    fun test_channel_actions_create_registry_fail() {
+        let (
+            mut scenario_val,
+            app,
+            channel_fees,
+            channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            owned_user_admin,
+            owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut app_channel_registry = scenario.take_shared<AppChannelRegistry>();
+
+            channel_actions::create_registry(
+                &mut app_channel_registry,
+                &app,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(app_channel_registry);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -739,16 +1117,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
-            owned_user_server,
-            owned_user_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -770,10 +1150,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -798,14 +1182,67 @@ module sage_channel::test_channel_actions {
             );
 
             channel_actions::follow<SUI>(
+                &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_server,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
             );
+
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+
+            let analytics_channel = channel::borrow_analytics_mut(
+                &mut channel,
+                &channel_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics_channel,
+                utf8(b"channel-followed")
+            );
+
+            assert!(!field_exists);
+
+            let num_following_users = analytics::borrow_field(
+                analytics_channel,
+                utf8(b"channel-followed")
+            );
+
+            assert!(num_following_users == 0);
+
+            let analytics_self = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                &channel_witness_config,
+                &mut owned_user_server,
+                &user_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics_self,
+                utf8(b"followed-channel")
+            );
+
+            assert!(!field_exists);
+
+            let num_followed_channels = analytics::borrow_field(
+                analytics_self,
+                utf8(b"followed-channel")
+            );
+
+            assert!(num_followed_channels == 0);
 
             let follows = channel::borrow_follows_mut(&mut channel);
 
@@ -816,7 +1253,7 @@ module sage_channel::test_channel_actions {
 
             assert!(is_member, ETestIsNotMember);
 
-            let length = membership::get_length(
+            let length = membership::get_member_length(
                 follows
             );
 
@@ -854,7 +1291,7 @@ module sage_channel::test_channel_actions {
 
             assert!(!is_member, EIsMember);
 
-            let length = membership::get_length(
+            let length = membership::get_member_length(
                 follows
             );
 
@@ -866,16 +1303,359 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_follows_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            channel_fees,
+            mut channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"CHANNEL-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _channel_address = channel_actions::create<SUI>(
+                &app,
+                &channel_fees,
+                &mut channel_registry,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            ts::return_to_sender(scenario, reward_cap);
+        };
+
+        ts::next_tx(scenario, SERVER);
+        let mut channel = {
+            let mut channel = ts::take_shared<Channel>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                JOIN_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                JOIN_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            channel_actions::follow<SUI>(
+                &app,
+                &mut channel,
+                &channel_fees,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            channel
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                LEAVE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                LEAVE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            channel_actions::unfollow<SUI>(
+                &mut channel,
+                &channel_fees,
+                &clock,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                JOIN_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                JOIN_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            channel_actions::follow<SUI>(
+                &app,
+                &mut channel,
+                &channel_fees,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+
+            let analytics_channel = channel::borrow_analytics_mut(
+                &mut channel,
+                &channel_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics_channel,
+                utf8(b"channel-followed")
+            );
+
+            assert!(field_exists);
+
+            let num_following_users = analytics::borrow_field(
+                analytics_channel,
+                utf8(b"channel-followed")
+            );
+
+            assert!(num_following_users == 1);
+
+            let analytics_self = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                &channel_witness_config,
+                &mut owned_user_server,
+                &user_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics_self,
+                utf8(b"followed-channel")
+            );
+
+            assert!(field_exists);
+
+            let num_followed_channels = analytics::borrow_field(
+                analytics_self,
+                utf8(b"followed-channel")
+            );
+
+            assert!(num_followed_channels == 1);
+
+            ts::return_shared(channel);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EAppChannelMismatch)]
+    fun test_channel_actions_follows_app_mismatch() {
+        let (
+            mut scenario_val,
+            app,
+            channel_fees,
+            mut channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"CHANNEL-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _channel_address = channel_actions::create<SUI>(
+                &app,
+                &channel_fees,
+                &mut channel_registry,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let new_app = {
+            let new_app = apps::create_for_testing(
+                utf8(b"new"),
+                ts::ctx(scenario)
+            );
+
+            new_app
+        };
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let mut channel = ts::take_shared<Channel>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                JOIN_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                JOIN_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            channel_actions::follow<SUI>(
+                &new_app,
+                &mut channel,
+                &channel_fees,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy(channel);
+            destroy(new_app);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -890,16 +1670,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
-            owned_user_server,
-            owned_user_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -921,10 +1703,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -949,10 +1735,14 @@ module sage_channel::test_channel_actions {
             );
 
             channel_actions::follow<SUI>(
+                &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_server,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -964,16 +1754,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -988,16 +1780,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
-            owned_user_server,
-            owned_user_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1019,10 +1813,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1047,10 +1845,14 @@ module sage_channel::test_channel_actions {
             );
 
             channel_actions::follow<SUI>(
+                &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_server,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1062,16 +1864,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1086,16 +1890,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
-            owned_user_server,
-            owned_user_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1117,10 +1923,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1145,10 +1955,14 @@ module sage_channel::test_channel_actions {
             );
 
             channel_actions::follow<SUI>(
+                &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_server,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1178,16 +1992,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1202,16 +2018,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
-            owned_user_server,
-            owned_user_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1233,10 +2051,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1261,10 +2083,14 @@ module sage_channel::test_channel_actions {
             );
 
             channel_actions::follow<SUI>(
+                &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_server,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1294,16 +2120,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1317,16 +2145,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1348,10 +2178,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1435,16 +2269,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1458,16 +2294,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1489,10 +2327,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1594,16 +2436,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1618,16 +2462,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1649,10 +2495,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1692,16 +2542,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1716,16 +2568,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1747,10 +2601,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1790,16 +2648,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1814,16 +2674,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1845,10 +2707,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -1888,16 +2754,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -1912,16 +2780,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -1943,10 +2813,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2012,16 +2886,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2036,16 +2912,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2067,10 +2945,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2129,16 +3011,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2153,16 +3037,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2184,10 +3070,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2246,16 +3136,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2269,16 +3161,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             mut clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2287,8 +3181,6 @@ module sage_channel::test_channel_actions {
         let banner = utf8(b"banner");
         let description = utf8(b"description");
         let name = utf8(b"CHANNEL-name");
-
-        let posts_key = utf8(b"sage-posts");
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -2302,10 +3194,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2339,9 +3235,11 @@ module sage_channel::test_channel_actions {
                 &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
-                &owned_user_config,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -2383,9 +3281,11 @@ module sage_channel::test_channel_actions {
                 &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
-                &owned_user_config,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -2401,11 +3301,38 @@ module sage_channel::test_channel_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
+            let app_address = object::id_address(&app);
+            let current_epoch = reward_registry::get_current(&reward_weights_registry);
             let mut channel = ts::take_shared<Channel>(scenario);
+            let channel_witness = channel_witness::create_witness();
+
+            let analytics = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                &channel_witness_config,
+                &mut owned_user_admin,
+                &user_witness_config,
+                app_address,
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics,
+                utf8(b"channel-text-posts")
+            );
+
+            assert!(!field_exists);
+
+            let num_posts = analytics::borrow_field(
+                analytics,
+                utf8(b"channel-text-posts")
+            );
+
+            assert!(num_posts == 0);
 
             let posts = channel::take_posts(
                 &mut channel,
-                posts_key,
+                app_address,
                 ts::ctx(scenario)
             );
 
@@ -2429,8 +3356,8 @@ module sage_channel::test_channel_actions {
 
             channel::return_posts(
                 &mut channel,
-                posts,
-                posts_key
+                app_address,
+                posts
             );
 
             ts::return_shared(channel);
@@ -2439,16 +3366,180 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_channel_actions_post_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            channel_fees,
+            mut channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"CHANNEL-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _channel_address = channel_actions::create<SUI>(
+                &app,
+                &channel_fees,
+                &mut channel_registry,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            ts::return_to_sender(scenario, reward_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut channel = ts::take_shared<Channel>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let data = utf8(b"data");
+            let title = utf8(b"title");
+
+            let (
+                _post_address,
+                _timestamp
+            ) = channel_actions::post<SUI>(
+                &app,
+                &mut channel,
+                &channel_fees,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy(channel);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let app_address = object::id_address(&app);
+            let channel_witness = channel_witness::create_witness();
+            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+
+            let analytics = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+                &channel_witness,
+                &channel_witness_config,
+                &mut owned_user_admin,
+                &user_witness_config,
+                app_address,
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let field_exists = analytics::field_exists(
+                analytics,
+                utf8(b"channel-text-posts")
+            );
+
+            assert!(field_exists);
+
+            let num_posts = analytics::borrow_field(
+                analytics,
+                utf8(b"channel-text-posts")
+            );
+
+            assert!(num_posts == 1);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2463,16 +3554,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2494,10 +3587,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2531,9 +3628,11 @@ module sage_channel::test_channel_actions {
                 &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
-                &owned_user_config,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -2548,16 +3647,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2572,16 +3673,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2603,10 +3706,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2640,9 +3747,11 @@ module sage_channel::test_channel_actions {
                 &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
-                &owned_user_config,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -2657,16 +3766,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2681,16 +3792,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
-            owned_user_server,
-            owned_user_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            mut owned_user_server,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2712,10 +3825,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2749,9 +3866,11 @@ module sage_channel::test_channel_actions {
                 &app,
                 &mut channel,
                 &channel_fees,
+                &channel_witness_config,
                 &clock,
-                &owned_user_server,
-                &owned_user_config,
+                &reward_weights_registry,
+                &mut owned_user_server,
+                &user_witness_config,
                 data,
                 description,
                 title,
@@ -2766,16 +3885,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2789,16 +3910,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2822,10 +3945,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2889,16 +4016,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -2913,16 +4042,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -2944,10 +4075,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -2986,16 +4121,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -3009,16 +4146,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3042,10 +4181,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -3118,16 +4261,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -3142,16 +4287,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3173,10 +4320,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -3224,16 +4375,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -3248,16 +4401,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3279,10 +4434,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -3330,16 +4489,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -3354,16 +4515,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3385,10 +4548,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -3436,16 +4603,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 
@@ -3460,16 +4629,18 @@ module sage_channel::test_channel_actions {
             app,
             channel_fees,
             mut channel_registry,
+            channel_witness_config,
             clock,
             invite_config,
-            owned_user_admin,
+            reward_weights_registry,
+            mut owned_user_admin,
             owned_user_server,
-            owned_user_config,
             shared_user_admin,
             shared_user_server,
             user_fees,
             user_registry,
-            user_invite_registry
+            user_invite_registry,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -3491,10 +4662,14 @@ module sage_channel::test_channel_actions {
             );
 
             let _channel_address = channel_actions::create<SUI>(
+                &app,
                 &channel_fees,
                 &mut channel_registry,
+                &channel_witness_config,
                 &clock,
-                &owned_user_admin,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
                 avatar,
                 banner,
                 description,
@@ -3542,16 +4717,18 @@ module sage_channel::test_channel_actions {
                 app,
                 channel_fees,
                 channel_registry,
+                channel_witness_config,
                 clock,
                 invite_config,
+                reward_weights_registry,
                 owned_user_admin,
                 owned_user_server,
-                owned_user_config,
                 shared_user_admin,
                 shared_user_server,
                 user_fees,
                 user_registry,
-                user_invite_registry
+                user_invite_registry,
+                user_witness_config
             );
         };
 

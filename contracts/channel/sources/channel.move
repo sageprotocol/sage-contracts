@@ -1,9 +1,23 @@
 module sage_channel::channel {
     use sui::{
-        dynamic_field::{Self as df}
+        dynamic_field::{Self as df},
+        dynamic_object_field::{Self as dof}
     };
 
     use std::string::{String};
+
+    use sage_admin::{
+        access::{ChannelWitnessConfig}
+    };
+
+    use sage_analytics::{
+        analytics::{Analytics},
+        analytics_actions::{Self}
+    };
+
+    use sage_channel::{
+        channel_witness::{Self}
+    };
 
     use sage_shared::{
         membership::{Membership},
@@ -24,13 +38,20 @@ module sage_channel::channel {
 
     // --------------- Errors ---------------
 
-    const EInvalidChannelDescription: u64 = 370;
-    const EInvalidChannelName: u64 = 371;
+    const EAppChannelMismatch: u64 = 370;
+    const EInvalidChannelDescription: u64 = 371;
+    const EInvalidChannelName: u64 = 372;
 
     // --------------- Name Tag ---------------
 
+    public struct AnalyticsKey has copy, drop, store {
+        app: address,
+        epoch: u64
+    }
+
     public struct Channel has key {
         id: UID,
+        app: address,
         avatar_hash: String,
         banner_hash: String,
         created_at: u64,
@@ -44,7 +65,7 @@ module sage_channel::channel {
     }
 
     public struct PostsKey has copy, drop, store {
-        app: String
+        app: address
     }
 
     // --------------- Events ---------------
@@ -52,6 +73,13 @@ module sage_channel::channel {
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun assert_app_channel_match(
+        channel: &Channel,
+        app_address: address
+    ) {
+        assert!(channel.app == app_address, EAppChannelMismatch);
+    }
 
     public fun assert_channel_description(
         description: &String
@@ -111,6 +139,45 @@ module sage_channel::channel {
 
     // --------------- Friend Functions ---------------
 
+    public(package) fun borrow_analytics_mut(
+        channel: &mut Channel,
+        channel_witness_config: &ChannelWitnessConfig,
+        app_address: address,
+        epoch: u64,
+        ctx: &mut TxContext
+    ): &mut Analytics {
+        let analytics_key = AnalyticsKey {
+            app: app_address,
+            epoch
+        };
+
+        let does_exist = dof::exists_with_type<AnalyticsKey, Analytics>(
+            &channel.id,
+            analytics_key
+        );
+
+        if (!does_exist) {
+            let channel_witness = channel_witness::create_witness();
+
+            let analytics = analytics_actions::create_analytics_for_channel(
+                &channel_witness,
+                channel_witness_config,
+                ctx
+            );
+
+            dof::add(
+                &mut channel.id,
+                analytics_key,
+                analytics
+            );
+        };
+
+        dof::borrow_mut<AnalyticsKey, Analytics>(
+            &mut channel.id,
+            analytics_key
+        )
+    }
+
     public(package) fun borrow_follows_mut(
         channel: &mut Channel
     ): &mut Membership {
@@ -124,6 +191,7 @@ module sage_channel::channel {
     }
 
     public(package) fun create(
+        app_address: address,
         avatar_hash: String,
         banner_hash: String,
         description: String,
@@ -140,6 +208,7 @@ module sage_channel::channel {
 
         let channel = Channel {
             id: object::new(ctx),
+            app: app_address,
             avatar_hash,
             banner_hash,
             created_at,
@@ -161,11 +230,11 @@ module sage_channel::channel {
 
     public(package) fun return_posts(
         channel: &mut Channel,
-        posts: Posts,
-        app_name: String
+        app_address: address,
+        posts: Posts
     ) {
         let posts_key = PostsKey {
-            app: app_name
+            app: app_address
         };
 
         df::add(
@@ -177,11 +246,11 @@ module sage_channel::channel {
 
     public(package) fun take_posts(
         channel: &mut Channel,
-        app_name: String,
+        app_address: address,
         ctx: &mut TxContext
     ): Posts {
         let posts_key = PostsKey {
-            app: app_name
+            app: app_address
         };
 
         let does_exist = df::exists_with_type<PostsKey, Posts>(
