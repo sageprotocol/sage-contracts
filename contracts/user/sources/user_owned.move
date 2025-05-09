@@ -9,17 +9,21 @@ module sage_user::user_owned {
     };
 
     use sage_admin::{
-        access::{UserWitnessConfig},
+        access::{
+            Self,
+            ChannelWitnessConfig,
+            UserWitnessConfig
+        },
         apps::{App}
+    };
+
+    use sage_analytics::{
+        analytics::{Analytics},
+        analytics_actions::{Self}
     };
 
     use sage_post::{
         post::{Post}
-    };
-
-    use sage_reward::{
-        analytics::{Analytics},
-        analytics_actions::{Self}
     };
 
     use sage_user::{
@@ -78,6 +82,29 @@ module sage_user::user_owned {
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun borrow_analytics_mut_for_channel<ChannelWitness: drop>(
+        channel_witness: &ChannelWitness,
+        channel_witness_config: &ChannelWitnessConfig,
+        owned_user: &mut UserOwned,
+        user_witness_config: &UserWitnessConfig,
+        app_address: address,
+        epoch: u64,
+        ctx: &mut TxContext
+    ): &mut Analytics {
+        access::assert_channel_witness<ChannelWitness>(
+            channel_witness_config,
+            channel_witness
+        );
+
+        borrow_analytics_mut(
+            owned_user,
+            user_witness_config,
+            app_address,
+            epoch,
+            ctx
+        )
+    }
 
     public fun get_avatar(
         owned_user: &UserOwned
