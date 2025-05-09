@@ -12,7 +12,7 @@ module sage_user::user_shared {
         access::{UserWitnessConfig}
     };
 
-    use sage_reward::{
+    use sage_analytics::{
         analytics::{Analytics},
         analytics_actions::{Self}
     };
