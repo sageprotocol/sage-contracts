@@ -74,7 +74,7 @@ module sage_user::user_shared {
         shared_user.key
     }
 
-     public fun get_owner(
+    public fun get_owner(
         shared_user: &UserShared
     ): address {
         shared_user.owner
@@ -86,9 +86,41 @@ module sage_user::user_shared {
         shared_user.owned_user
     }
 
+    public fun has_analytics(
+        shared_user: &mut UserShared,
+        app_address: address,
+        epoch: u64,
+    ): bool {
+        let analytics_key = AnalyticsKey {
+            app: app_address,
+            epoch
+        };
+
+        dof::exists_with_type<AnalyticsKey, Analytics>(
+            &shared_user.id,
+            analytics_key
+        )
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun borrow_analytics_mut(
+        shared_user: &mut UserShared,
+        app_address: address,
+        epoch: u64
+    ): &mut Analytics {
+        let analytics_key = AnalyticsKey {
+            app: app_address,
+            epoch
+        };
+
+        dof::borrow_mut<AnalyticsKey, Analytics>(
+            &mut shared_user.id,
+            analytics_key
+        )
+    }
+
+    public(package) fun borrow_or_create_analytics_mut(
         shared_user: &mut UserShared,
         user_witness_config: &UserWitnessConfig,
         app_address: address,

@@ -33,12 +33,17 @@ module sage_user::user_actions {
     };
 
     use sage_reward::{
-        // reward_actions::{Self},
+        reward_actions::{Self},
         reward_registry::{Self, RewardWeightsRegistry}
     };
 
     use sage_shared::{
         membership::{Self}
+    };
+
+    use sage_trust::{
+        access::{TrustConfig},
+        trust::{ProtectedTreasury, TRUST}
     };
 
     use sage_user::{
@@ -266,7 +271,7 @@ module sage_user::user_actions {
                 reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
                 user_witness_config,
                 app_address,
@@ -293,7 +298,7 @@ module sage_user::user_actions {
                 metric_self
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 user,
                 user_witness_config,
                 app_address,
@@ -372,6 +377,107 @@ module sage_user::user_actions {
         assert!(is_valid_name, EInvalidUsername);
     }
 
+    #[allow(lint(self_transfer))]
+    public fun claim_reward(
+        app: &App,
+        treasury: &mut ProtectedTreasury,
+        trust_config: &TrustConfig,
+        owned_user: &mut UserOwned,
+        shared_user: &mut UserShared,
+        user_witness_config: &UserWitnessConfig,
+        epoch: u64,
+        ctx: &mut TxContext
+    ) {
+        let self = tx_context::sender(ctx);
+        let owner = shared_user.get_owner();
+
+        assert!(owner == self, ENotSelf);
+
+        let app_address = object::id_address(app);
+        let user_witness = user_witness::create_witness();
+
+        let mut total_coin_option: Option<Coin<TRUST>> = option::none();
+
+        let has_owned_analytics = owned_user.has_analytics(
+            app_address,
+            epoch
+        );
+
+        if (has_owned_analytics) {
+            let analytics = owned_user.borrow_analytics_mut(
+                app_address,
+                epoch
+            );
+            let (
+                _amount,
+                coin_option
+            ) = reward_actions::claim_value_for_user<UserWitness>(
+                analytics,
+                app,
+                treasury,
+                trust_config,
+                &user_witness,
+                user_witness_config,
+                ctx
+            );
+
+            if (coin_option.is_some()) {
+                total_coin_option.destroy_none();
+                total_coin_option = coin_option;
+            } else {
+                coin_option.destroy_none();
+            };
+        };
+
+        let has_shared_analytics = shared_user.has_analytics(
+            app_address,
+            epoch
+        );
+
+        if (has_shared_analytics) {
+            let analytics = shared_user.borrow_analytics_mut(
+                app_address,
+                epoch
+            );
+            let (
+                _amount,
+                coin_option
+            ) = reward_actions::claim_value_for_user<UserWitness>(
+                analytics,
+                app,
+                treasury,
+                trust_config,
+                &user_witness,
+                user_witness_config,
+                ctx
+            );
+
+            if (coin_option.is_some()) {
+                let coin = coin_option.destroy_some();
+
+                if (total_coin_option.is_some()) {
+                    let mut total_coin = total_coin_option.destroy_some();
+                    total_coin.join(coin);
+
+                    total_coin_option = option::some(total_coin);
+                } else {
+                    total_coin_option.destroy_none();
+                    total_coin_option = option::some(coin);
+                };
+            } else {
+                coin_option.destroy_none();
+            };
+        };
+
+        if (total_coin_option.is_some()) {
+            let total_coin = total_coin_option.destroy_some();
+
+            transfer::public_transfer(total_coin, self);
+        } else {
+            total_coin_option.destroy_none();
+        };
+    }
+
     public fun comment<CoinType> (
         app: &App,
         clock: &Clock,
@@ -420,7 +526,7 @@ module sage_user::user_actions {
             let claim_parent = reward_weights.get_weight(metric_parent);
             let claim_self = reward_weights.get_weight(metric_self);
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
                 user_witness_config,
                 app_address,
@@ -437,7 +543,7 @@ module sage_user::user_actions {
                 metric_self
             );
 
-            let analytics_parent = user_shared::borrow_analytics_mut(
+            let analytics_parent = user_shared::borrow_or_create_analytics_mut(
                 shared_user,
                 user_witness_config,
                 app_address,
@@ -735,7 +841,7 @@ module sage_user::user_actions {
             let claim_followed = reward_weights.get_weight(metric_followed);
             let claim_self = reward_weights.get_weight(metric_self);
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
                 user_witness_config,
                 app_address,
@@ -754,7 +860,7 @@ module sage_user::user_actions {
                 metric_self
             );
 
-            let analytics_followed = user_shared::borrow_analytics_mut(
+            let analytics_followed = user_shared::borrow_or_create_analytics_mut(
                 shared_user,
                 user_witness_config,
                 app_address,
@@ -873,7 +979,7 @@ module sage_user::user_actions {
 
                 let claim = reward_weights.get_weight(metric);
 
-                let analytics = user_shared::borrow_analytics_mut(
+                let analytics = user_shared::borrow_or_create_analytics_mut(
                     user_shared,
                     user_witness_config,
                     app_address,
@@ -892,7 +998,7 @@ module sage_user::user_actions {
                     metric
                 );
 
-                let friend_analytics = user_shared::borrow_analytics_mut(
+                let friend_analytics = user_shared::borrow_or_create_analytics_mut(
                     user_friend,
                     user_witness_config,
                     app_address,
@@ -996,7 +1102,7 @@ module sage_user::user_actions {
                 reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
                 user_witness_config,
                 app_address,
@@ -1023,7 +1129,7 @@ module sage_user::user_actions {
                 metric_self
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 shared_user,
                 user_witness_config,
                 app_address,
@@ -1118,7 +1224,7 @@ module sage_user::user_actions {
 
             let claim = reward_weights.get_weight(metric);
 
-            let analytics = user_owned::borrow_analytics_mut(
+            let analytics = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
                 user_witness_config,
                 app_address,

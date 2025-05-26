@@ -97,7 +97,7 @@ module sage_user::user_owned {
             channel_witness
         );
 
-        borrow_analytics_mut(
+        borrow_or_create_analytics_mut(
             owned_user,
             user_witness_config,
             app_address,
@@ -227,6 +227,22 @@ module sage_user::user_owned {
         } else {
             0
         }
+    }
+
+    public fun has_analytics(
+        owned_user: &mut UserOwned,
+        app_address: address,
+        epoch: u64,
+    ): bool {
+        let analytics_key = AnalyticsKey {
+            app: app_address,
+            epoch
+        };
+
+        dof::exists_with_type<AnalyticsKey, Analytics>(
+            &owned_user.id,
+            analytics_key
+        )
     }
 
     // --------------- Friend Functions ---------------
@@ -412,6 +428,22 @@ module sage_user::user_owned {
     }
 
     public(package) fun borrow_analytics_mut(
+        owned_user: &mut UserOwned,
+        app_address: address,
+        epoch: u64
+    ): &mut Analytics {
+        let analytics_key = AnalyticsKey {
+            app: app_address,
+            epoch
+        };
+
+        dof::borrow_mut<AnalyticsKey, Analytics>(
+            &mut owned_user.id,
+            analytics_key
+        )
+    }
+
+    public(package) fun borrow_or_create_analytics_mut(
         owned_user: &mut UserOwned,
         user_witness_config: &UserWitnessConfig,
         app_address: address,

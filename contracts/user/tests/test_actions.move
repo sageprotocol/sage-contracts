@@ -891,7 +891,7 @@ module sage_user::test_user_actions {
 
             let current_epoch = reward_registry::get_current(&reward_weights_registry);
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -913,7 +913,7 @@ module sage_user::test_user_actions {
 
             assert!(num_post_favorites == 0);
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -1206,7 +1206,7 @@ module sage_user::test_user_actions {
 
             let current_epoch = reward_registry::get_current(&reward_weights_registry);
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -1235,7 +1235,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == 0);
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -1291,7 +1291,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -1320,7 +1320,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == WEIGHT_USER_POST_FAVORITED);
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -1363,7 +1363,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -1392,7 +1392,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == WEIGHT_USER_POST_FAVORITED);
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -3264,7 +3264,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics = user_owned::borrow_analytics_mut(
+            let analytics = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -3279,7 +3279,7 @@ module sage_user::test_user_actions {
 
             assert!(!analytics_exists);
 
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut other_shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -3529,7 +3529,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -3551,7 +3551,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == WEIGHT_FOLLOWED_USER);
 
-            let analytics_friend = user_shared::borrow_analytics_mut(
+            let analytics_friend = user_shared::borrow_or_create_analytics_mut(
                 &mut other_shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -3622,7 +3622,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -3644,7 +3644,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == WEIGHT_FOLLOWED_USER);
 
-            let analytics_friend = user_shared::borrow_analytics_mut(
+            let analytics_friend = user_shared::borrow_or_create_analytics_mut(
                 &mut other_shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -5005,7 +5005,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -5044,7 +5044,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, OTHER);
         {
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut other_shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -5457,7 +5457,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -5491,7 +5491,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, OTHER);
         {
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut other_shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -5593,7 +5593,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut other_shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -5618,7 +5618,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let analytics = user_shared::borrow_analytics_mut(
+            let analytics = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -6835,7 +6835,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics = user_owned::borrow_analytics_mut(
+            let analytics = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7075,7 +7075,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics = user_owned::borrow_analytics_mut(
+            let analytics = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7511,7 +7511,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7526,7 +7526,7 @@ module sage_user::test_user_actions {
 
             assert!(!analytics_exists);
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7765,7 +7765,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7787,7 +7787,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == 0);
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7892,7 +7892,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7914,7 +7914,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == 0);
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -7985,7 +7985,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_self = user_owned::borrow_analytics_mut(
+            let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8014,7 +8014,7 @@ module sage_user::test_user_actions {
 
             assert!(claim == WEIGHT_COMMENT_GIVEN);
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8504,7 +8504,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8519,7 +8519,7 @@ module sage_user::test_user_actions {
 
             assert!(!analytics_exists);
 
-            let analytics_liker = user_owned::borrow_analytics_mut(
+            let analytics_liker = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8797,7 +8797,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8826,7 +8826,7 @@ module sage_user::test_user_actions {
 
             assert!(claim_author == 0);
 
-            let analytics_liker = user_owned::borrow_analytics_mut(
+            let analytics_liker = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_other,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8893,7 +8893,7 @@ module sage_user::test_user_actions {
                 &reward_weights_registry
             );
 
-            let analytics_author = user_shared::borrow_analytics_mut(
+            let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
                 &user_witness_config,
                 object::id_address(&app),
@@ -8922,7 +8922,7 @@ module sage_user::test_user_actions {
 
             assert!(claim_author == WEIGHT_USER_POST_LIKED);
 
-            let analytics_liker = user_owned::borrow_analytics_mut(
+            let analytics_liker = user_owned::borrow_or_create_analytics_mut(
                 &mut owned_user_other,
                 &user_witness_config,
                 object::id_address(&app),
