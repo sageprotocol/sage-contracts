@@ -12,6 +12,13 @@ module sage_reward::test_reward_actions {
 
     use sage_admin::{
         admin::{Self, AdminCap, RewardCap},
+        access::{
+            Self as admin_access,
+            UserWitnessConfig,
+            InvalidWitness,
+            ValidWitness,
+            EWitnessMismatch
+        },
         apps::{Self, App}
     };
 
@@ -52,7 +59,8 @@ module sage_reward::test_reward_actions {
         protected_treasury: ProtectedTreasury,
         reward_cap: RewardCap,
         reward_weights_registry: RewardWeightsRegistry,
-        trust_config: TrustConfig
+        trust_config: TrustConfig,
+        user_witness_config: UserWitnessConfig
     ) {
         destroy(app);
         destroy(clock);
@@ -60,6 +68,7 @@ module sage_reward::test_reward_actions {
         destroy(reward_cap);
         destroy(reward_weights_registry);
         destroy(trust_config);
+        destroy(user_witness_config);
     }
 
     #[test_only]
@@ -70,7 +79,8 @@ module sage_reward::test_reward_actions {
         ProtectedTreasury,
         RewardCap,
         RewardWeightsRegistry,
-        TrustConfig
+        TrustConfig,
+        UserWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -103,6 +113,11 @@ module sage_reward::test_reward_actions {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let mut trust_config = ts::take_shared<TrustConfig>(scenario);
 
+            admin_access::create_user_witness_config<ValidWitness>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
             trust_access::update<RewardWitness>(
                 &admin_cap,
                 &mut trust_config
@@ -117,20 +132,23 @@ module sage_reward::test_reward_actions {
         let (
             app,
             protected_treasury,
-            reward_weights_registry
+            reward_weights_registry,
+            user_witness_config
         ) = {
-            let mut app = apps::create_for_testing(
+            let app = apps::create_for_testing(
                 utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
             let protected_treasury = scenario.take_shared<ProtectedTreasury>();
             let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
+            let user_witness_config = scenario.take_shared<UserWitnessConfig>();
 
             (
                 app,
                 protected_treasury,
-                reward_weights_registry
+                reward_weights_registry,
+                user_witness_config
             )
         };
 
@@ -141,7 +159,8 @@ module sage_reward::test_reward_actions {
             protected_treasury,
             reward_cap,
             reward_weights_registry,
-            trust_config
+            trust_config,
+            user_witness_config
         )
     }
 
@@ -154,7 +173,8 @@ module sage_reward::test_reward_actions {
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config
+            trust_config,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -180,7 +200,8 @@ module sage_reward::test_reward_actions {
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config
+                trust_config,
+                user_witness_config
             );
         };
 
@@ -197,7 +218,8 @@ module sage_reward::test_reward_actions {
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config
+            trust_config,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -224,7 +246,8 @@ module sage_reward::test_reward_actions {
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config
+                trust_config,
+                user_witness_config
             );
         };
 
@@ -240,7 +263,8 @@ module sage_reward::test_reward_actions {
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config
+            trust_config,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -281,7 +305,8 @@ module sage_reward::test_reward_actions {
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config
+                trust_config,
+                user_witness_config
             );
         };
 
@@ -297,7 +322,8 @@ module sage_reward::test_reward_actions {
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config
+            trust_config,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -336,7 +362,8 @@ module sage_reward::test_reward_actions {
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config
+                trust_config,
+                user_witness_config
             );
         };
 
@@ -352,7 +379,8 @@ module sage_reward::test_reward_actions {
             mut protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config
+            trust_config,
+            user_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -374,7 +402,7 @@ module sage_reward::test_reward_actions {
             let (
                 amount,
                 coin_option
-            ) = reward_actions::claim_value(
+            ) = reward_actions::claim_value_for_testing(
                 &mut analytics,
                 &app,
                 &mut protected_treasury,
@@ -429,7 +457,235 @@ module sage_reward::test_reward_actions {
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config
+                trust_config,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_claim_non_zero() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            mut protected_treasury,
+            reward_cap,
+            mut reward_weights_registry,
+            trust_config,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let metric = utf8(b"reward-weight");
+        let weight = 100;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                metric,
+                weight
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let mut analytics = {
+            let mut analytics = analytics::create_for_testing(ts::ctx(scenario));
+            let claim = 100;
+
+            analytics_actions::increment_analytics_for_testing(
+                &mut analytics,
+                object::id_address(&app),
+                claim,
+                metric
+            );
+
+            analytics
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                amount,
+                coin_option
+            ) = reward_actions::claim_value_for_testing(
+                &mut analytics,
+                &app,
+                &mut protected_treasury,
+                &trust_config,
+                ts::ctx(scenario)
+            );
+
+            assert!(amount == weight);
+            assert!(coin_option.is_some());
+
+            let coin = coin_option.destroy_some();
+            let balance = coin.balance();
+
+            assert!(balance.value() == weight);
+
+            destroy(coin);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let retrieved_weight = reward_weights.get_weight(metric);
+
+            assert!(retrieved_weight == weight);
+
+            destroy(analytics);
+
+            destroy_for_testing(
+                app,
+                clock,
+                protected_treasury,
+                reward_cap,
+                reward_weights_registry,
+                trust_config,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_claim_from_user() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            mut protected_treasury,
+            reward_cap,
+            mut reward_weights_registry,
+            trust_config,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut analytics = analytics::create_for_testing(ts::ctx(scenario));
+
+            let valid_witness = admin_access::create_valid_witness_for_testing();
+
+            let (
+                amount,
+                coin_option
+            ) = reward_actions::claim_value_for_user<ValidWitness>(
+                &mut analytics,
+                &app,
+                &mut protected_treasury,
+                &trust_config,
+                &valid_witness,
+                &user_witness_config,
+                ts::ctx(scenario)
+            );
+
+            assert!(amount == 0);
+            assert!(coin_option.is_none());
+
+            destroy(analytics);
+            destroy(coin_option);
+
+            destroy_for_testing(
+                app,
+                clock,
+                protected_treasury,
+                reward_cap,
+                reward_weights_registry,
+                trust_config,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_claim_from_user_fail() {
+        let (
+            mut scenario_val,
+            app,
+            clock,
+            mut protected_treasury,
+            reward_cap,
+            mut reward_weights_registry,
+            trust_config,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut analytics = analytics::create_for_testing(ts::ctx(scenario));
+
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
+
+            let (
+                amount,
+                coin_option
+            ) = reward_actions::claim_value_for_user<InvalidWitness>(
+                &mut analytics,
+                &app,
+                &mut protected_treasury,
+                &trust_config,
+                &invalid_witness,
+                &user_witness_config,
+                ts::ctx(scenario)
+            );
+
+            assert!(amount == 0);
+            assert!(coin_option.is_none());
+
+            destroy(analytics);
+            destroy(coin_option);
+
+            destroy_for_testing(
+                app,
+                clock,
+                protected_treasury,
+                reward_cap,
+                reward_weights_registry,
+                trust_config,
+                user_witness_config
             );
         };
 
