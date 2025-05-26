@@ -5,6 +5,7 @@ version = "0.0.1"
 
 [dependencies]
 SageAdmin = { local = "../admin" }
+SageTrust = { local = "../trust" }
 
 [addresses]
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
@@ -13,6 +14,8 @@ treasury = "0x083819196bd7923be95bba14ab1f89931dc392a0d41c71a3eb5e2e9ad914acc9"
 
 sage_admin = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
 # sage_analytics = ""
+# sage_trust = ""
 
 # sage_admin = "0x0"
 sage_analytics = "0x0"
+sage_trust = "0x0"

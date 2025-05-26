@@ -56,6 +56,11 @@ module sage_channel::channel_actions {
 
     // --------------- Constants ---------------
 
+    const METRIC_CHANNEL_CREATED: vector<u8> = b"channel-created";
+    const METRIC_CHANNEL_FOLLOWED: vector<u8> = b"channel-followed";
+    const METRIC_CHANNEL_TEXT_POST: vector<u8> = b"channel-text-posts";
+    const METRIC_FOLLOWED_CHANNEL: vector<u8> = b"followed-channel";
+
     // --------------- Errors ---------------
 
     const EChannelNameMismatch: u64 = 370;
@@ -312,11 +317,18 @@ module sage_channel::channel_actions {
                 ctx
             );
 
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric = utf8(METRIC_CHANNEL_CREATED);
+            let claim = reward_weights.get_weight(metric);
+
             analytics_actions::increment_analytics_for_channel<ChannelWitness>(
                 analytics,
+                app,
                 &channel_witness,
                 channel_witness_config,
-                utf8(b"channel-created")
+                claim,
+                metric
             );
         };
 
@@ -435,6 +447,14 @@ module sage_channel::channel_actions {
                 reward_weights_registry
             );
 
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric_channel = utf8(METRIC_CHANNEL_FOLLOWED);
+            let metric_user = utf8(METRIC_FOLLOWED_CHANNEL);
+
+            let claim_channel = reward_weights.get_weight(metric_channel);
+            let claim_user = reward_weights.get_weight(metric_user);
+
             let analytics_channel = channel::borrow_analytics_mut(
                 channel,
                 channel_witness_config,
@@ -445,9 +465,11 @@ module sage_channel::channel_actions {
 
             analytics_actions::increment_analytics_for_channel<ChannelWitness>(
                 analytics_channel,
+                app,
                 &channel_witness,
                 channel_witness_config,
-                utf8(b"channel-followed")
+                claim_channel,
+                metric_channel
             );
 
             let analytics_user = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
@@ -462,9 +484,11 @@ module sage_channel::channel_actions {
 
             analytics_actions::increment_analytics_for_channel<ChannelWitness>(
                 analytics_user,
+                app,
                 &channel_witness,
                 channel_witness_config,
-                utf8(b"followed-channel")
+                claim_user,
+                metric_user
             );
         };
         
@@ -562,7 +586,12 @@ module sage_channel::channel_actions {
                 reward_weights_registry
             );
 
-            let analytics_user = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric = utf8(METRIC_CHANNEL_TEXT_POST);
+            let claim = reward_weights.get_weight(metric);
+
+            let analytics = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
                 &channel_witness,
                 channel_witness_config,
                 owned_user,
@@ -573,10 +602,12 @@ module sage_channel::channel_actions {
             );
 
             analytics_actions::increment_analytics_for_channel<ChannelWitness>(
-                analytics_user,
+                analytics,
+                app,
                 &channel_witness,
                 channel_witness_config,
-                utf8(b"channel-text-posts")
+                claim,
+                metric
             );
         };
 

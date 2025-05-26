@@ -52,6 +52,12 @@ module sage_post::post {
         post.created_by
     }
 
+    public fun get_comments_count(
+        post: &Post
+    ): u64 {
+        post.posts.get_length()
+    }
+
     public fun get_created_at(
         post: &Post
     ): u64 {
@@ -62,12 +68,6 @@ module sage_post::post {
         post: &Post
     ): u64 {
         post.depth
-    }
-
-    public fun get_comments_count(
-        post: &Post
-    ): u64 {
-        post.posts.get_length()
     }
 
     public fun get_likes_count(

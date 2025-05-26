@@ -40,6 +40,7 @@ module sage_user::test_user_actions {
     };
 
     use sage_reward::{
+        reward_actions::{Self},
         reward_registry::{Self, RewardWeightsRegistry}
     };
 
@@ -86,6 +87,28 @@ module sage_user::test_user_actions {
     const OTHER: address = @0xbabe;
     const SERVER: address = @server;
     const TREASURY: address = @treasury;
+
+    const METRIC_COMMENT_GIVEN: vector<u8> = b"comment-given";
+    const METRIC_COMMENT_RECEIVED: vector<u8> = b"comment-received";
+    const METRIC_FAVORITED_POST: vector<u8> = b"favorited-post";
+    const METRIC_FOLLOWED_USER: vector<u8> = b"followed-user";
+    const METRIC_LIKED_POST: vector<u8> = b"liked-post";
+    const METRIC_POST_FAVORITED: vector<u8> = b"post-favorited";
+    const METRIC_POST_LIKED: vector<u8> = b"post-liked";
+    const METRIC_USER_FOLLOWED: vector<u8> = b"user-followed";
+    const METRIC_USER_FRIENDS: vector<u8> = b"user-friends";
+    const METRIC_USER_TEXT_POST: vector<u8> = b"user-text-posts";
+
+    const WEIGHT_COMMENT_GIVEN: u64 = 1;
+    const WEIGHT_COMMENT_RECEIVED: u64 = 2;
+    const WEIGHT_FAVORITED_USER_POST: u64 = 3;
+    const WEIGHT_FOLLOWED_USER: u64 = 4;
+    const WEIGHT_USER_FOLLOWED: u64 = 5;
+    const WEIGHT_USER_FRIENDS: u64 = 6;
+    const WEIGHT_USER_LIKED_POST: u64 = 7;
+    const WEIGHT_USER_POST_FAVORITED: u64 = 8;
+    const WEIGHT_USER_POST_LIKED: u64 = 9;
+    const WEIGHT_USER_TEXT_POST: u64 = 10;
 
     const CREATE_INVITE_CUSTOM_FEE: u64 = 1;
     const CREATE_INVITE_SUI_FEE: u64 = 2;
@@ -883,7 +906,7 @@ module sage_user::test_user_actions {
 
             assert!(!does_exist);
 
-            let num_post_favorites = analytics::borrow_field(
+            let num_post_favorites = analytics::get_field(
                 analytics_author,
                 utf8(b"post-favorited")
             );
@@ -905,7 +928,7 @@ module sage_user::test_user_actions {
 
             assert!(!does_exist);
 
-            let num_favorited_posts = analytics::borrow_field(
+            let num_favorited_posts = analytics::get_field(
                 analytics_self,
                 utf8(b"favorited-post")
             );
@@ -942,7 +965,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            mut reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -965,6 +988,27 @@ module sage_user::test_user_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_FAVORITED_POST),
+                WEIGHT_FAVORITED_USER_POST
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_POST_FAVORITED),
+                WEIGHT_USER_POST_FAVORITED
             );
 
             ts::return_to_sender(scenario, reward_cap);
@@ -1172,17 +1216,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics_author,
-                utf8(b"post-favorited")
+                utf8(METRIC_POST_FAVORITED)
             );
 
             assert!(!does_exist);
 
-            let num_post_favorites = analytics::borrow_field(
+            let num_post_favorites = analytics::get_field(
                 analytics_author,
-                utf8(b"post-favorited")
+                utf8(METRIC_POST_FAVORITED)
             );
 
             assert!(num_post_favorites == 0);
+
+            let claim = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim == 0);
 
             let analytics_self = user_owned::borrow_analytics_mut(
                 &mut owned_user_admin,
@@ -1194,17 +1245,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics_self,
-                utf8(b"favorited-post")
+                utf8(METRIC_FAVORITED_POST)
             );
 
             assert!(!does_exist);
 
-            let num_favorited_posts = analytics::borrow_field(
+            let num_favorited_posts = analytics::get_field(
                 analytics_self,
-                utf8(b"favorited-post")
+                utf8(METRIC_FAVORITED_POST)
             );
 
             assert!(num_favorited_posts == 0);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == 0);
 
             (
                 current_epoch,
@@ -1243,17 +1301,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics_author,
-                utf8(b"post-favorited")
+                utf8(METRIC_POST_FAVORITED)
             );
 
             assert!(does_exist);
 
-            let num_post_favorites = analytics::borrow_field(
+            let num_post_favorites = analytics::get_field(
                 analytics_author,
-                utf8(b"post-favorited")
+                utf8(METRIC_POST_FAVORITED)
             );
 
             assert!(num_post_favorites == 1);
+
+            let claim = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_POST_FAVORITED);
 
             let analytics_self = user_owned::borrow_analytics_mut(
                 &mut owned_user_admin,
@@ -1265,17 +1330,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics_self,
-                utf8(b"favorited-post")
+                utf8(METRIC_FAVORITED_POST)
             );
 
             assert!(does_exist);
 
-            let num_favorited_posts = analytics::borrow_field(
+            let num_favorited_posts = analytics::get_field(
                 analytics_self,
-                utf8(b"favorited-post")
+                utf8(METRIC_FAVORITED_POST)
             );
 
             assert!(num_favorited_posts == 1);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_FAVORITED_USER_POST);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -1301,17 +1373,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics_author,
-                utf8(b"post-favorited")
+                utf8(METRIC_POST_FAVORITED)
             );
 
             assert!(does_exist);
 
-            let num_post_favorites = analytics::borrow_field(
+            let num_post_favorites = analytics::get_field(
                 analytics_author,
-                utf8(b"post-favorited")
+                utf8(METRIC_POST_FAVORITED)
             );
 
             assert!(num_post_favorites == 1);
+
+            let claim = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_POST_FAVORITED);
 
             let analytics_self = user_owned::borrow_analytics_mut(
                 &mut owned_user_admin,
@@ -1323,17 +1402,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics_self,
-                utf8(b"favorited-post")
+                utf8(METRIC_FAVORITED_POST)
             );
 
             assert!(does_exist);
 
-            let num_favorited_posts = analytics::borrow_field(
+            let num_favorited_posts = analytics::get_field(
                 analytics_self,
-                utf8(b"favorited-post")
+                utf8(METRIC_FAVORITED_POST)
             );
 
             assert!(num_favorited_posts == 1);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_FAVORITED_USER_POST);
 
             destroy(admin_cap);
             destroy(post_admin);
@@ -3293,7 +3379,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            mut reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -3349,6 +3435,27 @@ module sage_user::test_user_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_FOLLOWED_USER),
+                WEIGHT_FOLLOWED_USER
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_USER_FOLLOWED),
+                WEIGHT_USER_FOLLOWED
             );
 
             ts::return_to_sender(scenario, reward_cap);
@@ -3432,10 +3539,17 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_self,
-                utf8(b"user-followed")
+                utf8(METRIC_FOLLOWED_USER)
             );
 
             assert!(analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_FOLLOWED_USER);
 
             let analytics_friend = user_shared::borrow_analytics_mut(
                 &mut other_shared_user,
@@ -3447,10 +3561,17 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_friend,
-                utf8(b"user-follows")
+                utf8(METRIC_USER_FOLLOWED)
             );
 
             assert!(analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics_friend,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_FOLLOWED);
 
             (
                 owned_user,
@@ -3509,12 +3630,19 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let num_followed = analytics::borrow_field(
+            let num_followed = analytics::get_field(
                 analytics_self,
-                utf8(b"user-followed")
+                utf8(METRIC_FOLLOWED_USER)
             );
 
             assert!(num_followed == 1);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_FOLLOWED_USER);
 
             let analytics_friend = user_shared::borrow_analytics_mut(
                 &mut other_shared_user,
@@ -3524,12 +3652,19 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let num_follows = analytics::borrow_field(
+            let num_follows = analytics::get_field(
                 analytics_friend,
-                utf8(b"user-follows")
+                utf8(METRIC_USER_FOLLOWED)
             );
 
             assert!(num_follows == 1);
+
+            let claim = analytics::get_claim(
+                analytics_friend,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_FOLLOWED);
 
             ts::return_to_sender(scenario, owned_user);
             ts::return_shared(other_shared_user);
@@ -5152,7 +5287,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            mut reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -5174,6 +5309,20 @@ module sage_user::test_user_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_USER_FRIENDS),
+                WEIGHT_USER_FRIENDS
             );
 
             ts::return_to_sender(scenario, reward_cap);
@@ -5318,17 +5467,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics,
-                utf8(b"user-friends")
+                utf8(METRIC_USER_FRIENDS)
             );
 
             assert!(does_exist);
 
-            let num_friends = analytics::borrow_field(
+            let num_friends = analytics::get_field(
                 analytics,
-                utf8(b"user-friends")
+                utf8(METRIC_USER_FRIENDS)
             );
 
             assert!(num_friends == 1);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_FRIENDS);
 
             current_epoch
         };
@@ -5345,17 +5501,24 @@ module sage_user::test_user_actions {
 
             let does_exist = analytics::field_exists(
                 analytics,
-                utf8(b"user-friends")
+                utf8(METRIC_USER_FRIENDS)
             );
 
             assert!(does_exist);
 
-            let num_friends = analytics::borrow_field(
+            let num_friends = analytics::get_field(
                 analytics,
-                utf8(b"user-friends")
+                utf8(METRIC_USER_FRIENDS)
             );
 
             assert!(num_friends == 1);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_FRIENDS);
         };
 
         ts::next_tx(scenario, OTHER);
@@ -5438,12 +5601,19 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let num_friends = analytics::borrow_field(
+            let num_friends = analytics::get_field(
                 analytics,
-                utf8(b"user-friends")
+                utf8(METRIC_USER_FRIENDS)
             );
 
             assert!(num_friends == 1);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_FRIENDS);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -5456,12 +5626,19 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            let num_friends = analytics::borrow_field(
+            let num_friends = analytics::get_field(
                 analytics,
-                utf8(b"user-friends")
+                utf8(METRIC_USER_FRIENDS)
             );
 
             assert!(num_friends == 1);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_USER_FRIENDS);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -6731,7 +6908,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            mut reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6754,6 +6931,20 @@ module sage_user::test_user_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_USER_TEXT_POST),
+                WEIGHT_USER_TEXT_POST
             );
 
             ts::return_to_sender<RewardCap>(scenario, reward_cap);
@@ -6894,17 +7085,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics,
-                utf8(b"user-text-posts")
+                utf8(METRIC_USER_TEXT_POST)
             );
 
             assert!(analytics_exists);
 
-            let num_posts = analytics::borrow_field(
+            let num_posts = analytics::get_field(
                 analytics,
-                utf8(b"user-text-posts")
+                utf8(METRIC_USER_TEXT_POST)
             );
 
             assert!(num_posts == 2);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == (WEIGHT_USER_TEXT_POST * 2));
 
             ts::return_to_sender(scenario, owned_user);
             ts::return_shared(shared_user);
@@ -7374,7 +7572,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            mut reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -7577,10 +7775,17 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_self,
-                utf8(b"comment-given")
+                utf8(METRIC_COMMENT_GIVEN)
             );
 
             assert!(!analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == 0);
 
             let analytics_author = user_shared::borrow_analytics_mut(
                 &mut shared_user_admin,
@@ -7592,10 +7797,17 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_author,
-                utf8(b"comment-received")
+                utf8(METRIC_COMMENT_RECEIVED)
             );
 
             assert!(!analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim == 0);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -7606,6 +7818,27 @@ module sage_user::test_user_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_COMMENT_GIVEN),
+                WEIGHT_COMMENT_GIVEN
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_COMMENT_RECEIVED),
+                WEIGHT_COMMENT_RECEIVED
             );
 
             ts::return_to_sender<RewardCap>(scenario, reward_cap);
@@ -7669,10 +7902,17 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_self,
-                utf8(b"comment-given")
+                utf8(METRIC_COMMENT_GIVEN)
             );
 
             assert!(!analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == 0);
 
             let analytics_author = user_shared::borrow_analytics_mut(
                 &mut shared_user_admin,
@@ -7684,10 +7924,17 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_author,
-                utf8(b"comment-received")
+                utf8(METRIC_COMMENT_RECEIVED)
             );
 
             assert!(!analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim == 0);
         };
 
         ts::next_tx(scenario, OTHER);
@@ -7748,17 +7995,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_self,
-                utf8(b"comment-given")
+                utf8(METRIC_COMMENT_GIVEN)
             );
 
             assert!(analytics_exists);
 
-            let num_comment_given = analytics::borrow_field(
+            let num_comment_given = analytics::get_field(
                 analytics_self,
-                utf8(b"comment-given")
+                utf8(METRIC_COMMENT_GIVEN)
             );
 
             assert!(num_comment_given == 1);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_COMMENT_GIVEN);
 
             let analytics_author = user_shared::borrow_analytics_mut(
                 &mut shared_user_admin,
@@ -7770,17 +8024,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_author,
-                utf8(b"comment-received")
+                utf8(METRIC_COMMENT_RECEIVED)
             );
 
             assert!(analytics_exists);
 
-            let num_comment_received = analytics::borrow_field(
+            let num_comment_received = analytics::get_field(
                 analytics_author,
-                utf8(b"comment-received")
+                utf8(METRIC_COMMENT_RECEIVED)
             );
 
             assert!(num_comment_received == 1);
+
+            let claim = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_COMMENT_RECEIVED);
 
             destroy(parent_post);
 
@@ -8306,7 +8567,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            mut reward_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -8457,6 +8718,27 @@ module sage_user::test_user_actions {
                 true
             );
 
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_LIKED_POST),
+                WEIGHT_USER_LIKED_POST
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_POST_LIKED),
+                WEIGHT_USER_POST_LIKED
+            );
+
             ts::return_to_sender<RewardCap>(scenario, reward_cap);
         };
 
@@ -8525,17 +8807,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_author,
-                utf8(b"post-liked")
+                utf8(METRIC_POST_LIKED)
             );
 
             assert!(!analytics_exists);
 
-            let num_liked = analytics::borrow_field(
+            let num_liked = analytics::get_field(
                 analytics_author,
-                utf8(b"post-liked")
+                utf8(METRIC_POST_LIKED)
             );
 
             assert!(num_liked == 0);
+
+            let claim_author = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim_author == 0);
 
             let analytics_liker = user_owned::borrow_analytics_mut(
                 &mut owned_user_other,
@@ -8547,17 +8836,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_liker,
-                utf8(b"liked-post")
+                utf8(METRIC_LIKED_POST)
             );
 
             assert!(!analytics_exists);
 
-            let num_liked = analytics::borrow_field(
+            let num_liked = analytics::get_field(
                 analytics_liker,
-                utf8(b"liked-post")
+                utf8(METRIC_LIKED_POST)
             );
 
             assert!(num_liked == 0);
+
+            let claim_liker = analytics::get_claim(
+                analytics_liker,
+                object::id_address(&app)
+            );
+
+            assert!(claim_liker == 0);
         };
 
         ts::next_tx(scenario, OTHER);
@@ -8607,17 +8903,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_author,
-                utf8(b"post-liked")
+                utf8(METRIC_POST_LIKED)
             );
 
             assert!(analytics_exists);
 
-            let num_liked = analytics::borrow_field(
+            let num_liked = analytics::get_field(
                 analytics_author,
-                utf8(b"post-liked")
+                utf8(METRIC_POST_LIKED)
             );
 
             assert!(num_liked == 1);
+
+            let claim_author = analytics::get_claim(
+                analytics_author,
+                object::id_address(&app)
+            );
+
+            assert!(claim_author == WEIGHT_USER_POST_LIKED);
 
             let analytics_liker = user_owned::borrow_analytics_mut(
                 &mut owned_user_other,
@@ -8629,17 +8932,24 @@ module sage_user::test_user_actions {
 
             let analytics_exists = analytics::field_exists(
                 analytics_liker,
-                utf8(b"liked-post")
+                utf8(METRIC_LIKED_POST)
             );
 
             assert!(analytics_exists);
 
-            let num_liked = analytics::borrow_field(
+            let num_liked = analytics::get_field(
                 analytics_liker,
-                utf8(b"liked-post")
+                utf8(METRIC_LIKED_POST)
             );
 
             assert!(num_liked == 1);
+
+            let claim_liker = analytics::get_claim(
+                analytics_liker,
+                object::id_address(&app)
+            );
+
+            assert!(claim_liker == WEIGHT_USER_LIKED_POST);
 
             destroy(owned_user_admin);
             destroy(shared_user_admin);

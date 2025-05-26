@@ -116,7 +116,7 @@ module sage_trust::test_access {
             let reward_witness = access::create_valid_witness();
 
             access::assert_reward_witness<ValidWitness>(
-                reward_witness,
+                &reward_witness,
                 &trust_config
             );
 
@@ -145,7 +145,7 @@ module sage_trust::test_access {
             let reward_witness = access::create_invalid_witness();
 
             access::assert_reward_witness<InvalidWitness>(
-                reward_witness,
+                &reward_witness,
                 &trust_config
             );
 
@@ -200,7 +200,7 @@ module sage_trust::test_access {
             let invalid_witness = access::create_invalid_witness();
 
             let is_verified = access::verify_reward_witness<InvalidWitness>(
-                invalid_witness,
+                &invalid_witness,
                 &trust_config
             );
 
@@ -209,7 +209,7 @@ module sage_trust::test_access {
             let valid_witness = access::create_valid_witness();
 
             let is_verified = access::verify_reward_witness<ValidWitness>(
-                valid_witness,
+                &valid_witness,
                 &trust_config
             );
 

@@ -52,7 +52,7 @@ module sage_analytics::test_analytics {
             let key = utf8(b"analytics");
             let value = 5;
 
-            let retrieved_value = analytics::borrow_field(
+            let retrieved_value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -72,7 +72,7 @@ module sage_analytics::test_analytics {
 
             assert!(does_exist);
 
-            let retrieved_value = analytics::borrow_field(
+            let retrieved_value = analytics::get_field(
                 &analytics,
                 key
             );

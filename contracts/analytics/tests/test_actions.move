@@ -19,7 +19,8 @@ module sage_analytics::test_analytics_actions {
             ValidWitness,
             EWitnessMismatch
         },
-        admin::{Self, AdminCap}
+        admin::{Self, AdminCap},
+        apps::{Self, App}
     };
 
     use sage_analytics::{
@@ -37,10 +38,12 @@ module sage_analytics::test_analytics_actions {
 
     #[test_only]
     fun destroy_for_testing(
+        app: App,
         channel_witness_config: ChannelWitnessConfig,
         group_witness_config: GroupWitnessConfig,
         user_witness_config: UserWitnessConfig
     ) {
+        destroy(app);
         destroy(channel_witness_config);
         destroy(group_witness_config);
         destroy(user_witness_config);
@@ -49,6 +52,7 @@ module sage_analytics::test_analytics_actions {
     #[test_only]
     fun setup_for_testing(): (
         Scenario,
+        App,
         ChannelWitnessConfig,
         GroupWitnessConfig,
         UserWitnessConfig
@@ -57,6 +61,7 @@ module sage_analytics::test_analytics_actions {
         let scenario = &mut scenario_val;
         {
             admin::init_for_testing(ts::ctx(scenario));
+            apps::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -81,15 +86,22 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         let (
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
         ) = {
+            let app = apps::create_for_testing(
+                utf8(b"sage"),
+                ts::ctx(scenario)
+            );
+
             let channel_witness_config = ts::take_shared<ChannelWitnessConfig>(scenario);
             let group_witness_config = ts::take_shared<GroupWitnessConfig>(scenario);
             let user_witness_config = ts::take_shared<UserWitnessConfig>(scenario);
 
             (
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -98,6 +110,7 @@ module sage_analytics::test_analytics_actions {
 
         (
             scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -108,6 +121,7 @@ module sage_analytics::test_analytics_actions {
     fun test_create() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -144,6 +158,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -158,6 +173,7 @@ module sage_analytics::test_analytics_actions {
     fun test_create_channel_fail() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -178,6 +194,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -192,6 +209,7 @@ module sage_analytics::test_analytics_actions {
     fun test_create_group_fail() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -212,6 +230,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -226,6 +245,7 @@ module sage_analytics::test_analytics_actions {
     fun test_create_user_fail() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -246,6 +266,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -259,6 +280,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_analytics() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -272,7 +294,7 @@ module sage_analytics::test_analytics_actions {
 
             let key = utf8(b"analytics");
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -281,10 +303,12 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_testing(
                 &mut analytics,
+                object::id_address(&app),
+                5,
                 key
             );
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -293,10 +317,12 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_testing(
                 &mut analytics,
+                object::id_address(&app),
+                5,
                 key
             );
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -305,10 +331,12 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_testing(
                 &mut analytics,
+                object::id_address(&app),
+                5,
                 key
             );
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -318,6 +346,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -331,6 +360,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_channel_analytics() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -352,12 +382,14 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_channel<ValidWitness>(
                 &mut analytics,
+                &app,
                 &valid_witness,
                 &channel_witness_config,
+                10,
                 key
             );
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -367,6 +399,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -381,6 +414,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_channel_analytics_fail() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -404,14 +438,17 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_channel<InvalidWitness>(
                 &mut analytics,
+                &app,
                 &invalid_witness,
                 &channel_witness_config,
+                10,
                 key
             );
 
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -425,6 +462,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_group_analytics() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -446,12 +484,14 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_group<ValidWitness>(
                 &mut analytics,
+                &app,
                 &valid_witness,
                 &group_witness_config,
+                10,
                 key
             );
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -461,6 +501,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -475,6 +516,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_group_analytics_fail() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -498,14 +540,17 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_group<InvalidWitness>(
                 &mut analytics,
+                &app,
                 &invalid_witness,
                 &group_witness_config,
+                10,
                 key
             );
 
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -519,6 +564,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_user_analytics() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -540,12 +586,14 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_user<ValidWitness>(
                 &mut analytics,
+                &app,
                 &valid_witness,
                 &user_witness_config,
+                10,
                 key
             );
 
-            let value = analytics::borrow_field(
+            let value = analytics::get_field(
                 &analytics,
                 key
             );
@@ -555,6 +603,7 @@ module sage_analytics::test_analytics_actions {
             destroy(analytics);
 
             destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config
@@ -569,6 +618,7 @@ module sage_analytics::test_analytics_actions {
     fun test_increment_user_analytics_fail() {
         let (
             mut scenario_val,
+            app,
             channel_witness_config,
             group_witness_config,
             user_witness_config
@@ -592,439 +642,17 @@ module sage_analytics::test_analytics_actions {
 
             analytics_actions::increment_analytics_for_user<InvalidWitness>(
                 &mut analytics,
+                &app,
                 &invalid_witness,
                 &user_witness_config,
+                10,
                 key
             );
 
             destroy(analytics);
 
             destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_decrement_analytics() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let mut analytics = analytics::create(ts::ctx(scenario));
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_testing(
-                &mut analytics,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 1);
-
-            analytics_actions::increment_analytics_for_testing(
-                &mut analytics,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 2);
-
-            analytics_actions::increment_analytics_for_testing(
-                &mut analytics,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 3);
-
-            analytics_actions::decrement_analytics_for_testing(
-                &mut analytics,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 2);
-
-            analytics_actions::decrement_analytics_for_testing(
-                &mut analytics,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 1);
-
-            analytics_actions::decrement_analytics_for_testing(
-                &mut analytics,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 0);
-
-            destroy(analytics);
-
-            destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_decrement_channel_analytics() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let valid_witness = access::create_valid_witness_for_testing();
-
-            let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                &valid_witness,
-                &channel_witness_config,
-                ts::ctx(scenario)
-            );
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_channel<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &channel_witness_config,
-                key
-            );
-
-            analytics_actions::decrement_analytics_for_channel<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &channel_witness_config,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 0);
-
-            destroy(analytics);
-
-            destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EWitnessMismatch)]
-    fun test_decrement_channel_analytics_fail() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let valid_witness = access::create_valid_witness_for_testing();
-
-            let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
-                &valid_witness,
-                &channel_witness_config,
-                ts::ctx(scenario)
-            );
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_channel<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &channel_witness_config,
-                key
-            );
-
-            let invalid_witness = access::create_invalid_witness_for_testing();
-
-            analytics_actions::decrement_analytics_for_channel<InvalidWitness>(
-                &mut analytics,
-                &invalid_witness,
-                &channel_witness_config,
-                key
-            );
-
-            destroy(analytics);
-
-            destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_decrement_group_analytics() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let valid_witness = access::create_valid_witness_for_testing();
-
-            let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                &valid_witness,
-                &group_witness_config,
-                ts::ctx(scenario)
-            );
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_group<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &group_witness_config,
-                key
-            );
-
-            analytics_actions::decrement_analytics_for_group<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &group_witness_config,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 0);
-
-            destroy(analytics);
-
-            destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EWitnessMismatch)]
-    fun test_decrement_group_analytics_fail() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let valid_witness = access::create_valid_witness_for_testing();
-
-            let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
-                &valid_witness,
-                &group_witness_config,
-                ts::ctx(scenario)
-            );
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_group<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &group_witness_config,
-                key
-            );
-
-            let invalid_witness = access::create_invalid_witness_for_testing();
-
-            analytics_actions::decrement_analytics_for_group<InvalidWitness>(
-                &mut analytics,
-                &invalid_witness,
-                &group_witness_config,
-                key
-            );
-
-            destroy(analytics);
-
-            destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    fun test_decrement_user_analytics() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let valid_witness = access::create_valid_witness_for_testing();
-
-            let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                &valid_witness,
-                &user_witness_config,
-                ts::ctx(scenario)
-            );
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_user<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &user_witness_config,
-                key
-            );
-
-            analytics_actions::decrement_analytics_for_user<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &user_witness_config,
-                key
-            );
-
-            let value = analytics::borrow_field(
-                &analytics,
-                key
-            );
-
-            assert!(value == 0);
-
-            destroy(analytics);
-
-            destroy_for_testing(
-                channel_witness_config,
-                group_witness_config,
-                user_witness_config
-            );
-        };
-
-        ts::end(scenario_val);
-    }
-
-    #[test]
-    #[expected_failure(abort_code = EWitnessMismatch)]
-    fun test_decrement_user_analytics_fail() {
-        let (
-            mut scenario_val,
-            channel_witness_config,
-            group_witness_config,
-            user_witness_config
-        ) = setup_for_testing();
-        
-        let scenario = &mut scenario_val;
-
-        ts::next_tx(scenario, ADMIN);
-        {
-            let valid_witness = access::create_valid_witness_for_testing();
-
-            let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
-                &valid_witness,
-                &user_witness_config,
-                ts::ctx(scenario)
-            );
-
-            let key = utf8(b"analytics");
-
-            analytics_actions::increment_analytics_for_user<ValidWitness>(
-                &mut analytics,
-                &valid_witness,
-                &user_witness_config,
-                key
-            );
-
-            let invalid_witness = access::create_invalid_witness_for_testing();
-
-            analytics_actions::decrement_analytics_for_user<InvalidWitness>(
-                &mut analytics,
-                &invalid_witness,
-                &user_witness_config,
-                key
-            );
-
-            destroy(analytics);
-
-            destroy_for_testing(
+                app,
                 channel_witness_config,
                 group_witness_config,
                 user_witness_config

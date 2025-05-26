@@ -150,17 +150,15 @@ module sage_trust::test_trust {
             let reward_witness = access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
-                reward_witness,
+                &reward_witness,
                 &mut protected_treasury,
                 &trust_config,
                 5,
                 ts::ctx(scenario)
             );
 
-            let reward_witness = access::create_valid_witness();
-
             trust::burn<ValidWitness>(
-                reward_witness,
+                &reward_witness,
                 &mut protected_treasury,
                 &trust_config,
                 coin
@@ -193,7 +191,7 @@ module sage_trust::test_trust {
             let reward_witness = access::create_invalid_witness();
 
             let coin = trust::mint<InvalidWitness>(
-                reward_witness,
+                &reward_witness,
                 &mut protected_treasury,
                 &trust_config,
                 5,
@@ -229,7 +227,7 @@ module sage_trust::test_trust {
             let reward_witness = access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
-                reward_witness,
+                &reward_witness,
                 &mut protected_treasury,
                 &trust_config,
                 5,
@@ -239,7 +237,7 @@ module sage_trust::test_trust {
             let reward_witness = access::create_invalid_witness();
 
             trust::burn<InvalidWitness>(
-                reward_witness,
+                &reward_witness,
                 &mut protected_treasury,
                 &trust_config,
                 coin
@@ -272,7 +270,7 @@ module sage_trust::test_trust {
             let reward_witness = access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
-                reward_witness,
+                &reward_witness,
                 &mut protected_treasury,
                 &trust_config,
                 amount,

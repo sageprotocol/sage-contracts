@@ -21,10 +21,13 @@ module sage_reward::test_reward_weights_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    fun create_reward_weights(): RewardWeights {
+    fun create_reward_weights(
+        scenario: &mut Scenario
+    ): RewardWeights {
         let reward_weights = reward::create_weights(
             1,
-            0
+            0,
+            ts::ctx(scenario)
         );
 
         reward_weights
@@ -85,7 +88,7 @@ module sage_reward::test_reward_weights_registry {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_weights = create_reward_weights();
+            let reward_weights = create_reward_weights(scenario);
             let timestamp = 1000;
 
             reward_weights_registry.add(
@@ -120,7 +123,7 @@ module sage_reward::test_reward_weights_registry {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_weights = create_reward_weights();
+            let reward_weights = create_reward_weights(scenario);
 
             reward_weights_registry.add(
                 reward_weights,

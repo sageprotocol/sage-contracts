@@ -57,7 +57,7 @@ module sage_channel::test_channel_actions {
     };
 
     use sage_reward::{
-        // reward_actions::{Self},
+        reward_actions::{Self},
         reward_registry::{Self, RewardWeightsRegistry}
     };
 
@@ -86,6 +86,16 @@ module sage_channel::test_channel_actions {
 
     const ADMIN: address = @admin;
     const SERVER: address = @server;
+
+    const METRIC_CHANNEL_CREATED: vector<u8> = b"channel-created";
+    const METRIC_CHANNEL_FOLLOWED: vector<u8> = b"channel-followed";
+    const METRIC_CHANNEL_TEXT_POST: vector<u8> = b"channel-text-posts";
+    const METRIC_FOLLOWED_CHANNEL: vector<u8> = b"followed-channel";
+
+    const WEIGHT_CHANNEL_CREATED: u64 = 1;
+    const WEIGHT_CHANNEL_FOLLOWED: u64 = 2;
+    const WEIGHT_CHANNEL_TEXT_POST: u64 = 3;
+    const WEIGHT_FOLLOWED_CHANNEL: u64 = 4;
 
     const ADD_MODERATOR_CUSTOM_FEE: u64 = 1;
     const ADD_MODERATOR_SUI_FEE: u64 = 2;
@@ -625,7 +635,7 @@ module sage_channel::test_channel_actions {
 
             assert!(!field_exists);
 
-            let num_created_channels = analytics::borrow_field(
+            let num_created_channels = analytics::get_field(
                 analytics_self,
                 utf8(b"channel-created")
             );
@@ -688,7 +698,7 @@ module sage_channel::test_channel_actions {
             channel_witness_config,
             clock,
             invite_config,
-            reward_weights_registry,
+            mut reward_weights_registry,
             mut owned_user_admin,
             owned_user_server,
             shared_user_admin,
@@ -714,6 +724,20 @@ module sage_channel::test_channel_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_CHANNEL_CREATED),
+                WEIGHT_CHANNEL_CREATED
             );
 
             ts::return_to_sender(scenario, reward_cap);
@@ -771,12 +795,19 @@ module sage_channel::test_channel_actions {
 
             assert!(field_exists);
 
-            let num_created_channels = analytics::borrow_field(
+            let num_created_channels = analytics::get_field(
                 analytics_self,
                 utf8(b"channel-created")
             );
 
             assert!(num_created_channels == 1);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_CHANNEL_CREATED);
 
             destroy_for_testing(
                 app,
@@ -1213,7 +1244,7 @@ module sage_channel::test_channel_actions {
 
             assert!(!field_exists);
 
-            let num_following_users = analytics::borrow_field(
+            let num_following_users = analytics::get_field(
                 analytics_channel,
                 utf8(b"channel-followed")
             );
@@ -1237,7 +1268,7 @@ module sage_channel::test_channel_actions {
 
             assert!(!field_exists);
 
-            let num_followed_channels = analytics::borrow_field(
+            let num_followed_channels = analytics::get_field(
                 analytics_self,
                 utf8(b"followed-channel")
             );
@@ -1331,7 +1362,7 @@ module sage_channel::test_channel_actions {
             channel_witness_config,
             clock,
             invite_config,
-            reward_weights_registry,
+            mut reward_weights_registry,
             mut owned_user_admin,
             mut owned_user_server,
             shared_user_admin,
@@ -1387,6 +1418,27 @@ module sage_channel::test_channel_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_FOLLOWED_CHANNEL),
+                WEIGHT_FOLLOWED_CHANNEL
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_CHANNEL_FOLLOWED),
+                WEIGHT_CHANNEL_FOLLOWED
             );
 
             ts::return_to_sender(scenario, reward_cap);
@@ -1486,12 +1538,19 @@ module sage_channel::test_channel_actions {
 
             assert!(field_exists);
 
-            let num_following_users = analytics::borrow_field(
+            let num_following_users = analytics::get_field(
                 analytics_channel,
                 utf8(b"channel-followed")
             );
 
             assert!(num_following_users == 1);
+
+            let claim = analytics::get_claim(
+                analytics_channel,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_CHANNEL_FOLLOWED);
 
             let analytics_self = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
                 &channel_witness,
@@ -1510,12 +1569,19 @@ module sage_channel::test_channel_actions {
 
             assert!(field_exists);
 
-            let num_followed_channels = analytics::borrow_field(
+            let num_followed_channels = analytics::get_field(
                 analytics_self,
                 utf8(b"followed-channel")
             );
 
             assert!(num_followed_channels == 1);
+
+            let claim = analytics::get_claim(
+                analytics_self,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_FOLLOWED_CHANNEL);
 
             ts::return_shared(channel);
 
@@ -3323,7 +3389,7 @@ module sage_channel::test_channel_actions {
 
             assert!(!field_exists);
 
-            let num_posts = analytics::borrow_field(
+            let num_posts = analytics::get_field(
                 analytics,
                 utf8(b"channel-text-posts")
             );
@@ -3394,7 +3460,7 @@ module sage_channel::test_channel_actions {
             channel_witness_config,
             clock,
             invite_config,
-            reward_weights_registry,
+            mut reward_weights_registry,
             mut owned_user_admin,
             owned_user_server,
             shared_user_admin,
@@ -3450,6 +3516,20 @@ module sage_channel::test_channel_actions {
                 &reward_cap,
                 &mut app,
                 true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_CHANNEL_TEXT_POST),
+                WEIGHT_CHANNEL_TEXT_POST
             );
 
             ts::return_to_sender(scenario, reward_cap);
@@ -3517,12 +3597,19 @@ module sage_channel::test_channel_actions {
 
             assert!(field_exists);
 
-            let num_posts = analytics::borrow_field(
+            let num_posts = analytics::get_field(
                 analytics,
                 utf8(b"channel-text-posts")
             );
 
             assert!(num_posts == 1);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_CHANNEL_TEXT_POST);
 
             destroy_for_testing(
                 app,

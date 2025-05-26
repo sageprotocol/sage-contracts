@@ -58,7 +58,7 @@ module sage_trust::access {
     // --------------- Public Functions ---------------
 
     public fun assert_reward_witness<WitnessType: drop> (
-        reward_witness: WitnessType,
+        reward_witness: &WitnessType,
         trust_config: &TrustConfig
     ) {
         let is_reward_witness = verify_reward_witness<WitnessType>(
@@ -82,7 +82,7 @@ module sage_trust::access {
     }
 
     public fun verify_reward_witness<WitnessType: drop> (
-        _reward_witness: WitnessType,
+        _reward_witness: &WitnessType,
         trust_config: &TrustConfig
     ): bool {
         let type_name = type_name::get<WitnessType>();

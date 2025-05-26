@@ -62,6 +62,17 @@ module sage_user::user_actions {
 
     const DESCRIPTION_MAX_LENGTH: u64 = 370;
 
+    const METRIC_COMMENT_GIVEN: vector<u8> = b"comment-given";
+    const METRIC_COMMENT_RECEIVED: vector<u8> = b"comment-received";
+    const METRIC_FAVORITED_POST: vector<u8> = b"favorited-post";
+    const METRIC_FOLLOWED_USER: vector<u8> = b"followed-user";
+    const METRIC_LIKED_POST: vector<u8> = b"liked-post";
+    const METRIC_POST_FAVORITED: vector<u8> = b"post-favorited";
+    const METRIC_POST_LIKED: vector<u8> = b"post-liked";
+    const METRIC_USER_FOLLOWED: vector<u8> = b"user-followed";
+    const METRIC_USER_FRIENDS: vector<u8> = b"user-friends";
+    const METRIC_USER_TEXT_POST: vector<u8> = b"user-text-posts";
+
     const USERNAME_MIN_LENGTH: u64 = 3;
     const USERNAME_MAX_LENGTH: u64 = 20;
 
@@ -263,13 +274,23 @@ module sage_user::user_actions {
                 ctx
             );
 
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric_author = utf8(METRIC_POST_FAVORITED);
+            let metric_self = utf8(METRIC_FAVORITED_POST);
+
+            let claim_author = reward_weights.get_weight(metric_author);
+            let claim_self = reward_weights.get_weight(metric_self);
+            
             let user_witness = user_witness::create_witness();
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics_self,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"favorited-post")
+                claim_self,
+                metric_self
             );
 
             let analytics_author = user_shared::borrow_analytics_mut(
@@ -282,9 +303,11 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics_author,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"post-favorited")
+                claim_author,
+                metric_author
             );
         };
 
@@ -389,6 +412,14 @@ module sage_user::user_actions {
                 reward_weights_registry
             );
 
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric_parent = utf8(METRIC_COMMENT_RECEIVED);
+            let metric_self = utf8(METRIC_COMMENT_GIVEN);
+
+            let claim_parent = reward_weights.get_weight(metric_parent);
+            let claim_self = reward_weights.get_weight(metric_self);
+
             let analytics_self = user_owned::borrow_analytics_mut(
                 owned_user,
                 user_witness_config,
@@ -399,9 +430,11 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics_self,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"comment-given")
+                claim_self,
+                metric_self
             );
 
             let analytics_parent = user_shared::borrow_analytics_mut(
@@ -414,9 +447,11 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics_parent,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"comment-received")
+                claim_parent,
+                metric_parent
             );
         };
 
@@ -692,7 +727,15 @@ module sage_user::user_actions {
                 reward_weights_registry
             );
 
-            let analytics = user_owned::borrow_analytics_mut(
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric_followed = utf8(METRIC_USER_FOLLOWED);
+            let metric_self = utf8(METRIC_FOLLOWED_USER);
+
+            let claim_followed = reward_weights.get_weight(metric_followed);
+            let claim_self = reward_weights.get_weight(metric_self);
+
+            let analytics_self = user_owned::borrow_analytics_mut(
                 owned_user,
                 user_witness_config,
                 app_address,
@@ -703,13 +746,15 @@ module sage_user::user_actions {
             let user_witness = user_witness::create_witness();
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
-                analytics,
+                analytics_self,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"user-followed")
+                claim_self,
+                metric_self
             );
 
-            let friend_analytics = user_shared::borrow_analytics_mut(
+            let analytics_followed = user_shared::borrow_analytics_mut(
                 shared_user,
                 user_witness_config,
                 app_address,
@@ -718,10 +763,12 @@ module sage_user::user_actions {
             );
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
-                friend_analytics,
+                analytics_followed,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"user-follows")
+                claim_followed,
+                metric_followed
             );
         };
 
@@ -820,6 +867,12 @@ module sage_user::user_actions {
                     reward_weights_registry
                 );
 
+                let reward_weights = reward_weights_registry.borrow_current();
+
+                let metric = utf8(METRIC_USER_FRIENDS);
+
+                let claim = reward_weights.get_weight(metric);
+
                 let analytics = user_shared::borrow_analytics_mut(
                     user_shared,
                     user_witness_config,
@@ -832,9 +885,11 @@ module sage_user::user_actions {
 
                 analytics_actions::increment_analytics_for_user<UserWitness>(
                     analytics,
+                    app,
                     &user_witness,
                     user_witness_config,
-                    utf8(b"user-friends")
+                    claim,
+                    metric
                 );
 
                 let friend_analytics = user_shared::borrow_analytics_mut(
@@ -847,9 +902,11 @@ module sage_user::user_actions {
 
                 analytics_actions::increment_analytics_for_user<UserWitness>(
                     friend_analytics,
+                    app,
                     &user_witness,
                     user_witness_config,
-                    utf8(b"user-friends")
+                    claim,
+                    metric
                 );
             };
 
@@ -947,13 +1004,23 @@ module sage_user::user_actions {
                 ctx
             );
 
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric_author = utf8(METRIC_POST_LIKED);
+            let metric_self = utf8(METRIC_LIKED_POST);
+
+            let claim_author = reward_weights.get_weight(metric_author);
+            let claim_self = reward_weights.get_weight(metric_self);
+
             let user_witness = user_witness::create_witness();
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics_self,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"liked-post")
+                claim_self,
+                metric_self
             );
 
             let analytics_author = user_shared::borrow_analytics_mut(
@@ -966,9 +1033,11 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics_author,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"post-liked")
+                claim_author,
+                metric_author
             );
         };
     }
@@ -1043,6 +1112,12 @@ module sage_user::user_actions {
                 reward_weights_registry
             );
 
+            let reward_weights = reward_weights_registry.borrow_current();
+
+            let metric = utf8(METRIC_USER_TEXT_POST);
+
+            let claim = reward_weights.get_weight(metric);
+
             let analytics = user_owned::borrow_analytics_mut(
                 owned_user,
                 user_witness_config,
@@ -1055,9 +1130,11 @@ module sage_user::user_actions {
 
             analytics_actions::increment_analytics_for_user<UserWitness>(
                 analytics,
+                app,
                 &user_witness,
                 user_witness_config,
-                utf8(b"user-text-posts")
+                claim,
+                metric
             );
         };
 

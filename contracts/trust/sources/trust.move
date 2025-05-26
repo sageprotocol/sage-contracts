@@ -68,7 +68,7 @@ module sage_trust::trust {
     // --------------- Public Functions ---------------
 
     public fun burn<WitnessType: drop> (
-        reward_witness: WitnessType,
+        reward_witness: &WitnessType,
         treasury: &mut ProtectedTreasury,
         trust_config: &TrustConfig,
         coin: Coin<TRUST>
@@ -84,7 +84,7 @@ module sage_trust::trust {
     }
     
     public fun mint<WitnessType: drop> (
-        reward_witness: WitnessType,
+        reward_witness: &WitnessType,
         treasury: &mut ProtectedTreasury,
         trust_config: &TrustConfig,
         amount: u64,
