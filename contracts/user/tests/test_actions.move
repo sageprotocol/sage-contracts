@@ -4,15 +4,22 @@ module sage_user::test_user_actions {
 
     use sui::{
         clock::{Self, Clock},
-        coin::{mint_for_testing},
+        coin::{
+            Coin,
+            mint_for_testing
+        },
         sui::{SUI},
-        test_scenario::{Self as ts, Scenario},
+        test_scenario::{
+            Self as ts,
+            Scenario,
+            EEmptyInventory
+        },
         test_utils::{destroy}
     };
 
     use sage_admin::{
         access::{
-            Self,
+            Self as admin_access,
             ChannelConfig,
             UserOwnedConfig,
             UserWitnessConfig,
@@ -41,12 +48,18 @@ module sage_user::test_user_actions {
 
     use sage_reward::{
         reward_actions::{Self},
-        reward_registry::{Self, RewardWeightsRegistry}
+        reward_registry::{Self, RewardWeightsRegistry},
+        reward_witness::{RewardWitness}
     };
 
     use sage_shared::{
         membership::{Self},
         posts::{Self}
+    };
+
+    use sage_trust::{
+        access::{Self as trust_access, TrustConfig},
+        trust::{Self, ProtectedTreasury, TRUST}
     };
 
     use sage_user::{
@@ -212,6 +225,8 @@ module sage_user::test_user_actions {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
             reward_registry::init_for_testing(ts::ctx(scenario));
+            trust::init_for_testing(ts::ctx(scenario));
+            trust_access::init_for_testing(ts::ctx(scenario));
             user_invite::init_for_testing(ts::ctx(scenario));
             user_registry::init_for_testing(ts::ctx(scenario));
         };
@@ -248,14 +263,21 @@ module sage_user::test_user_actions {
 
             let clock = ts::take_shared<Clock>(scenario);
 
-            access::create_owned_user_config<UserOwned>(
+            let mut trust_config = ts::take_shared<TrustConfig>(scenario);
+
+            admin_access::create_owned_user_config<UserOwned>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_user_witness_config<UserWitness>(
+            admin_access::create_user_witness_config<UserWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
+            );
+
+            trust_access::update<RewardWitness>(
+                &admin_cap,
+                &mut trust_config
             );
 
             post_fees::create<SUI>(
@@ -292,6 +314,8 @@ module sage_user::test_user_actions {
 
             ts::return_to_sender(scenario, admin_cap);
             ts::return_to_sender(scenario, fee_cap);
+
+            ts::return_shared(trust_config);
 
             (
                 app,
@@ -500,7 +524,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::create_channel_config<ValidChannel>(
+            admin_access::create_channel_config<ValidChannel>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -630,7 +654,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::create_channel_config<ValidChannel>(
+            admin_access::create_channel_config<ValidChannel>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -9873,6 +9897,867 @@ module sage_user::test_user_actions {
             let is_valid = user_actions::is_valid_description_for_testing(&description);
 
             assert!(is_valid == false, EDescriptionInvalid);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EEmptyInventory)]
+    fun test_user_actions_claim_zero_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            clock,
+            invite_config,
+            post_fees,
+            mut reward_weights_registry,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_USER_TEXT_POST),
+                WEIGHT_USER_TEXT_POST
+            );
+
+            ts::return_to_sender<RewardCap>(scenario, reward_cap);
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let current_epoch = reward_registry::get_current(
+                &reward_weights_registry
+            );
+            let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
+            let trust_config = ts::take_shared<TrustConfig>(scenario);
+
+            user_actions::claim_reward(
+                &app,
+                &mut treasury,
+                &trust_config,
+                &mut owned_user,
+                &mut shared_user,
+                &user_witness_config,
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+            ts::return_shared(treasury);
+            ts::return_shared(trust_config);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
+            let balance = coin.value();
+
+            assert!(balance == 0);
+
+            destroy(coin);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                post_fees,
+                reward_weights_registry,
+                user_registry,
+                user_invite_registry,
+                user_fees,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_claim_owned_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            mut clock,
+            invite_config,
+            post_fees,
+            mut reward_weights_registry,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_USER_TEXT_POST),
+                WEIGHT_USER_TEXT_POST
+            );
+
+            ts::return_to_sender<RewardCap>(scenario, reward_cap);
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                _timestamp
+            ) = user_actions::post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user,
+                &reward_weights_registry,
+                &mut shared_user,
+                &user_fees,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            clock::increment_for_testing(
+                &mut clock,
+                1
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                _timestamp
+            ) = user_actions::post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user,
+                &reward_weights_registry,
+                &mut shared_user,
+                &user_fees,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let current_epoch = reward_registry::get_current(
+                &reward_weights_registry
+            );
+            let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
+            let trust_config = ts::take_shared<TrustConfig>(scenario);
+
+            user_actions::claim_reward(
+                &app,
+                &mut treasury,
+                &trust_config,
+                &mut owned_user,
+                &mut shared_user,
+                &user_witness_config,
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+            ts::return_shared(treasury);
+            ts::return_shared(trust_config);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
+            let balance = coin.value();
+
+            assert!(balance == (2 * WEIGHT_USER_TEXT_POST));
+
+            destroy(coin);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                post_fees,
+                reward_weights_registry,
+                user_registry,
+                user_invite_registry,
+                user_fees,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_claim_shared_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            clock,
+            invite_config,
+            post_fees,
+            mut reward_weights_registry,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_POST_LIKED),
+                WEIGHT_USER_POST_LIKED
+            );
+
+            ts::return_to_sender<RewardCap>(scenario, reward_cap);
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            mut owned_user,
+            mut shared_user
+        ) = {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                _timestamp
+            ) = user_actions::post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user,
+                &reward_weights_registry,
+                &mut shared_user,
+                &user_fees,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            (owned_user, shared_user)
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                utf8(b"other"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let mut owned_user_other = ts::take_from_sender<UserOwned>(scenario);
+
+            let mut post = ts::take_shared<Post>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                LIKE_POST_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                LIKE_POST_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let royalties = fees::create_for_testing<SUI>(
+                &mut app,
+                0,
+                TREASURY,
+                0,
+                TREASURY,
+                ts::ctx(scenario)
+            );
+
+            user_actions::like_post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user_other,
+                &mut post,
+                &post_fees,
+                &reward_weights_registry,
+                &royalties,
+                &mut shared_user,
+                &user_witness_config,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user_other);
+
+            destroy(post);
+            destroy(royalties);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let current_epoch = reward_registry::get_current(
+                &reward_weights_registry
+            );
+            let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
+            let trust_config = ts::take_shared<TrustConfig>(scenario);
+
+            user_actions::claim_reward(
+                &app,
+                &mut treasury,
+                &trust_config,
+                &mut owned_user,
+                &mut shared_user,
+                &user_witness_config,
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+            ts::return_shared(treasury);
+            ts::return_shared(trust_config);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
+            let balance = coin.value();
+
+            assert!(balance == WEIGHT_USER_POST_LIKED);
+
+            destroy(coin);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                post_fees,
+                reward_weights_registry,
+                user_registry,
+                user_invite_registry,
+                user_fees,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_claim_owned_and_shared_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            clock,
+            invite_config,
+            post_fees,
+            mut reward_weights_registry,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_USER_TEXT_POST),
+                WEIGHT_USER_TEXT_POST
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_weights_registry,
+                utf8(METRIC_POST_LIKED),
+                WEIGHT_USER_POST_LIKED
+            );
+
+            ts::return_to_sender<RewardCap>(scenario, reward_cap);
+
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            mut owned_user,
+            mut shared_user
+        ) = {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let mut shared_user = ts::take_shared<UserShared>(scenario);
+
+            let data = utf8(b"data");
+            let description = utf8(b"description");
+            let title = utf8(b"title");
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                _timestamp
+            ) = user_actions::post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user,
+                &reward_weights_registry,
+                &mut shared_user,
+                &user_fees,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            (owned_user, shared_user)
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                avatar,
+                banner,
+                description,
+                utf8(b"other"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let mut owned_user_other = ts::take_from_sender<UserOwned>(scenario);
+
+            let mut post = ts::take_shared<Post>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                LIKE_POST_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                LIKE_POST_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let royalties = fees::create_for_testing<SUI>(
+                &mut app,
+                0,
+                TREASURY,
+                0,
+                TREASURY,
+                ts::ctx(scenario)
+            );
+
+            user_actions::like_post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user_other,
+                &mut post,
+                &post_fees,
+                &reward_weights_registry,
+                &royalties,
+                &mut shared_user,
+                &user_witness_config,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user_other);
+
+            destroy(post);
+            destroy(royalties);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let current_epoch = reward_registry::get_current(
+                &reward_weights_registry
+            );
+            let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
+            let trust_config = ts::take_shared<TrustConfig>(scenario);
+
+            user_actions::claim_reward(
+                &app,
+                &mut treasury,
+                &trust_config,
+                &mut owned_user,
+                &mut shared_user,
+                &user_witness_config,
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, owned_user);
+            ts::return_shared(shared_user);
+            ts::return_shared(treasury);
+            ts::return_shared(trust_config);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
+            let balance = coin.value();
+
+            assert!(balance == (WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST));
+
+            destroy(coin);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                post_fees,
+                reward_weights_registry,
+                user_registry,
+                user_invite_registry,
+                user_fees,
+                user_witness_config
+            );
         };
 
         ts::end(scenario_val);
