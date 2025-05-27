@@ -30,10 +30,11 @@ module sage_reward::reward_actions {
 
     use sage_trust::{
         access::{
-            TrustConfig
+            RewardWitnessConfig
         },
         trust::{
             Self,
+            MintConfig,
             ProtectedTreasury,
             TRUST
         }
@@ -71,8 +72,9 @@ module sage_reward::reward_actions {
     public fun claim_value_for_user<UserWitness: drop>(
         analytics: &mut Analytics,
         app: &App,
+        mint_config: &MintConfig,
+        reward_witness_config: &RewardWitnessConfig,
         treasury: &mut ProtectedTreasury,
-        trust_config: &TrustConfig,
         user_witness: &UserWitness,
         user_witness_config: &UserWitnessConfig,
         ctx: &mut TxContext
@@ -88,8 +90,9 @@ module sage_reward::reward_actions {
         claim_value(
             analytics,
             app,
+            mint_config,
+            reward_witness_config,
             treasury,
-            trust_config,
             ctx
         )
     }
@@ -152,8 +155,9 @@ module sage_reward::reward_actions {
     fun claim_value(
         analytics: &mut Analytics,
         app: &App,
+        mint_config: &MintConfig,
+        reward_witness_config: &RewardWitnessConfig,
         treasury: &mut ProtectedTreasury,
-        trust_config: &TrustConfig,
         ctx: &mut TxContext
     ): (
         u64,
@@ -173,13 +177,14 @@ module sage_reward::reward_actions {
                 analytics,
                 app,
                 &reward_witness,
-                trust_config
+                reward_witness_config
             );
 
             let coin = trust::mint<RewardWitness>(
+                mint_config,
                 &reward_witness,
+                reward_witness_config,
                 treasury,
-                trust_config,
                 amount,
                 ctx
             );
@@ -207,8 +212,9 @@ module sage_reward::reward_actions {
     public fun claim_value_for_testing(
         analytics: &mut Analytics,
         app: &App,
+        mint_config: &MintConfig,
+        reward_witness_config: &RewardWitnessConfig,
         treasury: &mut ProtectedTreasury,
-        trust_config: &TrustConfig,
         ctx: &mut TxContext
     ): (
         u64,
@@ -217,8 +223,9 @@ module sage_reward::reward_actions {
         claim_value(
             analytics,
             app,
+            mint_config,
+            reward_witness_config,
             treasury,
-            trust_config,
             ctx
         )
     }

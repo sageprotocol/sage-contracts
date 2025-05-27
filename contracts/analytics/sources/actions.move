@@ -20,7 +20,7 @@ module sage_analytics::analytics_actions {
     use sage_trust::{
         access::{
             Self as trust_access,
-            TrustConfig
+            RewardWitnessConfig
         }
     };
 
@@ -40,11 +40,11 @@ module sage_analytics::analytics_actions {
         analytics: &mut Analytics,
         app: &App,
         reward_witness: &RewardWitness,
-        trust_config: &TrustConfig
+        reward_witness_config: &RewardWitnessConfig
     ): u64 {
         trust_access::assert_reward_witness<RewardWitness>(
             reward_witness,
-            trust_config
+            reward_witness_config
         );
 
         analytics::remove_claim(

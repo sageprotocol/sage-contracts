@@ -19,13 +19,14 @@ module sage_trust::test_trust {
     use sage_trust::{
         access::{
             Self,
-            TrustConfig,
+            RewardWitnessConfig,
             InvalidWitness,
             ValidWitness,
             ETypeMismatch
         },
         trust::{
             Self,
+            MintConfig,
             ProtectedTreasury,
             TRUST
         }
@@ -50,20 +51,23 @@ module sage_trust::test_trust {
     #[test_only]
     fun destroy_for_testing(
         admin_cap: AdminCap,
+        mint_config: MintConfig,
         protected_treasury: ProtectedTreasury,
-        trust_config: TrustConfig
+        reward_witness_config: RewardWitnessConfig
     ) {
         destroy(admin_cap);
+        destroy(mint_config);
         destroy(protected_treasury);
-        destroy(trust_config);
+        destroy(reward_witness_config);
     }
 
     #[test_only]
     fun setup_for_testing(): (
         Scenario,
         AdminCap,
+        MintConfig,
         ProtectedTreasury,
-        TrustConfig
+        RewardWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -78,30 +82,35 @@ module sage_trust::test_trust {
         ts::next_tx(scenario, ADMIN);
         let (
             admin_cap,
+            mint_config,
             protected_treasury,
-            trust_config
+            reward_witness_config
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            let mint_config = ts::take_shared<MintConfig>(scenario);
             let protected_treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let mut trust_config = ts::take_shared<TrustConfig>(scenario);
+            let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             access::update<ValidWitness>(
                 &admin_cap,
-                &mut trust_config
+                &mut reward_witness_config
             );
 
             (
                 admin_cap,
+                mint_config,
                 protected_treasury,
-                trust_config
+                reward_witness_config
             )
         };
 
         (
             scenario_val,
             admin_cap,
+            mint_config,
             protected_treasury,
-            trust_config
+            reward_witness_config
         )
     }
 
@@ -139,8 +148,9 @@ module sage_trust::test_trust {
         let (
             mut scenario_val,
             admin_cap,
+            mint_config,
             mut protected_treasury,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -150,9 +160,10 @@ module sage_trust::test_trust {
             let reward_witness = access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
+                &mint_config,
                 &reward_witness,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 5,
                 ts::ctx(scenario)
             );
@@ -160,14 +171,15 @@ module sage_trust::test_trust {
             trust::burn<ValidWitness>(
                 &reward_witness,
                 &mut protected_treasury,
-                &trust_config,
+                &reward_witness_config,
                 coin
             );
 
             destroy_for_testing(
                 admin_cap,
+                mint_config,
                 protected_treasury,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -180,8 +192,9 @@ module sage_trust::test_trust {
         let (
             mut scenario_val,
             admin_cap,
+            mint_config,
             mut protected_treasury,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -191,9 +204,10 @@ module sage_trust::test_trust {
             let reward_witness = access::create_invalid_witness();
 
             let coin = trust::mint<InvalidWitness>(
+                &mint_config,
                 &reward_witness,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 5,
                 ts::ctx(scenario)
             );
@@ -202,8 +216,9 @@ module sage_trust::test_trust {
 
             destroy_for_testing(
                 admin_cap,
+                mint_config,
                 protected_treasury,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -216,8 +231,9 @@ module sage_trust::test_trust {
         let (
             mut scenario_val,
             admin_cap,
+            mint_config,
             mut protected_treasury,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -227,9 +243,10 @@ module sage_trust::test_trust {
             let reward_witness = access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
+                &mint_config,
                 &reward_witness,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 5,
                 ts::ctx(scenario)
             );
@@ -239,14 +256,15 @@ module sage_trust::test_trust {
             trust::burn<InvalidWitness>(
                 &reward_witness,
                 &mut protected_treasury,
-                &trust_config,
+                &reward_witness_config,
                 coin
             );
 
             destroy_for_testing(
                 admin_cap,
+                mint_config,
                 protected_treasury,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -258,8 +276,9 @@ module sage_trust::test_trust {
         let (
             mut scenario_val,
             admin_cap,
+            mint_config,
             mut protected_treasury,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -270,9 +289,10 @@ module sage_trust::test_trust {
             let reward_witness = access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
+                &mint_config,
                 &reward_witness,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 amount,
                 ts::ctx(scenario)
             );
@@ -287,8 +307,9 @@ module sage_trust::test_trust {
 
             destroy_for_testing(
                 admin_cap,
+                mint_config,
                 protected_treasury,
-                trust_config
+                reward_witness_config
             );
         };
 

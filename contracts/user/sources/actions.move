@@ -42,8 +42,12 @@ module sage_user::user_actions {
     };
 
     use sage_trust::{
-        access::{TrustConfig},
-        trust::{ProtectedTreasury, TRUST}
+        access::{RewardWitnessConfig},
+        trust::{
+            MintConfig,
+            ProtectedTreasury,
+            TRUST
+        }
     };
 
     use sage_user::{
@@ -380,8 +384,9 @@ module sage_user::user_actions {
     #[allow(lint(self_transfer))]
     public fun claim_reward(
         app: &App,
+        mint_config: &MintConfig,
+        reward_witness_config: &RewardWitnessConfig,
         treasury: &mut ProtectedTreasury,
-        trust_config: &TrustConfig,
         owned_user: &mut UserOwned,
         shared_user: &mut UserShared,
         user_witness_config: &UserWitnessConfig,
@@ -414,8 +419,9 @@ module sage_user::user_actions {
             ) = reward_actions::claim_value_for_user<UserWitness>(
                 analytics,
                 app,
+                mint_config,
+                reward_witness_config,
                 treasury,
-                trust_config,
                 &user_witness,
                 user_witness_config,
                 ctx
@@ -445,8 +451,9 @@ module sage_user::user_actions {
             ) = reward_actions::claim_value_for_user<UserWitness>(
                 analytics,
                 app,
+                mint_config,
+                reward_witness_config,
                 treasury,
-                trust_config,
                 &user_witness,
                 user_witness_config,
                 ctx

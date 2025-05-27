@@ -20,7 +20,7 @@ module sage_trust::access {
 
     // --------------- Name Tag ---------------
 
-    public struct TrustConfig has key {
+    public struct RewardWitnessConfig has key {
         id: UID,
         finalized: bool,
         type_name: TypeName
@@ -44,26 +44,26 @@ module sage_trust::access {
     ) {
         claim_and_keep(otw, ctx);
 
-        let type_name = type_name::get<TrustConfig>();
+        let type_name = type_name::get<RewardWitnessConfig>();
 
-        let trust_config = TrustConfig {
+        let reward_witness_config = RewardWitnessConfig {
             id: object::new(ctx),
             finalized: false,
             type_name
         };
 
-        transfer::share_object(trust_config);
+        transfer::share_object(reward_witness_config);
     }
 
     // --------------- Public Functions ---------------
 
     public fun assert_reward_witness<WitnessType: drop> (
         reward_witness: &WitnessType,
-        trust_config: &TrustConfig
+        reward_witness_config: &RewardWitnessConfig
     ) {
         let is_reward_witness = verify_reward_witness<WitnessType>(
             reward_witness,
-            trust_config
+            reward_witness_config
         );
 
         assert!(is_reward_witness, ETypeMismatch);
@@ -71,23 +71,23 @@ module sage_trust::access {
 
     public fun update<TypeName> (
         _: &AdminCap,
-        trust_config: &mut TrustConfig
+        reward_witness_config: &mut RewardWitnessConfig
     ) {
-        assert!(!trust_config.finalized, EIsFinalized);
+        assert!(!reward_witness_config.finalized, EIsFinalized);
 
         let type_name = type_name::get<TypeName>();
 
-        trust_config.finalized = true;
-        trust_config.type_name = type_name;
+        reward_witness_config.finalized = true;
+        reward_witness_config.type_name = type_name;
     }
 
     public fun verify_reward_witness<WitnessType: drop> (
         _reward_witness: &WitnessType,
-        trust_config: &TrustConfig
+        reward_witness_config: &RewardWitnessConfig
     ): bool {
         let type_name = type_name::get<WitnessType>();
 
-        type_name == trust_config.type_name
+        type_name == reward_witness_config.type_name
     }
 
     // --------------- Friend Functions ---------------

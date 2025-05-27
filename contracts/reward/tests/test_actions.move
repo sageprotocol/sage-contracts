@@ -36,10 +36,11 @@ module sage_reward::test_reward_actions {
     use sage_trust::{
         access::{
             Self as trust_access,
-            TrustConfig
+            RewardWitnessConfig
         },
         trust::{
             Self,
+            MintConfig,
             ProtectedTreasury
         }
     };
@@ -56,18 +57,20 @@ module sage_reward::test_reward_actions {
     fun destroy_for_testing(
         app: App,
         clock: Clock,
+        mint_config: MintConfig,
         protected_treasury: ProtectedTreasury,
         reward_cap: RewardCap,
         reward_weights_registry: RewardWeightsRegistry,
-        trust_config: TrustConfig,
+        reward_witness_config: RewardWitnessConfig,
         user_witness_config: UserWitnessConfig
     ) {
         destroy(app);
         destroy(clock);
+        destroy(mint_config);
         destroy(protected_treasury);
         destroy(reward_cap);
         destroy(reward_weights_registry);
-        destroy(trust_config);
+        destroy(reward_witness_config);
         destroy(user_witness_config);
     }
 
@@ -76,10 +79,11 @@ module sage_reward::test_reward_actions {
         Scenario,
         App,
         Clock,
+        MintConfig,
         ProtectedTreasury,
         RewardCap,
         RewardWeightsRegistry,
-        TrustConfig,
+        RewardWitnessConfig,
         UserWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
@@ -109,9 +113,9 @@ module sage_reward::test_reward_actions {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let trust_config = {
+        let reward_witness_config = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-            let mut trust_config = ts::take_shared<TrustConfig>(scenario);
+            let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             admin_access::create_user_witness_config<ValidWitness>(
                 &admin_cap,
@@ -120,17 +124,18 @@ module sage_reward::test_reward_actions {
 
             trust_access::update<RewardWitness>(
                 &admin_cap,
-                &mut trust_config
+                &mut reward_witness_config
             );
 
             ts::return_to_sender(scenario, admin_cap);
 
-            trust_config
+            reward_witness_config
         };
 
         ts::next_tx(scenario, ADMIN);
         let (
             app,
+            mint_config,
             protected_treasury,
             reward_weights_registry,
             user_witness_config
@@ -140,12 +145,14 @@ module sage_reward::test_reward_actions {
                 ts::ctx(scenario)
             );
 
+            let mint_config = scenario.take_shared<MintConfig>();
             let protected_treasury = scenario.take_shared<ProtectedTreasury>();
             let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
             let user_witness_config = scenario.take_shared<UserWitnessConfig>();
 
             (
                 app,
+                mint_config,
                 protected_treasury,
                 reward_weights_registry,
                 user_witness_config
@@ -156,10 +163,11 @@ module sage_reward::test_reward_actions {
             scenario_val,
             app,
             clock,
+            mint_config,
             protected_treasury,
             reward_cap,
             reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         )
     }
@@ -170,10 +178,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -197,10 +206,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -215,10 +225,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -243,10 +254,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -260,10 +272,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             mut clock,
+            mint_config,
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -302,10 +315,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -319,10 +333,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -359,10 +374,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -376,10 +392,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             mut protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -405,8 +422,10 @@ module sage_reward::test_reward_actions {
             ) = reward_actions::claim_value_for_testing(
                 &mut analytics,
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
+                
                 ts::ctx(scenario)
             );
 
@@ -454,10 +473,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -471,10 +491,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             mut protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -523,8 +544,9 @@ module sage_reward::test_reward_actions {
             ) = reward_actions::claim_value_for_testing(
                 &mut analytics,
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 ts::ctx(scenario)
             );
 
@@ -552,10 +574,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -569,10 +592,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             mut protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -600,8 +624,9 @@ module sage_reward::test_reward_actions {
             ) = reward_actions::claim_value_for_user<ValidWitness>(
                 &mut analytics,
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 &valid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
@@ -616,10 +641,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };
@@ -634,10 +660,11 @@ module sage_reward::test_reward_actions {
             mut scenario_val,
             app,
             clock,
+            mint_config,
             mut protected_treasury,
             reward_cap,
             mut reward_weights_registry,
-            trust_config,
+            reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
 
@@ -665,8 +692,9 @@ module sage_reward::test_reward_actions {
             ) = reward_actions::claim_value_for_user<InvalidWitness>(
                 &mut analytics,
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut protected_treasury,
-                &trust_config,
                 &invalid_witness,
                 &user_witness_config,
                 ts::ctx(scenario)
@@ -681,10 +709,11 @@ module sage_reward::test_reward_actions {
             destroy_for_testing(
                 app,
                 clock,
+                mint_config,
                 protected_treasury,
                 reward_cap,
                 reward_weights_registry,
-                trust_config,
+                reward_witness_config,
                 user_witness_config
             );
         };

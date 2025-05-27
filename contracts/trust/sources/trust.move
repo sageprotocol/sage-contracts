@@ -5,8 +5,12 @@ module sage_trust::trust {
         url::{new_unsafe_from_bytes}
     };
 
+    use sage_admin::{
+        admin::{MintCap}
+    };
+
     use sage_trust::{
-        access::{Self, TrustConfig}
+        access::{Self, RewardWitnessConfig}
     };
 
     // --------------- Constants ---------------
@@ -20,6 +24,12 @@ module sage_trust::trust {
     // --------------- Errors ---------------
 
     // --------------- Name Tag ---------------
+
+    public struct MintConfig has key {
+        id: UID,
+        enabled: bool,
+        max_supply: Option<u64>
+    }
 
     public struct ProtectedTreasury has key {
         id: UID
@@ -52,6 +62,11 @@ module sage_trust::trust {
 
         transfer::public_freeze_object(metadata);
 
+        let mint_config = MintConfig {
+            id: object::new(ctx),
+            enabled: true,
+            max_supply: option::none()
+        };
         let mut protected_treasury = ProtectedTreasury {
             id: object::new(ctx)
         };
@@ -62,6 +77,7 @@ module sage_trust::trust {
             cap
         );
 
+        transfer::share_object(mint_config);
         transfer::share_object(protected_treasury);
     }
 
@@ -70,12 +86,12 @@ module sage_trust::trust {
     public fun burn<WitnessType: drop> (
         reward_witness: &WitnessType,
         treasury: &mut ProtectedTreasury,
-        trust_config: &TrustConfig,
+        reward_witness_config: &RewardWitnessConfig,
         coin: Coin<TRUST>
     ) {
         access::assert_reward_witness<WitnessType>(
             reward_witness,
-            trust_config
+            reward_witness_config
         );
 
         let cap = treasury.borrow_cap_mut();
@@ -84,23 +100,42 @@ module sage_trust::trust {
     }
     
     public fun mint<WitnessType: drop> (
+        mint_config: &MintConfig,
         reward_witness: &WitnessType,
+        reward_witness_config: &RewardWitnessConfig,
         treasury: &mut ProtectedTreasury,
-        trust_config: &TrustConfig,
         amount: u64,
         ctx: &mut TxContext
     ): Coin<TRUST> {
         access::assert_reward_witness<WitnessType>(
             reward_witness,
-            trust_config
+            reward_witness_config
         );
 
-        let cap = treasury.borrow_cap_mut();
+        if (option::is_some(&mint_config.max_supply)) {
+            let max_supply = *option::borrow(&mint_config.max_supply);
+            let total_supply = total_supply(treasury);
 
-        cap.mint(
-            amount,
-            ctx
-        )
+            if (max_supply > total_supply) {
+                mint_internal(
+                    treasury,
+                    0,
+                    ctx
+                )
+            } else {
+                mint_internal(
+                    treasury,
+                    amount,
+                    ctx
+                )
+            }
+        } else {
+            mint_internal(
+                treasury,
+                amount,
+                ctx
+            )
+        }
     }
 
     public fun total_supply(
@@ -109,6 +144,19 @@ module sage_trust::trust {
         let cap = treasury.borrow_cap();
 
         cap.total_supply()
+    }
+
+    public fun update_mint_config_admin(
+        _: &MintCap,
+        mint_config: &mut MintConfig,
+        enabled: bool,
+        max_supply: Option<u64>
+    ) {
+        update_mint_config(
+            mint_config,
+            enabled,
+            max_supply
+        );
     }
 
     // --------------- Friend Functions ---------------
@@ -131,6 +179,28 @@ module sage_trust::trust {
             &mut treasury.id,
             TreasuryCapKey {}
         )
+    }
+
+    fun mint_internal (
+        treasury: &mut ProtectedTreasury,
+        amount: u64,
+        ctx: &mut TxContext
+    ): Coin<TRUST> {
+        let cap = treasury.borrow_cap_mut();
+
+        cap.mint(
+            amount,
+            ctx
+        )
+    }
+
+    fun update_mint_config (
+        mint_config: &mut MintConfig,
+        enabled: bool,
+        max_supply: Option<u64>
+    ) {
+        mint_config.enabled = enabled;
+        mint_config.max_supply = max_supply;
     }
 
     // --------------- Test Functions ---------------

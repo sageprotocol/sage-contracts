@@ -58,8 +58,16 @@ module sage_user::test_user_actions {
     };
 
     use sage_trust::{
-        access::{Self as trust_access, TrustConfig},
-        trust::{Self, ProtectedTreasury, TRUST}
+        access::{
+            Self as trust_access,
+            RewardWitnessConfig
+        },
+        trust::{
+            Self,
+            MintConfig,
+            ProtectedTreasury,
+            TRUST
+        }
     };
 
     use sage_user::{
@@ -263,7 +271,7 @@ module sage_user::test_user_actions {
 
             let clock = ts::take_shared<Clock>(scenario);
 
-            let mut trust_config = ts::take_shared<TrustConfig>(scenario);
+            let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             admin_access::create_owned_user_config<UserOwned>(
                 &admin_cap,
@@ -277,7 +285,7 @@ module sage_user::test_user_actions {
 
             trust_access::update<RewardWitness>(
                 &admin_cap,
-                &mut trust_config
+                &mut reward_witness_config
             );
 
             post_fees::create<SUI>(
@@ -315,7 +323,7 @@ module sage_user::test_user_actions {
             ts::return_to_sender(scenario, admin_cap);
             ts::return_to_sender(scenario, fee_cap);
 
-            ts::return_shared(trust_config);
+            ts::return_shared(reward_witness_config);
 
             (
                 app,
@@ -9990,13 +9998,15 @@ module sage_user::test_user_actions {
             let current_epoch = reward_registry::get_current(
                 &reward_weights_registry
             );
+            let mint_config = ts::take_shared<MintConfig>(scenario);
+            let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let trust_config = ts::take_shared<TrustConfig>(scenario);
-
+            
             user_actions::claim_reward(
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut treasury,
-                &trust_config,
                 &mut owned_user,
                 &mut shared_user,
                 &user_witness_config,
@@ -10005,9 +10015,11 @@ module sage_user::test_user_actions {
             );
 
             ts::return_to_sender(scenario, owned_user);
+            
+            ts::return_shared(mint_config);
+            ts::return_shared(reward_witness_config);
             ts::return_shared(shared_user);
             ts::return_shared(treasury);
-            ts::return_shared(trust_config);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -10204,13 +10216,15 @@ module sage_user::test_user_actions {
             let current_epoch = reward_registry::get_current(
                 &reward_weights_registry
             );
+            let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let trust_config = ts::take_shared<TrustConfig>(scenario);
+            let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::claim_reward(
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut treasury,
-                &trust_config,
                 &mut owned_user,
                 &mut shared_user,
                 &user_witness_config,
@@ -10219,9 +10233,11 @@ module sage_user::test_user_actions {
             );
 
             ts::return_to_sender(scenario, owned_user);
+            
+            ts::return_shared(mint_config);
+            ts::return_shared(reward_witness_config);
             ts::return_shared(shared_user);
             ts::return_shared(treasury);
-            ts::return_shared(trust_config);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -10424,13 +10440,16 @@ module sage_user::test_user_actions {
             let current_epoch = reward_registry::get_current(
                 &reward_weights_registry
             );
+            let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let trust_config = ts::take_shared<TrustConfig>(scenario);
+            let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::claim_reward(
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut treasury,
-                &trust_config,
+                
                 &mut owned_user,
                 &mut shared_user,
                 &user_witness_config,
@@ -10439,9 +10458,11 @@ module sage_user::test_user_actions {
             );
 
             ts::return_to_sender(scenario, owned_user);
+            
+            ts::return_shared(mint_config);
+            ts::return_shared(reward_witness_config);
             ts::return_shared(shared_user);
             ts::return_shared(treasury);
-            ts::return_shared(trust_config);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -10674,13 +10695,15 @@ module sage_user::test_user_actions {
             let current_epoch = reward_registry::get_current(
                 &reward_weights_registry
             );
+            let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let trust_config = ts::take_shared<TrustConfig>(scenario);
+            let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::claim_reward(
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut treasury,
-                &trust_config,
                 &mut owned_user,
                 &mut shared_user,
                 &user_witness_config,
@@ -10689,9 +10712,11 @@ module sage_user::test_user_actions {
             );
 
             ts::return_to_sender(scenario, owned_user);
+            
+            ts::return_shared(mint_config);
+            ts::return_shared(reward_witness_config);
             ts::return_shared(shared_user);
             ts::return_shared(treasury);
-            ts::return_shared(trust_config);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -10931,13 +10956,15 @@ module sage_user::test_user_actions {
             let current_epoch = reward_registry::get_current(
                 &reward_weights_registry
             );
+            let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let trust_config = ts::take_shared<TrustConfig>(scenario);
+            let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::claim_reward(
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut treasury,
-                &trust_config,
                 &mut owned_user,
                 &mut shared_user,
                 &user_witness_config,
@@ -10946,9 +10973,11 @@ module sage_user::test_user_actions {
             );
 
             ts::return_to_sender(scenario, owned_user);
+            
+            ts::return_shared(mint_config);
+            ts::return_shared(reward_witness_config);
             ts::return_shared(shared_user);
             ts::return_shared(treasury);
-            ts::return_shared(trust_config);
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -11192,13 +11221,15 @@ module sage_user::test_user_actions {
             let current_epoch = reward_registry::get_current(
                 &reward_weights_registry
             );
+            let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
-            let trust_config = ts::take_shared<TrustConfig>(scenario);
+            let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::claim_reward(
                 &app,
+                &mint_config,
+                &reward_witness_config,
                 &mut treasury,
-                &trust_config,
                 &mut owned_user,
                 &mut shared_user_other,
                 &user_witness_config,
@@ -11207,11 +11238,12 @@ module sage_user::test_user_actions {
             );
 
             ts::return_to_sender(scenario, owned_user);
-
+            
+            ts::return_shared(mint_config);
+            ts::return_shared(reward_witness_config);
             ts::return_shared(shared_user);
             ts::return_shared(shared_user_other);
             ts::return_shared(treasury);
-            ts::return_shared(trust_config);
 
             destroy_for_testing(
                 app,

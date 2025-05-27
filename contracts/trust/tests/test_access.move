@@ -12,7 +12,7 @@ module sage_trust::test_access {
     use sage_trust::{
         access::{
             Self,
-            TrustConfig,
+            RewardWitnessConfig,
             InvalidWitness,
             ValidWitness,
             EIsFinalized,
@@ -33,17 +33,17 @@ module sage_trust::test_access {
     #[test_only]
     fun destroy_for_testing(
         admin_cap: AdminCap,
-        trust_config: TrustConfig
+        reward_witness_config: RewardWitnessConfig
     ) {
         destroy(admin_cap);
-        destroy(trust_config);
+        destroy(reward_witness_config);
     }
 
     #[test_only]
     fun setup_for_testing(): (
         Scenario,
         AdminCap,
-        TrustConfig
+        RewardWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -57,26 +57,26 @@ module sage_trust::test_access {
         ts::next_tx(scenario, ADMIN);
         let (
             admin_cap,
-            trust_config
+            reward_witness_config
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
-            let mut trust_config = ts::take_shared<TrustConfig>(scenario);
+            let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             access::update<ValidWitness>(
                 &admin_cap,
-                &mut trust_config
+                &mut reward_witness_config
             );
 
             (
                 admin_cap,
-                trust_config
+                reward_witness_config
             )
         };
 
         (
             scenario_val,
             admin_cap,
-            trust_config
+            reward_witness_config
         )
     }
 
@@ -85,7 +85,7 @@ module sage_trust::test_access {
         let (
             mut scenario_val,
             admin_cap,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -94,7 +94,7 @@ module sage_trust::test_access {
         {
             destroy_for_testing(
                 admin_cap,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -106,7 +106,7 @@ module sage_trust::test_access {
         let (
             mut scenario_val,
             admin_cap,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -117,12 +117,12 @@ module sage_trust::test_access {
 
             access::assert_reward_witness<ValidWitness>(
                 &reward_witness,
-                &trust_config
+                &reward_witness_config
             );
 
             destroy_for_testing(
                 admin_cap,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -135,7 +135,7 @@ module sage_trust::test_access {
         let (
             mut scenario_val,
             admin_cap,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -146,12 +146,12 @@ module sage_trust::test_access {
 
             access::assert_reward_witness<InvalidWitness>(
                 &reward_witness,
-                &trust_config
+                &reward_witness_config
             );
 
             destroy_for_testing(
                 admin_cap,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -164,7 +164,7 @@ module sage_trust::test_access {
         let (
             mut scenario_val,
             admin_cap,
-            mut trust_config
+            mut reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -173,12 +173,12 @@ module sage_trust::test_access {
         {
             access::update<InvalidWitness>(
                 &admin_cap,
-                &mut trust_config
+                &mut reward_witness_config
             );
 
             destroy_for_testing(
                 admin_cap,
-                trust_config
+                reward_witness_config
             );
         };
 
@@ -190,7 +190,7 @@ module sage_trust::test_access {
         let (
             mut scenario_val,
             admin_cap,
-            trust_config
+            reward_witness_config
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -201,7 +201,7 @@ module sage_trust::test_access {
 
             let is_verified = access::verify_reward_witness<InvalidWitness>(
                 &invalid_witness,
-                &trust_config
+                &reward_witness_config
             );
 
             assert!(!is_verified, EWitnessVerificationMismatch);
@@ -210,14 +210,14 @@ module sage_trust::test_access {
 
             let is_verified = access::verify_reward_witness<ValidWitness>(
                 &valid_witness,
-                &trust_config
+                &reward_witness_config
             );
 
             assert!(is_verified, EWitnessVerificationMismatch);
 
             destroy_for_testing(
                 admin_cap,
-                trust_config
+                reward_witness_config
             );
         };
 
