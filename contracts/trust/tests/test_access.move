@@ -12,11 +12,12 @@ module sage_trust::test_access {
     use sage_trust::{
         access::{
             Self,
+            GovernanceWitnessConfig,
             RewardWitnessConfig,
             InvalidWitness,
             ValidWitness,
             EIsFinalized,
-            ETypeMismatch
+            EWitnessMismatch
         }
     };
 
@@ -33,9 +34,11 @@ module sage_trust::test_access {
     #[test_only]
     fun destroy_for_testing(
         admin_cap: AdminCap,
+        governance_witness_config: GovernanceWitnessConfig,
         reward_witness_config: RewardWitnessConfig
     ) {
         destroy(admin_cap);
+        destroy(governance_witness_config);
         destroy(reward_witness_config);
     }
 
@@ -43,6 +46,7 @@ module sage_trust::test_access {
     fun setup_for_testing(): (
         Scenario,
         AdminCap,
+        GovernanceWitnessConfig,
         RewardWitnessConfig
     ) {
         let mut scenario_val = ts::begin(ADMIN);
@@ -57,18 +61,25 @@ module sage_trust::test_access {
         ts::next_tx(scenario, ADMIN);
         let (
             admin_cap,
+            governance_witness_config,
             reward_witness_config
         ) = {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+            let mut governance_witness_config = ts::take_shared<GovernanceWitnessConfig>(scenario);
             let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
-            access::update<ValidWitness>(
+            access::update_governance_witness<ValidWitness>(
+                &admin_cap,
+                &mut governance_witness_config
+            );
+            access::update_reward_witness<ValidWitness>(
                 &admin_cap,
                 &mut reward_witness_config
             );
 
             (
                 admin_cap,
+                governance_witness_config,
                 reward_witness_config
             )
         };
@@ -76,6 +87,7 @@ module sage_trust::test_access {
         (
             scenario_val,
             admin_cap,
+            governance_witness_config,
             reward_witness_config
         )
     }
@@ -85,6 +97,7 @@ module sage_trust::test_access {
         let (
             mut scenario_val,
             admin_cap,
+            governance_witness_config,
             reward_witness_config
         ) = setup_for_testing();
 
@@ -94,6 +107,7 @@ module sage_trust::test_access {
         {
             destroy_for_testing(
                 admin_cap,
+                governance_witness_config,
                 reward_witness_config
             );
         };
@@ -102,10 +116,142 @@ module sage_trust::test_access {
     }
 
     #[test]
-    fun test_assert_witness_pass() {
+    fun test_assert_governance_witness_pass() {
         let (
             mut scenario_val,
             admin_cap,
+            governance_witness_config,
+            reward_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let governance_witness = access::create_valid_witness();
+
+            access::assert_governance_witness<ValidWitness>(
+                &governance_witness,
+                &governance_witness_config
+            );
+
+            destroy_for_testing(
+                admin_cap,
+                governance_witness_config,
+                reward_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_assert_governance_witness_fail() {
+        let (
+            mut scenario_val,
+            admin_cap,
+            governance_witness_config,
+            reward_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let governance_witness = access::create_invalid_witness();
+
+            access::assert_governance_witness<InvalidWitness>(
+                &governance_witness,
+                &governance_witness_config
+            );
+
+            destroy_for_testing(
+                admin_cap,
+                governance_witness_config,
+                reward_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EIsFinalized)]
+    fun test_governance_witness_update_fail() {
+        let (
+            mut scenario_val,
+            admin_cap,
+            mut governance_witness_config,
+            reward_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            access::update_governance_witness<InvalidWitness>(
+                &admin_cap,
+                &mut governance_witness_config
+            );
+
+            destroy_for_testing(
+                admin_cap,
+                governance_witness_config,
+                reward_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_verify_governance_witness() {
+        let (
+            mut scenario_val,
+            admin_cap,
+            governance_witness_config,
+            reward_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let invalid_witness = access::create_invalid_witness();
+
+            let is_verified = access::verify_governance_witness<InvalidWitness>(
+                &invalid_witness,
+                &governance_witness_config
+            );
+
+            assert!(!is_verified, EWitnessVerificationMismatch);
+
+            let valid_witness = access::create_valid_witness();
+
+            let is_verified = access::verify_governance_witness<ValidWitness>(
+                &valid_witness,
+                &governance_witness_config
+            );
+
+            assert!(is_verified, EWitnessVerificationMismatch);
+
+            destroy_for_testing(
+                admin_cap,
+                governance_witness_config,
+                reward_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_assert_reward_witness_pass() {
+        let (
+            mut scenario_val,
+            admin_cap,
+            governance_witness_config,
             reward_witness_config
         ) = setup_for_testing();
 
@@ -122,6 +268,7 @@ module sage_trust::test_access {
 
             destroy_for_testing(
                 admin_cap,
+                governance_witness_config,
                 reward_witness_config
             );
         };
@@ -130,11 +277,12 @@ module sage_trust::test_access {
     }
 
     #[test]
-    #[expected_failure(abort_code = ETypeMismatch)]
-    fun test_assert_witness_fail() {
+    #[expected_failure(abort_code = EWitnessMismatch)]
+    fun test_assert_reward_witness_fail() {
         let (
             mut scenario_val,
             admin_cap,
+            governance_witness_config,
             reward_witness_config
         ) = setup_for_testing();
 
@@ -151,6 +299,7 @@ module sage_trust::test_access {
 
             destroy_for_testing(
                 admin_cap,
+                governance_witness_config,
                 reward_witness_config
             );
         };
@@ -160,10 +309,11 @@ module sage_trust::test_access {
 
     #[test]
     #[expected_failure(abort_code = EIsFinalized)]
-    fun test_update_fail() {
+    fun test_reward_witness_update_fail() {
         let (
             mut scenario_val,
             admin_cap,
+            governance_witness_config,
             mut reward_witness_config
         ) = setup_for_testing();
 
@@ -171,13 +321,14 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::update<InvalidWitness>(
+            access::update_reward_witness<InvalidWitness>(
                 &admin_cap,
                 &mut reward_witness_config
             );
 
             destroy_for_testing(
                 admin_cap,
+                governance_witness_config,
                 reward_witness_config
             );
         };
@@ -186,10 +337,11 @@ module sage_trust::test_access {
     }
 
     #[test]
-    fun test_verify_witness() {
+    fun test_verify_reward_witness() {
         let (
             mut scenario_val,
             admin_cap,
+            governance_witness_config,
             reward_witness_config
         ) = setup_for_testing();
 
@@ -217,6 +369,7 @@ module sage_trust::test_access {
 
             destroy_for_testing(
                 admin_cap,
+                governance_witness_config,
                 reward_witness_config
             );
         };

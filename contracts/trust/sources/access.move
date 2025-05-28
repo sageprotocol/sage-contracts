@@ -16,15 +16,23 @@ module sage_trust::access {
     // --------------- Errors ---------------
 
     const EIsFinalized: u64 = 370;
-    const ETypeMismatch: u64 = 371;
+    const EWitnessMismatch: u64 = 371;
 
     // --------------- Name Tag ---------------
+
+    public struct GovernanceWitnessConfig has key {
+        id: UID,
+        finalized: bool,
+        type_name: TypeName
+    }
 
     public struct RewardWitnessConfig has key {
         id: UID,
         finalized: bool,
         type_name: TypeName
     }
+
+    public struct StartingWitness has drop {}
 
     public struct ACCESS has drop {}
 
@@ -44,18 +52,36 @@ module sage_trust::access {
     ) {
         claim_and_keep(otw, ctx);
 
-        let type_name = type_name::get<RewardWitnessConfig>();
+        let type_name = type_name::get<StartingWitness>();
 
+        let governance_witness_config = GovernanceWitnessConfig {
+            id: object::new(ctx),
+            finalized: false,
+            type_name
+        };
         let reward_witness_config = RewardWitnessConfig {
             id: object::new(ctx),
             finalized: false,
             type_name
         };
 
+        transfer::share_object(governance_witness_config);
         transfer::share_object(reward_witness_config);
     }
 
     // --------------- Public Functions ---------------
+
+    public fun assert_governance_witness<WitnessType: drop> (
+        governance_witness: &WitnessType,
+        governance_witness_config: &GovernanceWitnessConfig
+    ) {
+        let is_governance_witness = verify_governance_witness<WitnessType>(
+            governance_witness,
+            governance_witness_config
+        );
+
+        assert!(is_governance_witness, EWitnessMismatch);
+    }
 
     public fun assert_reward_witness<WitnessType: drop> (
         reward_witness: &WitnessType,
@@ -66,10 +92,22 @@ module sage_trust::access {
             reward_witness_config
         );
 
-        assert!(is_reward_witness, ETypeMismatch);
+        assert!(is_reward_witness, EWitnessMismatch);
     }
 
-    public fun update<TypeName> (
+    public fun update_governance_witness<TypeName> (
+        _: &AdminCap,
+        governance_witness_config: &mut GovernanceWitnessConfig
+    ) {
+        assert!(!governance_witness_config.finalized, EIsFinalized);
+
+        let type_name = type_name::get<TypeName>();
+
+        governance_witness_config.finalized = true;
+        governance_witness_config.type_name = type_name;
+    }
+
+    public fun update_reward_witness<TypeName> (
         _: &AdminCap,
         reward_witness_config: &mut RewardWitnessConfig
     ) {
@@ -79,6 +117,15 @@ module sage_trust::access {
 
         reward_witness_config.finalized = true;
         reward_witness_config.type_name = type_name;
+    }
+
+    public fun verify_governance_witness<WitnessType: drop> (
+        _governance_witness: &WitnessType,
+        governance_witness_config: &GovernanceWitnessConfig
+    ): bool {
+        let type_name = type_name::get<WitnessType>();
+
+        type_name == governance_witness_config.type_name
     }
 
     public fun verify_reward_witness<WitnessType: drop> (

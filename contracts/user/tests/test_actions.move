@@ -283,7 +283,7 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
-            trust_access::update<RewardWitness>(
+            trust_access::update_reward_witness<RewardWitness>(
                 &admin_cap,
                 &mut reward_witness_config
             );

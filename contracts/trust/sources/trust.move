@@ -10,16 +10,22 @@ module sage_trust::trust {
     };
 
     use sage_trust::{
-        access::{Self, RewardWitnessConfig}
+        access::{
+            Self,
+            GovernanceWitnessConfig,
+            RewardWitnessConfig
+        }
     };
 
     // --------------- Constants ---------------
 
-    const DECIMALS: u8 = 9;
+    const DECIMALS: u8 = 6;
     const DESCRIPTION: vector<u8> = b"";
     const ICON_URL: vector<u8> = b"";
     const NAME: vector<u8> = b"";
     const SYMBOL: vector<u8> = b"";
+
+    const SCALE_FACTOR: u64 = 1_000_000;
 
     // --------------- Errors ---------------
 
@@ -98,6 +104,18 @@ module sage_trust::trust {
 
         cap.burn(coin);
     }
+
+    public fun is_minting_enabled(
+        mint_config: &MintConfig
+    ): bool {
+        mint_config.enabled
+    }
+
+    public fun max_supply(
+        mint_config: &MintConfig
+    ): Option<u64> {
+        mint_config.max_supply
+    }
     
     public fun mint<WitnessType: drop> (
         mint_config: &MintConfig,
@@ -112,30 +130,29 @@ module sage_trust::trust {
             reward_witness_config
         );
 
-        if (option::is_some(&mint_config.max_supply)) {
+        let scaled_amount = amount / SCALE_FACTOR;
+
+        let mint_amount = if (!mint_config.enabled) {
+            0
+        } else if (option::is_some(&mint_config.max_supply)) {
             let max_supply = *option::borrow(&mint_config.max_supply);
             let total_supply = total_supply(treasury);
 
-            if (max_supply > total_supply) {
-                mint_internal(
-                    treasury,
-                    0,
-                    ctx
-                )
+            if (total_supply + scaled_amount <= max_supply) {
+                scaled_amount
             } else {
-                mint_internal(
-                    treasury,
-                    amount,
-                    ctx
-                )
+                0
             }
         } else {
-            mint_internal(
-                treasury,
-                amount,
-                ctx
-            )
-        }
+            scaled_amount
+        };
+
+        let cap = treasury.borrow_cap_mut();
+
+        cap.mint(
+            mint_amount,
+            ctx
+        )
     }
 
     public fun total_supply(
@@ -152,6 +169,25 @@ module sage_trust::trust {
         enabled: bool,
         max_supply: Option<u64>
     ) {
+        update_mint_config(
+            mint_config,
+            enabled,
+            max_supply
+        );
+    }
+
+    public fun update_mint_config_for_governance<GovernanceWitness: drop>(
+        governance_witness: &GovernanceWitness,
+        governance_witness_config: &GovernanceWitnessConfig,
+        mint_config: &mut MintConfig,
+        enabled: bool,
+        max_supply: Option<u64>
+    ) {
+        access::assert_governance_witness(
+            governance_witness,
+            governance_witness_config
+        );
+
         update_mint_config(
             mint_config,
             enabled,
@@ -178,19 +214,6 @@ module sage_trust::trust {
         dof::borrow_mut(
             &mut treasury.id,
             TreasuryCapKey {}
-        )
-    }
-
-    fun mint_internal (
-        treasury: &mut ProtectedTreasury,
-        amount: u64,
-        ctx: &mut TxContext
-    ): Coin<TRUST> {
-        let cap = treasury.borrow_cap_mut();
-
-        cap.mint(
-            amount,
-            ctx
         )
     }
 
