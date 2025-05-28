@@ -109,6 +109,8 @@ module sage_user::test_user_actions {
     const SERVER: address = @server;
     const TREASURY: address = @treasury;
 
+    const SCALE_FACTOR: u64 = 1_000_000;
+
     const METRIC_COMMENT_GIVEN: vector<u8> = b"comment-given";
     const METRIC_COMMENT_RECEIVED: vector<u8> = b"comment-received";
     const METRIC_FAVORITED_POST: vector<u8> = b"favorited-post";
@@ -120,16 +122,16 @@ module sage_user::test_user_actions {
     const METRIC_USER_FRIENDS: vector<u8> = b"user-friends";
     const METRIC_USER_TEXT_POST: vector<u8> = b"user-text-posts";
 
-    const WEIGHT_COMMENT_GIVEN: u64 = 1;
-    const WEIGHT_COMMENT_RECEIVED: u64 = 2;
-    const WEIGHT_FAVORITED_USER_POST: u64 = 3;
-    const WEIGHT_FOLLOWED_USER: u64 = 4;
-    const WEIGHT_USER_FOLLOWED: u64 = 5;
-    const WEIGHT_USER_FRIENDS: u64 = 6;
-    const WEIGHT_USER_LIKED_POST: u64 = 7;
-    const WEIGHT_USER_POST_FAVORITED: u64 = 8;
-    const WEIGHT_USER_POST_LIKED: u64 = 9;
-    const WEIGHT_USER_TEXT_POST: u64 = 10;
+    const WEIGHT_COMMENT_GIVEN: u64 = 1 * SCALE_FACTOR;
+    const WEIGHT_COMMENT_RECEIVED: u64 = 2 * SCALE_FACTOR;
+    const WEIGHT_FAVORITED_USER_POST: u64 = 3 * SCALE_FACTOR;
+    const WEIGHT_FOLLOWED_USER: u64 = 4 * SCALE_FACTOR;
+    const WEIGHT_USER_FOLLOWED: u64 = 5 * SCALE_FACTOR;
+    const WEIGHT_USER_FRIENDS: u64 = 6 * SCALE_FACTOR;
+    const WEIGHT_USER_LIKED_POST: u64 = 7 * SCALE_FACTOR;
+    const WEIGHT_USER_POST_FAVORITED: u64 = 8 * SCALE_FACTOR;
+    const WEIGHT_USER_POST_LIKED: u64 = 9 * SCALE_FACTOR;
+    const WEIGHT_USER_TEXT_POST: u64 = 10 * SCALE_FACTOR;
 
     const CREATE_INVITE_CUSTOM_FEE: u64 = 1;
     const CREATE_INVITE_SUI_FEE: u64 = 2;
@@ -10449,7 +10451,6 @@ module sage_user::test_user_actions {
                 &mint_config,
                 &reward_witness_config,
                 &mut treasury,
-                
                 &mut owned_user,
                 &mut shared_user,
                 &user_witness_config,
@@ -10470,7 +10471,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == (2 * WEIGHT_USER_TEXT_POST));
+            assert!(balance == ((2 * WEIGHT_USER_TEXT_POST) / SCALE_FACTOR));
 
             destroy(coin);
 
@@ -10724,7 +10725,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == WEIGHT_USER_POST_LIKED);
+            assert!(balance == (WEIGHT_USER_POST_LIKED / SCALE_FACTOR));
 
             destroy(coin);
 
@@ -10985,7 +10986,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == (WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST));
+            assert!(balance == ((WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST) / SCALE_FACTOR));
 
             destroy(coin);
 

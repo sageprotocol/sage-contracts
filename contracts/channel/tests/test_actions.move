@@ -87,15 +87,17 @@ module sage_channel::test_channel_actions {
     const ADMIN: address = @admin;
     const SERVER: address = @server;
 
+    const SCALE_FACTOR: u64 = 1_000_000;
+
     const METRIC_CHANNEL_CREATED: vector<u8> = b"channel-created";
     const METRIC_CHANNEL_FOLLOWED: vector<u8> = b"channel-followed";
     const METRIC_CHANNEL_TEXT_POST: vector<u8> = b"channel-text-posts";
     const METRIC_FOLLOWED_CHANNEL: vector<u8> = b"followed-channel";
 
-    const WEIGHT_CHANNEL_CREATED: u64 = 1;
-    const WEIGHT_CHANNEL_FOLLOWED: u64 = 2;
-    const WEIGHT_CHANNEL_TEXT_POST: u64 = 3;
-    const WEIGHT_FOLLOWED_CHANNEL: u64 = 4;
+    const WEIGHT_CHANNEL_CREATED: u64 = 1 * SCALE_FACTOR;
+    const WEIGHT_CHANNEL_FOLLOWED: u64 = 2 * SCALE_FACTOR;
+    const WEIGHT_CHANNEL_TEXT_POST: u64 = 3 * SCALE_FACTOR;
+    const WEIGHT_FOLLOWED_CHANNEL: u64 = 4 * SCALE_FACTOR;
 
     const ADD_MODERATOR_CUSTOM_FEE: u64 = 1;
     const ADD_MODERATOR_SUI_FEE: u64 = 2;
