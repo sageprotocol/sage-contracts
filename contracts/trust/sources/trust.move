@@ -1,7 +1,7 @@
 module sage_trust::trust {
     use sui::{
         coin::{Self, Coin, TreasuryCap},
-        dynamic_object_field::{Self as dof},
+        dynamic_field::{Self as df},
         url::{new_unsafe_from_bytes}
     };
 
@@ -77,7 +77,7 @@ module sage_trust::trust {
             id: object::new(ctx)
         };
 
-        dof::add(
+        df::add(
             &mut protected_treasury.id,
             TreasuryCapKey {},
             cap
@@ -202,7 +202,7 @@ module sage_trust::trust {
     fun borrow_cap(
         treasury: &ProtectedTreasury
     ): &TreasuryCap<TRUST> {
-        dof::borrow(
+        df::borrow(
             &treasury.id,
             TreasuryCapKey {}
         )
@@ -211,7 +211,7 @@ module sage_trust::trust {
     fun borrow_cap_mut(
         treasury: &mut ProtectedTreasury
     ): &mut TreasuryCap<TRUST> {
-        dof::borrow_mut(
+        df::borrow_mut(
             &mut treasury.id,
             TreasuryCapKey {}
         )
