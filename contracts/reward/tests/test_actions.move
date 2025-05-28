@@ -49,6 +49,8 @@ module sage_reward::test_reward_actions {
 
     const ADMIN: address = @admin;
 
+    const SCALE_FACTOR: u64 = 1_000_000;
+
     // --------------- Errors ---------------
 
     // --------------- Test Functions ---------------
@@ -501,8 +503,9 @@ module sage_reward::test_reward_actions {
 
         let scenario = &mut scenario_val;
 
+        let claim = 100;
         let metric = utf8(b"reward-weight");
-        let weight = 100;
+        let weight = claim * SCALE_FACTOR;
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -524,12 +527,11 @@ module sage_reward::test_reward_actions {
         ts::next_tx(scenario, ADMIN);
         let mut analytics = {
             let mut analytics = analytics::create_for_testing(ts::ctx(scenario));
-            let claim = 100;
 
             analytics_actions::increment_analytics_for_testing(
                 &mut analytics,
                 object::id_address(&app),
-                claim,
+                weight,
                 metric
             );
 
@@ -556,7 +558,7 @@ module sage_reward::test_reward_actions {
             let coin = coin_option.destroy_some();
             let balance = coin.balance();
 
-            assert!(balance.value() == weight);
+            assert!(balance.value() == claim);
 
             destroy(coin);
         };
