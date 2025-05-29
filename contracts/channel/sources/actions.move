@@ -35,7 +35,6 @@ module sage_channel::channel_actions {
     };
 
     use sage_reward::{
-        // reward_actions::{Self},
         reward_registry::{Self, RewardWeightsRegistry}
     };
 
