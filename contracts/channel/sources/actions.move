@@ -69,10 +69,10 @@ module sage_channel::channel_actions {
     // --------------- Events ---------------
 
     public struct ChannelCreated has copy, drop {
-        id: address,
-        app: address,
+        app_id: address,
         avatar: String,
         banner: String,
+        channel_id: address,
         channel_key: String,
         channel_name: String,
         created_at: u64,
@@ -82,35 +82,35 @@ module sage_channel::channel_actions {
 
     public struct ChannelFollowsUpdate has copy, drop {
         account_type: u8,
-        channel_key: String,
+        channel_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct ChannelModerationUpdate has copy, drop {
-        channel_key: String,
+        channel_id: address,
         message: u8,
         moderator_type: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct ChannelPostCreated has copy, drop {
-        id: address,
-        app: address,
-        channel_key: String,
+        app_id: address,
+        channel_id: address,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
+        post_id: address,
         title: String
     }
 
     public struct ChannelUpdated has copy, drop {
         avatar: String,
         banner: String,
-        channel_key: String,
+        channel_id: address,
         channel_name: String,
         description: String,
         updated_at: u64
@@ -144,15 +144,15 @@ module sage_channel::channel_actions {
             user_address
         );
 
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
         let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
-            channel_key,
+            channel_id,
             message,
             moderator_type,
             updated_at,
-            user: user_address
+            user_id: user_address
         });
     }
 
@@ -197,15 +197,15 @@ module sage_channel::channel_actions {
             user_address
         );
 
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
         let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
-            channel_key,
+            channel_id,
             message,
             moderator_type,
             updated_at,
-            user: user_address
+            user_id: user_address
         });
 
         fees::collect_payment<CoinType>(
@@ -332,10 +332,10 @@ module sage_channel::channel_actions {
         };
 
         event::emit(ChannelCreated {
-            id: channel_address,
-            app: app_address,
+            app_id: app_address,
             avatar,
             banner,
+            channel_id: channel_address,
             channel_key,
             channel_name: name,
             created_at: timestamp,
@@ -345,18 +345,18 @@ module sage_channel::channel_actions {
 
         event::emit(ChannelFollowsUpdate {
             account_type: membership_type,
-            channel_key,
+            channel_id: channel_address,
             message: membership_message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
 
         event::emit(ChannelModerationUpdate {
-            channel_key,
+            channel_id: channel_address,
             message: moderation_message,
             moderator_type: moderation_type,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
 
         channel_address
@@ -491,14 +491,14 @@ module sage_channel::channel_actions {
             );
         };
         
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
 
         event::emit(ChannelFollowsUpdate {
             account_type,
-            channel_key,
+            channel_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -610,16 +610,16 @@ module sage_channel::channel_actions {
             );
         };
 
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
 
         event::emit(ChannelPostCreated {
-            id: post_address,
-            app: app_address,
-            channel_key,
+            app_id: app_address,
+            channel_id,
             created_at: timestamp,
             created_by: self,
             data,
             description,
+            post_id: post_address,
             title
         });
 
@@ -650,15 +650,15 @@ module sage_channel::channel_actions {
             user_address
         );
 
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
         let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
-            channel_key,
+            channel_id,
             message,
             moderator_type,
             updated_at,
-            user: user_address
+            user_id: user_address
         });
     }
 
@@ -703,15 +703,15 @@ module sage_channel::channel_actions {
             user_address
         );
 
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
         let updated_at = clock.timestamp_ms();
 
         event::emit(ChannelModerationUpdate {
-            channel_key,
+            channel_id,
             message,
             moderator_type,
             updated_at,
-            user: user_address
+            user_id: user_address
         });
 
         fees::collect_payment<CoinType>(
@@ -754,14 +754,14 @@ module sage_channel::channel_actions {
             timestamp
         );
 
-        let channel_key = channel::get_key(channel);
+        let channel_id = object::id_address(channel);
 
         event::emit(ChannelFollowsUpdate {
             account_type,
-            channel_key,
+            channel_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
 
         fees::collect_payment<CoinType>(
@@ -779,7 +779,7 @@ module sage_channel::channel_actions {
         description: String,
         name: String
     ) {
-        let channel_key = assert_name_sameness(
+        let _channel_key = assert_name_sameness(
             channel,
             name
         );
@@ -795,10 +795,12 @@ module sage_channel::channel_actions {
             updated_at
         );
 
+        let channel_id = object::id_address(channel);
+
         event::emit(ChannelUpdated {
             avatar,
             banner,
-            channel_key,
+            channel_id,
             channel_name: name,
             description,
             updated_at
@@ -826,7 +828,7 @@ module sage_channel::channel_actions {
             self
         );
 
-        let channel_key = assert_name_sameness(
+        let _channel_key = assert_name_sameness(
             channel,
             name
         );
@@ -851,10 +853,12 @@ module sage_channel::channel_actions {
             updated_at
         );
 
+        let channel_id = object::id_address(channel);
+
         event::emit(ChannelUpdated {
             avatar,
             banner,
-            channel_key,
+            channel_id,
             channel_name: name,
             description,
             updated_at

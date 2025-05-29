@@ -40,20 +40,20 @@ module sage_post::post_actions {
     // --------------- Events ---------------
 
     public struct CommentCreated has copy, drop {
-        id: address,
-        app: address,
+        app_id: address,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
         parent_post_id: address,
+        post_id: address,
         title: String
     }
 
     public struct PostLiked has copy, drop {
-        id: address,
+        post_id: address,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     // --------------- Constructor ---------------
@@ -122,13 +122,13 @@ module sage_post::post_actions {
         let parent_post_address = post::get_address(parent_post);
 
         event::emit(CommentCreated {
-            id: post_address,
-            app: app_address,
+            app_id: app_address,
             created_at: timestamp,
             created_by: self,
             data,
             description,
             parent_post_id: parent_post_address,
+            post_id: post_address,
             title
         });
 
@@ -274,9 +274,9 @@ module sage_post::post_actions {
         let timestamp = clock.timestamp_ms();
 
         event::emit(PostLiked {
-            id: post_address,
+            post_id: post_address,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 

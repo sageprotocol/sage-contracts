@@ -50,8 +50,8 @@ module sage_user::user_fees {
     // --------------- Events ---------------
 
     public struct UserFeesCreated has copy, drop {
-        id: address,
-        app: address,
+        app_id: address,
+        user_fees_id: address,
         custom_coin_type: TypeName,
         create_invite_fee_custom: u64,
         create_invite_fee_sui: u64,
@@ -72,7 +72,7 @@ module sage_user::user_fees {
     }
 
     public struct UserFeesUpdated has copy, drop {
-        id: address,
+        user_fees_id: address,
         custom_coin_type: TypeName,
         create_invite_fee_custom: u64,
         create_invite_fee_sui: u64,
@@ -152,8 +152,8 @@ module sage_user::user_fees {
         );
 
         event::emit(UserFeesCreated {
-            id: fees_address,
-            app: app_address,
+            app_id: app_address,
+            user_fees_id: fees_address,
             custom_coin_type,
             create_invite_fee_custom,
             create_invite_fee_sui,
@@ -217,7 +217,7 @@ module sage_user::user_fees {
         fees.update_user_fee_sui = update_user_fee_sui;
 
         event::emit(UserFeesUpdated {
-            id: fees.id.to_address(),
+            user_fees_id: fees.id.to_address(),
             custom_coin_type,
             create_invite_fee_custom,
             create_invite_fee_sui,

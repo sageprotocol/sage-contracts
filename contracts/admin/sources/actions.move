@@ -30,7 +30,7 @@ module sage_admin::admin_actions {
     // --------------- Events ---------------
 
     public struct AppCreated has copy, drop {
-        id: address,
+        app_id: address,
         name: String
     }
 
@@ -138,7 +138,7 @@ module sage_admin::admin_actions {
         );
 
         event::emit(AppCreated {
-            id: app,
+            app_id: app,
             name: app_key
         });
 

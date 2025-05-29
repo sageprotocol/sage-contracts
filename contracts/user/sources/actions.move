@@ -100,84 +100,84 @@ module sage_user::user_actions {
     // --------------- Events ---------------
 
     public struct ChannelFavoritesUpdate has copy, drop {
-        app: address,
-        favorited_channel: address,
+        app_id: address,
+        favorited_channel_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct InviteCreated has copy, drop {
         invite_code: String,
         invite_key: String,
-        user: address
+        user_id: address
     }
 
     public struct PostFavoritesUpdate has copy, drop {
-        app: address,
-        favorited_post: address,
+        app_id: address,
+        favorited_post_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct UserCreated has copy, drop {
-        id: address,
         avatar: String,
         banner: String,
         created_at: u64,
         description: String,
         invited_by: Option<address>,
-        user_owned: address,
-        user_shared: address,
+        user_id: address,
+        user_owned_id: address,
+        user_shared_id: address,
         user_key: String,
         user_name: String
     }
 
     public struct UserFavoritesUpdate has copy, drop {
-        app: address,
-        favorited_user: address,
+        app_id: address,
+        favorited_user_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct UserFollowsUpdate has copy, drop {
         account_type: u8,
-        app: address,
-        followed_user: address,
+        app_id: address,
+        followed_user_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct UserFriendUpdate has copy, drop {
         account_type: u8,
-        app: address,
-        friended_user: address,
+        app_id: address,
+        friended_user_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct UserFriendRequestUpdate has copy, drop {
         account_type: u8,
-        app: address,
-        friended_user: address,
+        app_id: address,
+        friended_user_id: address,
         message: u8,
         updated_at: u64,
-        user: address
+        user_id: address
     }
 
     public struct UserPostCreated has copy, drop {
-        id: address,
-        app: address,
+        app_id: address,
         created_at: u64,
         created_by: address,
         data: String,
         description: String,
+        post_id: address,
         title: String,
-        user_key: String
+        user_id: address
     }
 
     public struct UserUpdated has copy, drop {
@@ -185,11 +185,9 @@ module sage_user::user_actions {
         banner: String,
         description: String,
         updated_at: u64,
-        user_key: String,
+        user_id: address,
         user_name: String
     }
-
-    public struct USER_ACTIONS has drop {}
 
     // --------------- Constructor ---------------
 
@@ -214,7 +212,7 @@ module sage_user::user_actions {
         let (
             message,
             self,
-            favorited_channel,
+            favorited_channel_id,
             _count
         ) = user_owned::add_favorite_channel(
             channel,
@@ -225,11 +223,11 @@ module sage_user::user_actions {
         );
 
         event::emit(ChannelFavoritesUpdate {
-            app: app_address,
-            favorited_channel,
+            app_id: app_address,
+            favorited_channel_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -254,7 +252,7 @@ module sage_user::user_actions {
         let (
             message,
             self,
-            favorited_post,
+            favorited_post_id,
             count
         ) = user_owned::add_favorite_post(
             post,
@@ -321,11 +319,11 @@ module sage_user::user_actions {
         };
 
         event::emit(PostFavoritesUpdate {
-            app: app_address,
-            favorited_post,
+            app_id: app_address,
+            favorited_post_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -342,7 +340,7 @@ module sage_user::user_actions {
         let (
             message,
             self,
-            favorited_user,
+            favorited_user_id,
             _count
         ) = user_owned::add_favorite_user(
             owned_user,
@@ -353,11 +351,11 @@ module sage_user::user_actions {
         );
 
         event::emit(UserFavoritesUpdate {
-            app: app_address,
-            favorited_user,
+            app_id: app_address,
+            favorited_user_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -703,14 +701,14 @@ module sage_user::user_actions {
         );
 
         event::emit(UserCreated {
-            id: self,
             avatar,
             banner,
             created_at,
             description,
             invited_by,
-            user_owned: owned_user_address,
-            user_shared: shared_user_address,
+            user_owned_id: owned_user_address,
+            user_shared_id: shared_user_address,
+            user_id: self,
             user_key,
             user_name: name
         });
@@ -761,7 +759,7 @@ module sage_user::user_actions {
         event::emit(InviteCreated {
             invite_code,
             invite_key,
-            user: self
+            user_id: self
         });
     }
 
@@ -887,11 +885,11 @@ module sage_user::user_actions {
 
         event::emit(UserFollowsUpdate {
             account_type: membership_type,
-            app: app_address,
-            followed_user: user_address,
+            app_id: app_address,
+            followed_user_id: user_address,
             message: membership_message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -1025,11 +1023,11 @@ module sage_user::user_actions {
 
             event::emit(UserFriendUpdate {
                 account_type: membership_type,
-                app: app_address,
-                friended_user: friend_address,
+                app_id: app_address,
+                friended_user_id: friend_address,
                 message: membership_message,
                 updated_at: timestamp,
-                user: user_address
+                user_id: user_address
             });
         } else {
             let friends_friend_requests = user_shared::borrow_friend_requests_mut(
@@ -1050,11 +1048,11 @@ module sage_user::user_actions {
 
             event::emit(UserFriendRequestUpdate {
                 account_type: membership_type,
-                app: app_address,
-                friended_user: friend_address,
+                app_id: app_address,
+                friended_user_id: friend_address,
                 message: membership_message,
                 updated_at: timestamp,
-                user: user_address
+                user_id: user_address
             });
         };
 
@@ -1251,17 +1249,17 @@ module sage_user::user_actions {
             );
         };
 
-        let user_key = user_shared::get_key(shared_user);
+        let user_id = shared_user.get_owner();
 
         event::emit(UserPostCreated {
-            id: post_address,
-            app: app_address,
+            app_id: app_address,
             created_at: timestamp,
             created_by: self,
             data,
             description,
+            post_id: post_address,
             title,
-            user_key
+            user_id
         });
 
         (post_address, timestamp)
@@ -1280,7 +1278,7 @@ module sage_user::user_actions {
         let (
             message,
             self,
-            favorited_channel,
+            favorited_channel_id,
             _count
         ) = user_owned::remove_favorite_channel(
             channel,
@@ -1291,11 +1289,11 @@ module sage_user::user_actions {
         );
 
         event::emit(ChannelFavoritesUpdate {
-            app: app_address,
-            favorited_channel,
+            app_id: app_address,
+            favorited_channel_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -1312,7 +1310,7 @@ module sage_user::user_actions {
         let (
             message,
             self,
-            favorited_post,
+            favorited_post_id,
             _count
         ) = user_owned::remove_favorite_post(
             post,
@@ -1323,11 +1321,11 @@ module sage_user::user_actions {
         );
 
         event::emit(PostFavoritesUpdate {
-            app: app_address,
-            favorited_post,
+            app_id: app_address,
+            favorited_post_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -1344,7 +1342,7 @@ module sage_user::user_actions {
         let (
             message,
             self,
-            favorited_user,
+            favorited_user_id,
             _count
         ) = user_owned::remove_favorite_user(
             owned_user,
@@ -1355,11 +1353,11 @@ module sage_user::user_actions {
         );
 
         event::emit(UserFavoritesUpdate {
-            app: app_address,
-            favorited_user,
+            app_id: app_address,
+            favorited_user_id,
             message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -1397,11 +1395,11 @@ module sage_user::user_actions {
 
         event::emit(UserFriendRequestUpdate {
             account_type: membership_type,
-            app: app_address,
-            friended_user: removed_request,
+            app_id: app_address,
+            friended_user_id: removed_request,
             message: membership_message,
             updated_at: timestamp,
-            user: user_address
+            user_id: user_address
         });
     }
 
@@ -1453,11 +1451,11 @@ module sage_user::user_actions {
 
         event::emit(UserFollowsUpdate {
             account_type: membership_type,
-            app: app_address,
-            followed_user: user_address,
+            app_id: app_address,
+            followed_user_id: user_address,
             message: membership_message,
             updated_at: timestamp,
-            user: self
+            user_id: self
         });
     }
 
@@ -1523,11 +1521,11 @@ module sage_user::user_actions {
 
         event::emit(UserFriendUpdate {
             account_type: membership_type,
-            app: app_address,
-            friended_user: friend_address,
+            app_id: app_address,
+            friended_user_id: friend_address,
             message: membership_message,
             updated_at: timestamp,
-            user: user_address
+            user_id: user_address
         });
     }
 
@@ -1585,7 +1583,7 @@ module sage_user::user_actions {
         event::emit(UserUpdated {
             avatar,
             banner,
-            user_key: owned_user_key,
+            user_id: self,
             user_name: name,
             description,
             updated_at
