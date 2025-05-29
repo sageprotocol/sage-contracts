@@ -12,7 +12,7 @@ module sage_user::user_actions {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelConfig,
             UserWitnessConfig
@@ -42,7 +42,7 @@ module sage_user::user_actions {
     };
 
     use sage_trust::{
-        access::{RewardWitnessConfig},
+        trust_access::{RewardWitnessConfig},
         trust::{
             MintConfig,
             ProtectedTreasury,
@@ -203,7 +203,7 @@ module sage_user::user_actions {
         owned_user: &mut UserOwned,
         ctx: &mut TxContext
     ) {
-        access::assert_channel(
+        admin_access::assert_channel(
             channel_config,
             channel
         );

@@ -8,7 +8,7 @@ module sage_channel::test_channel {
     };
 
     use sage_admin::{
-        access::{Self, ChannelWitnessConfig},
+        admin_access::{Self, ChannelWitnessConfig},
         admin::{Self, AdminCap}
     };
 
@@ -117,7 +117,7 @@ module sage_channel::test_channel {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            access::create_channel_witness_config<ChannelWitness>(
+            admin_access::create_channel_witness_config<ChannelWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );

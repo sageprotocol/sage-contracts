@@ -9,7 +9,7 @@ module sage_post::post_actions {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelWitnessConfig,
             GroupWitnessConfig,
@@ -74,7 +74,7 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        access::assert_user_witness(
+        admin_access::assert_user_witness(
             user_witness_config,
             user_witness
         );
@@ -146,7 +146,7 @@ module sage_post::post_actions {
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        access::assert_channel_witness(
+        admin_access::assert_channel_witness(
             channel_witness_config,
             channel_witness
         );
@@ -176,7 +176,7 @@ module sage_post::post_actions {
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        access::assert_group_witness(
+        admin_access::assert_group_witness(
             group_witness_config,
             group_witness
         );
@@ -206,7 +206,7 @@ module sage_post::post_actions {
         title: String,
         ctx: &mut TxContext
     ): (address, address, u64) {
-        access::assert_user_witness(
+        admin_access::assert_user_witness(
             user_witness_config,
             user_witness
         );
@@ -236,7 +236,7 @@ module sage_post::post_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        access::assert_user_witness(
+        admin_access::assert_user_witness(
             user_witness_config,
             user_witness
         );

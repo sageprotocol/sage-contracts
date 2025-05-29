@@ -1,5 +1,5 @@
 #[test_only]
-module sage_trust::test_access {
+module sage_trust::test_trust_access {
     use sui::{
         test_scenario::{Self as ts, Scenario},
         test_utils::{destroy}
@@ -10,7 +10,7 @@ module sage_trust::test_access {
     };
 
     use sage_trust::{
-        access::{
+        trust_access::{
             Self,
             GovernanceWitnessConfig,
             RewardWitnessConfig,
@@ -54,7 +54,7 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::init_for_testing(ts::ctx(scenario));
+            trust_access::init_for_testing(ts::ctx(scenario));
             admin::init_for_testing(ts::ctx(scenario));
         };
 
@@ -68,11 +68,11 @@ module sage_trust::test_access {
             let mut governance_witness_config = ts::take_shared<GovernanceWitnessConfig>(scenario);
             let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
-            access::update_governance_witness<ValidWitness>(
+            trust_access::update_governance_witness<ValidWitness>(
                 &admin_cap,
                 &mut governance_witness_config
             );
-            access::update_reward_witness<ValidWitness>(
+            trust_access::update_reward_witness<ValidWitness>(
                 &admin_cap,
                 &mut reward_witness_config
             );
@@ -128,9 +128,9 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let governance_witness = access::create_valid_witness();
+            let governance_witness = trust_access::create_valid_witness();
 
-            access::assert_governance_witness<ValidWitness>(
+            trust_access::assert_governance_witness<ValidWitness>(
                 &governance_witness,
                 &governance_witness_config
             );
@@ -159,9 +159,9 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let governance_witness = access::create_invalid_witness();
+            let governance_witness = trust_access::create_invalid_witness();
 
-            access::assert_governance_witness<InvalidWitness>(
+            trust_access::assert_governance_witness<InvalidWitness>(
                 &governance_witness,
                 &governance_witness_config
             );
@@ -190,7 +190,7 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::update_governance_witness<InvalidWitness>(
+            trust_access::update_governance_witness<InvalidWitness>(
                 &admin_cap,
                 &mut governance_witness_config
             );
@@ -218,18 +218,18 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness();
+            let invalid_witness = trust_access::create_invalid_witness();
 
-            let is_verified = access::verify_governance_witness<InvalidWitness>(
+            let is_verified = trust_access::verify_governance_witness<InvalidWitness>(
                 &invalid_witness,
                 &governance_witness_config
             );
 
             assert!(!is_verified, EWitnessVerificationMismatch);
 
-            let valid_witness = access::create_valid_witness();
+            let valid_witness = trust_access::create_valid_witness();
 
-            let is_verified = access::verify_governance_witness<ValidWitness>(
+            let is_verified = trust_access::verify_governance_witness<ValidWitness>(
                 &valid_witness,
                 &governance_witness_config
             );
@@ -259,9 +259,9 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_witness = access::create_valid_witness();
+            let reward_witness = trust_access::create_valid_witness();
 
-            access::assert_reward_witness<ValidWitness>(
+            trust_access::assert_reward_witness<ValidWitness>(
                 &reward_witness,
                 &reward_witness_config
             );
@@ -290,9 +290,9 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_witness = access::create_invalid_witness();
+            let reward_witness = trust_access::create_invalid_witness();
 
-            access::assert_reward_witness<InvalidWitness>(
+            trust_access::assert_reward_witness<InvalidWitness>(
                 &reward_witness,
                 &reward_witness_config
             );
@@ -321,7 +321,7 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::update_reward_witness<InvalidWitness>(
+            trust_access::update_reward_witness<InvalidWitness>(
                 &admin_cap,
                 &mut reward_witness_config
             );
@@ -349,18 +349,18 @@ module sage_trust::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness();
+            let invalid_witness = trust_access::create_invalid_witness();
 
-            let is_verified = access::verify_reward_witness<InvalidWitness>(
+            let is_verified = trust_access::verify_reward_witness<InvalidWitness>(
                 &invalid_witness,
                 &reward_witness_config
             );
 
             assert!(!is_verified, EWitnessVerificationMismatch);
 
-            let valid_witness = access::create_valid_witness();
+            let valid_witness = trust_access::create_valid_witness();
 
-            let is_verified = access::verify_reward_witness<ValidWitness>(
+            let is_verified = trust_access::verify_reward_witness<ValidWitness>(
                 &valid_witness,
                 &reward_witness_config
             );

@@ -9,7 +9,7 @@ module sage_channel::channel_actions {
     };
 
     use sage_admin::{
-        access::{ChannelWitnessConfig, UserWitnessConfig},
+        admin_access::{ChannelWitnessConfig, UserWitnessConfig},
         admin::{AdminCap},
         apps::{Self, App},
         fees::{Self}

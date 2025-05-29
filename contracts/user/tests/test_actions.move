@@ -18,8 +18,8 @@ module sage_user::test_user_actions {
     };
 
     use sage_admin::{
-        access::{
-            Self as admin_access,
+        admin_access::{
+            Self,
             ChannelConfig,
             UserOwnedConfig,
             UserWitnessConfig,
@@ -58,8 +58,8 @@ module sage_user::test_user_actions {
     };
 
     use sage_trust::{
-        access::{
-            Self as trust_access,
+        trust_access::{
+            Self,
             RewardWitnessConfig
         },
         trust::{

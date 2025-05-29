@@ -1,4 +1,4 @@
-module sage_admin::access {
+module sage_admin::admin_access {
     use std::{
         type_name::{Self, TypeName}
     };

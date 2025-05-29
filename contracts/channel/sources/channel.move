@@ -7,7 +7,7 @@ module sage_channel::channel {
     use std::string::{String};
 
     use sage_admin::{
-        access::{ChannelWitnessConfig}
+        admin_access::{ChannelWitnessConfig}
     };
 
     use sage_analytics::{

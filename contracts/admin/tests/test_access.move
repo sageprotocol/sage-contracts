@@ -1,12 +1,12 @@
 #[test_only]
-module sage_admin::test_access {
+module sage_admin::test_admin_access {
     use sui::{
         test_scenario::{Self as ts, Scenario},
         test_utils::{destroy}
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelConfig,
             ChannelWitnessConfig,
@@ -79,32 +79,32 @@ module sage_admin::test_access {
         let admin_cap = {
             let admin_cap = scenario.take_from_sender<AdminCap>();
 
-            access::create_channel_config<ValidType>(
+            admin_access::create_channel_config<ValidType>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_channel_witness_config<ValidWitness>(
+            admin_access::create_channel_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_group_witness_config<ValidWitness>(
+            admin_access::create_group_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_owned_user_config<ValidType>(
+            admin_access::create_owned_user_config<ValidType>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_shared_user_config<ValidType>(
+            admin_access::create_shared_user_config<ValidType>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_user_witness_config<ValidWitness>(
+            admin_access::create_user_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -198,27 +198,27 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         let invalid_type = {
-            let invalid_type = access::create_invalid_type_for_testing(
+            let invalid_type = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
             // assert invalid return
 
-            let is_verified = access::verify_channel<InvalidType>(
+            let is_verified = admin_access::verify_channel<InvalidType>(
                 &channel_config,
                 &invalid_type
             );
 
             assert!(!is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_owned_user<InvalidType>(
+            let is_verified = admin_access::verify_owned_user<InvalidType>(
                 &owned_user_config,
                 &invalid_type
             );
 
             assert!(!is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_shared_user<InvalidType>(
+            let is_verified = admin_access::verify_shared_user<InvalidType>(
                 &shared_user_config,
                 &invalid_type
             );
@@ -227,25 +227,25 @@ module sage_admin::test_access {
 
             // assert valid return
 
-            let valid_type = access::create_valid_type_for_testing(
+            let valid_type = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
-            let is_verified = access::verify_channel<ValidType>(
+            let is_verified = admin_access::verify_channel<ValidType>(
                 &channel_config,
                 &valid_type
             );
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_owned_user<ValidType>(
+            let is_verified = admin_access::verify_owned_user<ValidType>(
                 &owned_user_config,
                 &valid_type
             );
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_shared_user<ValidType>(
+            let is_verified = admin_access::verify_shared_user<ValidType>(
                 &shared_user_config,
                 &valid_type
             );
@@ -254,17 +254,17 @@ module sage_admin::test_access {
 
             // assert update
 
-            access::update_channel_type<InvalidType>(
+            admin_access::update_channel_type<InvalidType>(
                 &admin_cap,
                 &mut channel_config
             );
 
-            access::update_owned_user_type<InvalidType>(
+            admin_access::update_owned_user_type<InvalidType>(
                 &admin_cap,
                 &mut owned_user_config
             );
 
-            access::update_shared_user_type<InvalidType>(
+            admin_access::update_shared_user_type<InvalidType>(
                 &admin_cap,
                 &mut shared_user_config
             );
@@ -276,21 +276,21 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let is_verified = access::verify_channel<InvalidType>(
+            let is_verified = admin_access::verify_channel<InvalidType>(
                 &channel_config,
                 &invalid_type
             );
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_owned_user<InvalidType>(
+            let is_verified = admin_access::verify_owned_user<InvalidType>(
                 &owned_user_config,
                 &invalid_type
             );
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_shared_user<InvalidType>(
+            let is_verified = admin_access::verify_shared_user<InvalidType>(
                 &shared_user_config,
                 &invalid_type
             );
@@ -333,25 +333,25 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             // assert invalid return
 
-            let is_verified = access::verify_channel_witness<InvalidWitness>(
+            let is_verified = admin_access::verify_channel_witness<InvalidWitness>(
                 &channel_witness_config,
                 &invalid_witness
             );
 
             assert!(!is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_group_witness<InvalidWitness>(
+            let is_verified = admin_access::verify_group_witness<InvalidWitness>(
                 &group_witness_config,
                 &invalid_witness
             );
 
             assert!(!is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_user_witness<InvalidWitness>(
+            let is_verified = admin_access::verify_user_witness<InvalidWitness>(
                 &user_witness_config,
                 &invalid_witness
             );
@@ -360,23 +360,23 @@ module sage_admin::test_access {
 
             // assert valid return
 
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
-            let is_verified = access::verify_channel_witness<ValidWitness>(
+            let is_verified = admin_access::verify_channel_witness<ValidWitness>(
                 &channel_witness_config,
                 &valid_witness
             );
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_group_witness<ValidWitness>(
+            let is_verified = admin_access::verify_group_witness<ValidWitness>(
                 &group_witness_config,
                 &valid_witness
             );
 
             assert!(is_verified, ETestTypeMismatch);
 
-            let is_verified = access::verify_user_witness<ValidWitness>(
+            let is_verified = admin_access::verify_user_witness<ValidWitness>(
                 &user_witness_config,
                 &valid_witness
             );
@@ -420,11 +420,11 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_type = access::create_invalid_type_for_testing(
+            let invalid_type = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
-            access::assert_channel<InvalidType>(
+            admin_access::assert_channel<InvalidType>(
                 &channel_config,
                 &invalid_type
             );
@@ -466,9 +466,9 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
-            access::assert_channel_witness<InvalidWitness>(
+            admin_access::assert_channel_witness<InvalidWitness>(
                 &channel_witness_config,
                 &invalid_witness
             );
@@ -510,9 +510,9 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
-            access::assert_group_witness<InvalidWitness>(
+            admin_access::assert_group_witness<InvalidWitness>(
                 &group_witness_config,
                 &invalid_witness
             );
@@ -554,11 +554,11 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_type = access::create_invalid_type_for_testing(
+            let invalid_type = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
-            access::assert_owned_user<InvalidType>(
+            admin_access::assert_owned_user<InvalidType>(
                 &owned_user_config,
                 &invalid_type
             );
@@ -600,11 +600,11 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_type = access::create_invalid_type_for_testing(
+            let invalid_type = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
-            access::assert_shared_user<InvalidType>(
+            admin_access::assert_shared_user<InvalidType>(
                 &shared_user_config,
                 &invalid_type
             );
@@ -646,9 +646,9 @@ module sage_admin::test_access {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
-            access::assert_user_witness<InvalidWitness>(
+            admin_access::assert_user_witness<InvalidWitness>(
                 &user_witness_config,
                 &invalid_witness
             );

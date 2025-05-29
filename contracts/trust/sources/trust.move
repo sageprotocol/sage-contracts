@@ -1,7 +1,6 @@
 module sage_trust::trust {
     use sui::{
         coin::{Self, Coin, TreasuryCap},
-        dynamic_field::{Self as df},
         url::{new_unsafe_from_bytes}
     };
 
@@ -10,7 +9,7 @@ module sage_trust::trust {
     };
 
     use sage_trust::{
-        access::{
+        trust_access::{
             Self,
             GovernanceWitnessConfig,
             RewardWitnessConfig
@@ -38,7 +37,8 @@ module sage_trust::trust {
     }
 
     public struct ProtectedTreasury has key {
-        id: UID
+        id: UID,
+        cap: TreasuryCap<TRUST>
     }
 
     public struct TreasuryCapKey has copy, drop, store {}
@@ -73,15 +73,10 @@ module sage_trust::trust {
             enabled: true,
             max_supply: option::none()
         };
-        let mut protected_treasury = ProtectedTreasury {
-            id: object::new(ctx)
-        };
-
-        df::add(
-            &mut protected_treasury.id,
-            TreasuryCapKey {},
+        let protected_treasury = ProtectedTreasury {
+            id: object::new(ctx),
             cap
-        );
+        };
 
         transfer::share_object(mint_config);
         transfer::share_object(protected_treasury);
@@ -95,14 +90,12 @@ module sage_trust::trust {
         reward_witness_config: &RewardWitnessConfig,
         coin: Coin<TRUST>
     ) {
-        access::assert_reward_witness<WitnessType>(
+        trust_access::assert_reward_witness<WitnessType>(
             reward_witness,
             reward_witness_config
         );
 
-        let cap = treasury.borrow_cap_mut();
-
-        cap.burn(coin);
+        treasury.cap.burn(coin);
     }
 
     public fun is_minting_enabled(
@@ -125,7 +118,7 @@ module sage_trust::trust {
         amount: u64,
         ctx: &mut TxContext
     ): Coin<TRUST> {
-        access::assert_reward_witness<WitnessType>(
+        trust_access::assert_reward_witness<WitnessType>(
             reward_witness,
             reward_witness_config
         );
@@ -147,9 +140,7 @@ module sage_trust::trust {
             scaled_amount
         };
 
-        let cap = treasury.borrow_cap_mut();
-
-        cap.mint(
+        treasury.cap.mint(
             mint_amount,
             ctx
         )
@@ -158,9 +149,7 @@ module sage_trust::trust {
     public fun total_supply(
         treasury: &ProtectedTreasury
     ): u64 {
-        let cap = treasury.borrow_cap();
-
-        cap.total_supply()
+        treasury.cap.total_supply()
     }
 
     public fun update_mint_config_admin(
@@ -183,7 +172,7 @@ module sage_trust::trust {
         enabled: bool,
         max_supply: Option<u64>
     ) {
-        access::assert_governance_witness(
+        trust_access::assert_governance_witness(
             governance_witness,
             governance_witness_config
         );
@@ -198,24 +187,6 @@ module sage_trust::trust {
     // --------------- Friend Functions ---------------
 
     // --------------- Internal Functions ---------------
-
-    fun borrow_cap(
-        treasury: &ProtectedTreasury
-    ): &TreasuryCap<TRUST> {
-        df::borrow(
-            &treasury.id,
-            TreasuryCapKey {}
-        )
-    }
-
-    fun borrow_cap_mut(
-        treasury: &mut ProtectedTreasury
-    ): &mut TreasuryCap<TRUST> {
-        df::borrow_mut(
-            &mut treasury.id,
-            TreasuryCapKey {}
-        )
-    }
 
     fun update_mint_config (
         mint_config: &mut MintConfig,

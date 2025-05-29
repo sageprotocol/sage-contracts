@@ -12,8 +12,8 @@ module sage_reward::test_reward_actions {
 
     use sage_admin::{
         admin::{Self, AdminCap, RewardCap},
-        access::{
-            Self as admin_access,
+        admin_access::{
+            Self,
             UserWitnessConfig,
             InvalidWitness,
             ValidWitness,
@@ -34,8 +34,8 @@ module sage_reward::test_reward_actions {
     };
 
     use sage_trust::{
-        access::{
-            Self as trust_access,
+        trust_access::{
+            Self,
             RewardWitnessConfig
         },
         trust::{

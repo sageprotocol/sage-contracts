@@ -10,7 +10,7 @@ module sage_analytics::test_analytics_actions {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelWitnessConfig,
             GroupWitnessConfig,
@@ -68,15 +68,15 @@ module sage_analytics::test_analytics_actions {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            access::create_channel_witness_config<ValidWitness>(
+            admin_access::create_channel_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
-            access::create_group_witness_config<ValidWitness>(
+            admin_access::create_group_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
-            access::create_user_witness_config<ValidWitness>(
+            admin_access::create_user_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -131,7 +131,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
                 &valid_witness,
@@ -183,7 +183,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_channel<InvalidWitness>(
                 &invalid_witness,
@@ -219,7 +219,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_group<InvalidWitness>(
                 &invalid_witness,
@@ -255,7 +255,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let analytics = analytics_actions::create_analytics_for_user<InvalidWitness>(
                 &invalid_witness,
@@ -370,7 +370,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
                 &valid_witness,
@@ -424,7 +424,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_channel<ValidWitness>(
                 &valid_witness,
@@ -432,7 +432,7 @@ module sage_analytics::test_analytics_actions {
                 ts::ctx(scenario)
             );
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
@@ -472,7 +472,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
                 &valid_witness,
@@ -526,7 +526,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_group<ValidWitness>(
                 &valid_witness,
@@ -534,7 +534,7 @@ module sage_analytics::test_analytics_actions {
                 ts::ctx(scenario)
             );
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let key = utf8(b"analytics");
 
@@ -574,7 +574,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
                 &valid_witness,
@@ -628,7 +628,7 @@ module sage_analytics::test_analytics_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             let mut analytics = analytics_actions::create_analytics_for_user<ValidWitness>(
                 &valid_witness,
@@ -636,7 +636,7 @@ module sage_analytics::test_analytics_actions {
                 ts::ctx(scenario)
             );
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let key = utf8(b"analytics");
 

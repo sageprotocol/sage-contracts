@@ -4,7 +4,7 @@ module sage_analytics::analytics_actions {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelWitnessConfig,
             GroupWitnessConfig,
@@ -18,8 +18,8 @@ module sage_analytics::analytics_actions {
     };
 
     use sage_trust::{
-        access::{
-            Self as trust_access,
+        trust_access::{
+            Self,
             RewardWitnessConfig
         }
     };
@@ -58,7 +58,7 @@ module sage_analytics::analytics_actions {
         channel_witness_config: &ChannelWitnessConfig,
         ctx: &mut TxContext
     ): Analytics {
-        access::assert_channel_witness<ChannelWitness>(
+        admin_access::assert_channel_witness<ChannelWitness>(
             channel_witness_config,
             channel_witness
         );
@@ -71,7 +71,7 @@ module sage_analytics::analytics_actions {
         group_witness_config: &GroupWitnessConfig,
         ctx: &mut TxContext
     ): Analytics {
-        access::assert_group_witness<GroupWitness>(
+        admin_access::assert_group_witness<GroupWitness>(
             group_witness_config,
             group_witness
         );
@@ -84,7 +84,7 @@ module sage_analytics::analytics_actions {
         user_witness_config: &UserWitnessConfig,
         ctx: &mut TxContext
     ): Analytics {
-        access::assert_user_witness<UserWitness>(
+        admin_access::assert_user_witness<UserWitness>(
             user_witness_config,
             user_witness
         );
@@ -100,7 +100,7 @@ module sage_analytics::analytics_actions {
         claim: u64,
         key: String
     ) {
-        access::assert_channel_witness<ChannelWitness>(
+        admin_access::assert_channel_witness<ChannelWitness>(
             channel_witness_config,
             channel_witness
         );
@@ -126,7 +126,7 @@ module sage_analytics::analytics_actions {
         claim: u64,
         key: String
     ) {
-        access::assert_group_witness<GroupWitness>(
+        admin_access::assert_group_witness<GroupWitness>(
             group_witness_config,
             group_witness
         );
@@ -152,7 +152,7 @@ module sage_analytics::analytics_actions {
         claim: u64,
         key: String
     ) {
-        access::assert_user_witness<UserWitness>(
+        admin_access::assert_user_witness<UserWitness>(
             user_witness_config,
             user_witness
         );

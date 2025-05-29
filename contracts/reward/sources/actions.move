@@ -9,8 +9,8 @@ module sage_reward::reward_actions {
     };
 
     use sage_admin::{
-        access::{
-            Self as admin_access,
+        admin_access::{
+            Self,
             UserWitnessConfig
         },
         admin::{RewardCap},
@@ -29,7 +29,7 @@ module sage_reward::reward_actions {
     };
 
     use sage_trust::{
-        access::{
+        trust_access::{
             RewardWitnessConfig
         },
         trust::{

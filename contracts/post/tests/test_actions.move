@@ -11,7 +11,7 @@ module sage_post::test_post_actions {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelWitnessConfig,
             GroupWitnessConfig,
@@ -117,20 +117,20 @@ module sage_post::test_post_actions {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            access::create_owned_user_config<ValidType>(
+            admin_access::create_owned_user_config<ValidType>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
 
-            access::create_channel_witness_config<ValidWitness>(
+            admin_access::create_channel_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
-            access::create_group_witness_config<ValidWitness>(
+            admin_access::create_group_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
-            access::create_user_witness_config<ValidWitness>(
+            admin_access::create_user_witness_config<ValidWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
@@ -187,11 +187,11 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let valid_type = access::create_valid_type_for_testing(
+            let valid_type = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
-            let valid_witness = access::create_valid_witness_for_testing();
+            let valid_witness = admin_access::create_valid_witness_for_testing();
 
             post_fees::create<SUI>(
                 &fee_cap,
@@ -296,7 +296,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let timestamp = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -391,7 +391,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = access::create_invalid_type_for_testing(
+            let owned_user = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -401,7 +401,7 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let (
                 _post_address,
@@ -458,7 +458,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let timestamp = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -553,7 +553,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = access::create_invalid_type_for_testing(
+            let owned_user = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -563,7 +563,7 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let (
                 _post_address,
@@ -620,7 +620,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let timestamp = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -715,7 +715,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = access::create_invalid_type_for_testing(
+            let owned_user = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -725,7 +725,7 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let (
                 _post_address,
@@ -782,7 +782,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -924,7 +924,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -962,7 +962,7 @@ module sage_post::test_post_actions {
             let description = utf8(b"description");
             let title = utf8(b"title");
 
-            let owned_user = access::create_invalid_type_for_testing(
+            let owned_user = admin_access::create_invalid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -975,7 +975,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             let (
                 _comment_address,
@@ -1037,7 +1037,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1145,7 +1145,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1252,7 +1252,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1362,7 +1362,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1405,7 +1405,7 @@ module sage_post::test_post_actions {
                 ts::ctx(scenario)
             );
 
-            let invalid_witness = access::create_invalid_witness_for_testing();
+            let invalid_witness = admin_access::create_invalid_witness_for_testing();
 
             post_actions::like_for_user<SUI, InvalidWitness>(
                 &clock,
@@ -1458,7 +1458,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 
@@ -1555,7 +1555,7 @@ module sage_post::test_post_actions {
 
         ts::next_tx(scenario, ADMIN);
         let owned_user = {
-            let owned_user = access::create_valid_type_for_testing(
+            let owned_user = admin_access::create_valid_type_for_testing(
                 ts::ctx(scenario)
             );
 

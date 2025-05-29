@@ -9,7 +9,7 @@ module sage_user::user_owned {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelWitnessConfig,
             UserWitnessConfig
@@ -92,7 +92,7 @@ module sage_user::user_owned {
         epoch: u64,
         ctx: &mut TxContext
     ): &mut Analytics {
-        access::assert_channel_witness<ChannelWitness>(
+        admin_access::assert_channel_witness<ChannelWitness>(
             channel_witness_config,
             channel_witness
         );

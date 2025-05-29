@@ -12,7 +12,7 @@ module sage_channel::test_channel_actions {
     };
 
     use sage_admin::{
-        access::{
+        admin_access::{
             Self,
             ChannelWitnessConfig,
             UserWitnessConfig
@@ -260,11 +260,11 @@ module sage_channel::test_channel_actions {
 
             let clock = ts::take_shared<Clock>(scenario);
 
-            access::create_channel_witness_config<ChannelWitness>(
+            admin_access::create_channel_witness_config<ChannelWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );
-            access::create_user_witness_config<UserWitness>(
+            admin_access::create_user_witness_config<UserWitness>(
                 &admin_cap,
                 ts::ctx(scenario)
             );

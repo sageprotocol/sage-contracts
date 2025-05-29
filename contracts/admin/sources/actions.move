@@ -9,7 +9,7 @@ module sage_admin::admin_actions {
             FeeCap,
             RewardCap
         },
-        access::{
+        admin_access::{
             Self,
             UserOwnedConfig
         },
@@ -45,7 +45,7 @@ module sage_admin::admin_actions {
         owned_user_config: &UserOwnedConfig,
         ctx: &mut TxContext
     ): address {
-        access::assert_owned_user<OwnedUserType>(
+        admin_access::assert_owned_user<OwnedUserType>(
             owned_user_config,
             owned_user
         );

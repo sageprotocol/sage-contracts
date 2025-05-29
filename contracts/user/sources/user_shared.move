@@ -9,7 +9,7 @@ module sage_user::user_shared {
     };
 
     use sage_admin::{
-        access::{UserWitnessConfig}
+        admin_access::{UserWitnessConfig}
     };
 
     use sage_analytics::{

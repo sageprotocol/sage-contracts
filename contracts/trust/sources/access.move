@@ -1,4 +1,4 @@
-module sage_trust::access {
+module sage_trust::trust_access {
     use std::{
         type_name::{Self, TypeName}
     };
@@ -34,7 +34,7 @@ module sage_trust::access {
 
     public struct StartingWitness has drop {}
 
-    public struct ACCESS has drop {}
+    public struct TRUST_ACCESS has drop {}
 
     #[test_only]
     public struct InvalidWitness has drop {}
@@ -47,7 +47,7 @@ module sage_trust::access {
     // --------------- Constructor ---------------
 
     fun init(
-        otw: ACCESS,
+        otw: TRUST_ACCESS,
         ctx: &mut TxContext
     ) {
         claim_and_keep(otw, ctx);
@@ -145,7 +145,7 @@ module sage_trust::access {
 
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
-        init(ACCESS {}, ctx);
+        init(TRUST_ACCESS {}, ctx);
     }
 
     #[test_only]

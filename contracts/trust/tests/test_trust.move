@@ -21,7 +21,7 @@ module sage_trust::test_trust {
     };
 
     use sage_trust::{
-        access::{
+        trust_access::{
             Self,
             GovernanceWitnessConfig,
             RewardWitnessConfig,
@@ -84,7 +84,7 @@ module sage_trust::test_trust {
 
         ts::next_tx(scenario, ADMIN);
         {
-            access::init_for_testing(ts::ctx(scenario));
+            trust_access::init_for_testing(ts::ctx(scenario));
             admin::init_for_testing(ts::ctx(scenario));
             trust::init_for_testing(ts::ctx(scenario));
         };
@@ -104,11 +104,11 @@ module sage_trust::test_trust {
             let protected_treasury = ts::take_shared<ProtectedTreasury>(scenario);
             let mut reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
-            access::update_governance_witness<ValidWitness>(
+            trust_access::update_governance_witness<ValidWitness>(
                 &admin_cap,
                 &mut governance_witness_config
             );
-            access::update_reward_witness<ValidWitness>(
+            trust_access::update_reward_witness<ValidWitness>(
                 &admin_cap,
                 &mut reward_witness_config
             );
@@ -258,7 +258,7 @@ module sage_trust::test_trust {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let valid_witness = access::create_valid_witness();
+            let valid_witness = trust_access::create_valid_witness();
 
             trust::update_mint_config_for_governance<ValidWitness>(
                 &valid_witness,
@@ -305,7 +305,7 @@ module sage_trust::test_trust {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let invalid_witness = access::create_invalid_witness();
+            let invalid_witness = trust_access::create_invalid_witness();
 
             trust::update_mint_config_for_governance<InvalidWitness>(
                 &invalid_witness,
@@ -342,7 +342,7 @@ module sage_trust::test_trust {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_witness = access::create_valid_witness();
+            let reward_witness = trust_access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
                 &mint_config,
@@ -400,7 +400,7 @@ module sage_trust::test_trust {
                 option::none()
             );
 
-            let reward_witness = access::create_valid_witness();
+            let reward_witness = trust_access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
                 &mint_config,
@@ -460,7 +460,7 @@ module sage_trust::test_trust {
                 option::some(5)
             );
 
-            let reward_witness = access::create_valid_witness();
+            let reward_witness = trust_access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
                 &mint_config,
@@ -551,7 +551,7 @@ module sage_trust::test_trust {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_witness = access::create_invalid_witness();
+            let reward_witness = trust_access::create_invalid_witness();
 
             let coin = trust::mint<InvalidWitness>(
                 &mint_config,
@@ -592,7 +592,7 @@ module sage_trust::test_trust {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_witness = access::create_valid_witness();
+            let reward_witness = trust_access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
                 &mint_config,
@@ -603,7 +603,7 @@ module sage_trust::test_trust {
                 ts::ctx(scenario)
             );
 
-            let reward_witness = access::create_invalid_witness();
+            let reward_witness = trust_access::create_invalid_witness();
 
             trust::burn<InvalidWitness>(
                 &reward_witness,
@@ -640,7 +640,7 @@ module sage_trust::test_trust {
         ts::next_tx(scenario, ADMIN);
         {
             let amount = 5;
-            let reward_witness = access::create_valid_witness();
+            let reward_witness = trust_access::create_valid_witness();
 
             let coin = trust::mint<ValidWitness>(
                 &mint_config,
