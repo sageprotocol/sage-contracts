@@ -10458,6 +10458,10 @@ module sage_user::test_user_actions {
                 ts::ctx(scenario)
             );
 
+            let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == ((2 * WEIGHT_USER_TEXT_POST) / SCALE_FACTOR));
+
             ts::return_to_sender(scenario, owned_user);
             
             ts::return_shared(mint_config);

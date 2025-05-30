@@ -306,6 +306,81 @@ module sage_user::test_user_owned {
     }
 
     #[test]
+    fun test_owned_user_add_to_total_rewards() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                mut owned_user,
+                _user_address
+            ) = user_owned::create(
+                avatar,
+                banner,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let mut running_total = 0;
+
+            let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == running_total);
+
+            let amount = 5;
+            running_total = running_total + amount;
+
+            owned_user.add_to_total_rewards(amount);
+
+            let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == running_total);
+
+            let amount = (1005 / 1000);
+            running_total = running_total + amount;
+
+            owned_user.add_to_total_rewards(amount);
+
+            let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == running_total);
+
+            let amount = (105000 / 100000);
+            running_total = running_total + amount;
+
+            owned_user.add_to_total_rewards(amount);
+
+            let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == running_total);
+
+            let amount = (1050000 / 1000000);
+            running_total = running_total + amount;
+
+            owned_user.add_to_total_rewards(amount);
+
+            let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == running_total);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     #[expected_failure(abort_code = ENoAppFavorites)]
     fun test_owned_user_remove_favorite_channel_fail() {
         let mut scenario_val = ts::begin(ADMIN);

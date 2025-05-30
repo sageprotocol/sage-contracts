@@ -477,6 +477,11 @@ module sage_user::user_actions {
         if (total_coin_option.is_some()) {
             let total_coin = total_coin_option.destroy_some();
 
+            let balance = total_coin.balance();
+            let amount = balance.value();
+
+            owned_user.add_to_total_rewards(amount);
+
             transfer::public_transfer(total_coin, self);
         } else {
             total_coin_option.destroy_none();

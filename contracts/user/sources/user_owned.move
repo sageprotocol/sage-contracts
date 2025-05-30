@@ -73,7 +73,7 @@ module sage_user::user_owned {
         name: String,
         owner: address,
         shared_user: address,
-        total_earnings: u64,
+        total_rewards: u64,
         updated_at: u64
     }
 
@@ -227,6 +227,12 @@ module sage_user::user_owned {
         } else {
             0
         }
+    }
+
+    public fun get_total_rewards(
+        user: &UserOwned
+    ): u64 {
+        user.total_rewards
     }
 
     public fun has_analytics(
@@ -427,6 +433,13 @@ module sage_user::user_owned {
         )
     }
 
+    public(package) fun add_to_total_rewards(
+        owned_user: &mut UserOwned,
+        amount: u64
+    ) {
+        owned_user.total_rewards = owned_user.total_rewards + amount;
+    }
+
     public(package) fun borrow_analytics_mut(
         owned_user: &mut UserOwned,
         app_address: address,
@@ -502,7 +515,7 @@ module sage_user::user_owned {
             name,
             owner,
             shared_user: @0x0,
-            total_earnings: 0,
+            total_rewards: 0,
             updated_at: created_at
         };
 
