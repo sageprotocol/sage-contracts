@@ -1,6 +1,5 @@
 module sage_channel::channel {
     use sui::{
-        dynamic_field::{Self as df},
         dynamic_object_field::{Self as dof}
     };
 
@@ -20,6 +19,7 @@ module sage_channel::channel {
     };
 
     use sage_shared::{
+        blocklist::{Self, Blocklist},
         membership::{Membership},
         moderation::{Moderation},
         posts::{Self, Posts}
@@ -45,15 +45,15 @@ module sage_channel::channel {
     // --------------- Name Tag ---------------
 
     public struct AnalyticsKey has copy, drop, store {
-        app: address,
         epoch: u64
     }
 
     public struct Channel has key {
         id: UID,
         app: address,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
+        blocklist: Blocklist,
         created_at: u64,
         created_by: address,
         description: String,
@@ -61,11 +61,8 @@ module sage_channel::channel {
         key: String,
         moderators: Moderation,
         name: String,
+        posts: Posts,
         updated_at: u64
-    }
-
-    public struct PostsKey has copy, drop, store {
-        app: address
     }
 
     // --------------- Events ---------------
@@ -104,13 +101,13 @@ module sage_channel::channel {
     public fun get_avatar(
         channel: &Channel
     ): String {
-        channel.avatar_hash
+        channel.avatar
     }
 
     public fun get_banner(
         channel: &Channel
     ): String {
-        channel.banner_hash
+        channel.banner
     }
 
     public fun get_created_by(
@@ -142,12 +139,10 @@ module sage_channel::channel {
     public(package) fun borrow_analytics_mut(
         channel: &mut Channel,
         channel_witness_config: &ChannelWitnessConfig,
-        app_address: address,
         epoch: u64,
         ctx: &mut TxContext
     ): &mut Analytics {
         let analytics_key = AnalyticsKey {
-            app: app_address,
             epoch
         };
 
@@ -190,10 +185,16 @@ module sage_channel::channel {
         &mut channel.moderators
     }
 
+    public(package) fun borrow_posts_mut(
+        channel: &mut Channel
+    ): &mut Posts {
+        &mut channel.posts
+    }
+
     public(package) fun create(
         app_address: address,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         description: String,
         created_at: u64,
         created_by: address,
@@ -206,11 +207,15 @@ module sage_channel::channel {
         assert_channel_name(&name);
         assert_channel_description(&description);
 
+        let blocklist = blocklist::create(ctx);
+        let posts = posts::create(ctx);
+
         let channel = Channel {
             id: object::new(ctx),
             app: app_address,
-            avatar_hash,
-            banner_hash,
+            avatar,
+            banner,
+            blocklist,
             created_at,
             created_by,
             description,
@@ -218,6 +223,7 @@ module sage_channel::channel {
             key,
             moderators,
             name,
+            posts,
             updated_at: created_at
         };
 
@@ -228,58 +234,18 @@ module sage_channel::channel {
         channel_address
     }
 
-    public(package) fun return_posts(
-        channel: &mut Channel,
-        app_address: address,
-        posts: Posts
-    ) {
-        let posts_key = PostsKey {
-            app: app_address
-        };
-
-        df::add(
-            &mut channel.id,
-            posts_key,
-            posts
-        );
-    }
-
-    public(package) fun take_posts(
-        channel: &mut Channel,
-        app_address: address,
-        ctx: &mut TxContext
-    ): Posts {
-        let posts_key = PostsKey {
-            app: app_address
-        };
-
-        let does_exist = df::exists_with_type<PostsKey, Posts>(
-            &channel.id,
-            posts_key
-        );
-
-        if (does_exist) {
-            df::remove(
-                &mut channel.id,
-                posts_key
-            )
-        } else {
-            posts::create(ctx)
-        }
-    }
-
     public(package) fun update(
         channel: &mut Channel,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: String,
+        banner: String,
         description: String,
         name: String,
         updated_at: u64
     ) {
         assert_channel_description(&description);
 
-        channel.avatar_hash = avatar_hash;
-        channel.banner_hash = banner_hash;
+        channel.avatar = avatar;
+        channel.banner = banner;
         channel.description = description;
         channel.name = name;
         channel.updated_at = updated_at;

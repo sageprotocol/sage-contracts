@@ -1234,7 +1234,6 @@ module sage_channel::test_channel_actions {
             let analytics_channel = channel::borrow_analytics_mut(
                 &mut channel,
                 &channel_witness_config,
-                object::id_address(&app),
                 current_epoch,
                 ts::ctx(scenario)
             );
@@ -1528,7 +1527,6 @@ module sage_channel::test_channel_actions {
             let analytics_channel = channel::borrow_analytics_mut(
                 &mut channel,
                 &channel_witness_config,
-                object::id_address(&app),
                 current_epoch,
                 ts::ctx(scenario)
             );
@@ -3398,35 +3396,25 @@ module sage_channel::test_channel_actions {
 
             assert!(num_posts == 0);
 
-            let posts = channel::take_posts(
-                &mut channel,
-                app_address,
-                ts::ctx(scenario)
-            );
+            let posts = channel.borrow_posts_mut();
 
             let has_record = posts::has_record(
-                &posts,
+                posts,
                 timestamp_1
             );
 
             assert!(has_record, ENoPostRecord);
 
             let has_record = posts::has_record(
-                &posts,
+                posts,
                 timestamp_2
             );
 
             assert!(has_record, ENoPostRecord);
 
-            let length = posts::get_length(&posts);
+            let length = posts::get_length(posts);
 
             assert!(length == 2, EPostsLengthMismatch);
-
-            channel::return_posts(
-                &mut channel,
-                app_address,
-                posts
-            );
 
             ts::return_shared(channel);
 
@@ -3612,6 +3600,137 @@ module sage_channel::test_channel_actions {
             );
 
             assert!(claim == WEIGHT_CHANNEL_TEXT_POST);
+
+            destroy_for_testing(
+                app,
+                channel_fees,
+                channel_registry,
+                channel_witness_config,
+                clock,
+                invite_config,
+                reward_weights_registry,
+                owned_user_admin,
+                owned_user_server,
+                shared_user_admin,
+                shared_user_server,
+                user_fees,
+                user_registry,
+                user_invite_registry,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EAppChannelMismatch)]
+    fun test_channel_actions_post_app_mismatch() {
+        let (
+            mut scenario_val,
+            app,
+            channel_fees,
+            mut channel_registry,
+            channel_witness_config,
+            clock,
+            invite_config,
+            reward_weights_registry,
+            mut owned_user_admin,
+            owned_user_server,
+            shared_user_admin,
+            shared_user_server,
+            user_fees,
+            user_registry,
+            user_invite_registry,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let avatar = utf8(b"avatar");
+        let banner = utf8(b"banner");
+        let description = utf8(b"description");
+        let name = utf8(b"CHANNEL-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let _channel_address = channel_actions::create<SUI>(
+                &app,
+                &channel_fees,
+                &mut channel_registry,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                avatar,
+                banner,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let new_app = {
+            let new_app = apps::create_for_testing(
+                utf8(b"new"),
+                ts::ctx(scenario)
+            );
+
+            new_app
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut channel = ts::take_shared<Channel>(scenario);
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_CHANNEL_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_CHANNEL_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let data = utf8(b"data");
+            let title = utf8(b"title");
+
+            let (
+                _post_address,
+                _timestamp
+            ) = channel_actions::post<SUI>(
+                &new_app,
+                &mut channel,
+                &channel_fees,
+                &channel_witness_config,
+                &clock,
+                &reward_weights_registry,
+                &mut owned_user_admin,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            ts::return_shared(channel);
+            
+            destroy(new_app);
 
             destroy_for_testing(
                 app,

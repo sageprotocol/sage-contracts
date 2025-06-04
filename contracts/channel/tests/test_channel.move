@@ -157,7 +157,6 @@ module sage_channel::test_channel {
             let _analytics = channel::borrow_analytics_mut(
                 &mut channel,
                 &channel_witness_config,
-                @0x002,
                 1,
                 ts::ctx(scenario)
             );
@@ -280,7 +279,6 @@ module sage_channel::test_channel {
             );
         };
 
-        let app_address = @0x002;
         let post_address = @0xfff;
         let post_timestamp = 0;
 
@@ -288,22 +286,12 @@ module sage_channel::test_channel {
         let mut channel = {
             let mut channel= ts::take_shared<Channel>(scenario);
 
-            let mut posts = channel::take_posts(
-                &mut channel,
-                app_address,
-                ts::ctx(scenario)
-            );
+            let posts = channel.borrow_posts_mut();
 
             posts::add(
-                &mut posts,
+                posts,
                 post_timestamp,
                 post_address
-            );
-
-            channel::return_posts(
-                &mut channel,
-                app_address,
-                posts
             );
 
             channel
@@ -311,28 +299,18 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let posts = channel::take_posts(
-                &mut channel,
-                app_address,
-                ts::ctx(scenario)
-            );
+            let posts = channel.borrow_posts_mut();
 
             let has_record = posts::has_record(
-                &posts,
+                posts,
                 post_timestamp
             );
 
             assert!(has_record, EPostsFailure);
 
-            let length = posts::get_length(&posts);
+            let length = posts::get_length(posts);
 
             assert!(length == 1, EPostsFailure);
-
-            channel::return_posts(
-                &mut channel,
-                app_address,
-                posts
-            );
 
             destroy(channel);
         };

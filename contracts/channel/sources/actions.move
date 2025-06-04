@@ -229,7 +229,7 @@ module sage_channel::channel_actions {
         name: String,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
-        ctx: &mut TxContext,
+        ctx: &mut TxContext
     ): address {
         let app_address = object::id_address(app);
 
@@ -385,7 +385,6 @@ module sage_channel::channel_actions {
         channel_registry::share_registry(channel_registry);
     }
 
-    // test app and channel match
     public fun follow<CoinType> (
         app: &App,
         channel: &mut Channel,
@@ -457,7 +456,6 @@ module sage_channel::channel_actions {
             let analytics_channel = channel::borrow_analytics_mut(
                 channel,
                 channel_witness_config,
-                app_address,
                 current_epoch,
                 ctx
             );
@@ -518,6 +516,13 @@ module sage_channel::channel_actions {
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
     ): (address, u64) {
+        let app_address = object::id_address(app);
+
+        channel::assert_app_channel_match(
+            channel,
+            app_address
+        );
+
         let self = tx_context::sender(ctx);
 
         let follows = channel::borrow_follows_mut(
@@ -538,14 +543,9 @@ module sage_channel::channel_actions {
             sui_payment
         );
 
-        let app_address = object::id_address(app);
         let channel_witness = channel_witness::create_witness();
 
-        let mut posts = channel::take_posts(
-            channel,
-            app_address,
-            ctx
-        );
+        let posts = channel.borrow_posts_mut();
 
         let (
             post_address,
@@ -556,17 +556,11 @@ module sage_channel::channel_actions {
             &channel_witness,
             channel_witness_config,
             clock,
-            &mut posts,
+            posts,
             data,
             description,
             title,
             ctx
-        );
-
-        channel::return_posts(
-            channel,
-            app_address,
-            posts
         );
 
         fees::collect_payment<CoinType>(
