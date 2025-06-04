@@ -133,6 +133,14 @@ module sage_channel::test_channel_actions {
 
     const INCORRECT_FEE: u64 = 100;
 
+    const AVATAR: u256 = 0;
+    const BANNER: u256 = 1;
+    const DESCRIPTION: vector<u8> = b"description";
+
+    const NEW_AVATAR: u256 = 2;
+    const NEW_BANNER: u256 = 3;
+    const NEW_DESCRIPTION: vector<u8> = b"new-description";
+
     // --------------- Errors ---------------
 
     const EChannelAvatarMismatch: u64 = 2;
@@ -372,7 +380,7 @@ module sage_channel::test_channel_actions {
                 option::none(),
                 utf8(b"avatar"),
                 utf8(b"banner"),
-                utf8(b"description"),
+                utf8(DESCRIPTION),
                 utf8(b"admin"),
                 custom_payment,
                 sui_payment,
@@ -413,7 +421,7 @@ module sage_channel::test_channel_actions {
                 option::none(),
                 utf8(b"avatar"),
                 utf8(b"banner"),
-                utf8(b"description"),
+                utf8(DESCRIPTION),
                 utf8(b"server"),
                 custom_payment,
                 sui_payment,
@@ -530,9 +538,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         let key = string_helpers::to_lowercase(&name);
@@ -557,8 +563,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -572,10 +578,10 @@ module sage_channel::test_channel_actions {
             let mut channel = ts::take_shared<Channel>(scenario);
 
             let retrieved_avatar = channel::get_avatar(&channel);
-            assert!(retrieved_avatar == avatar, EChannelAvatarMismatch);
+            assert!(retrieved_avatar == AVATAR, EChannelAvatarMismatch);
 
             let retrieved_banner = channel::get_banner(&channel);
-            assert!(retrieved_banner == banner, EChannelBannerMismatch);
+            assert!(retrieved_banner == BANNER, EChannelBannerMismatch);
 
             let retrieved_creator = channel::get_created_by(&channel);
             assert!(retrieved_creator == ADMIN, EChannelCreatorMismatch);
@@ -713,9 +719,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -765,8 +769,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -857,9 +861,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -892,8 +894,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -949,9 +951,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -974,8 +974,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1029,9 +1029,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1054,8 +1052,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1166,9 +1164,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1191,8 +1187,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1376,9 +1372,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1401,8 +1395,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1631,9 +1625,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1656,8 +1648,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1752,9 +1744,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1777,8 +1767,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1862,9 +1852,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1887,8 +1875,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1972,9 +1960,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -1997,8 +1983,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2100,9 +2086,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2125,8 +2109,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2227,9 +2211,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2252,8 +2234,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2376,9 +2358,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2401,8 +2381,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2544,9 +2524,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2569,8 +2547,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2650,9 +2628,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2675,8 +2651,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2756,9 +2732,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2781,8 +2755,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2862,9 +2836,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2887,8 +2859,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2994,9 +2966,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3019,8 +2989,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3119,9 +3089,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3144,8 +3112,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3243,9 +3211,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3268,8 +3234,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3463,9 +3429,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3488,8 +3452,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3647,9 +3611,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3672,8 +3634,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3778,9 +3740,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3803,8 +3763,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3897,9 +3857,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -3922,8 +3880,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4016,9 +3974,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4041,8 +3997,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4134,9 +4090,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         let key = string_helpers::to_lowercase(&name);
@@ -4161,8 +4115,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4171,9 +4125,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4186,8 +4138,8 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &mut channel,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name
             );
@@ -4201,10 +4153,10 @@ module sage_channel::test_channel_actions {
             let channel = ts::take_shared<Channel>(scenario);
 
             let retrieved_avatar = channel::get_avatar(&channel);
-            assert!(retrieved_avatar == new_avatar, EChannelAvatarMismatch);
+            assert!(retrieved_avatar == NEW_AVATAR, EChannelAvatarMismatch);
 
             let retrieved_banner = channel::get_banner(&channel);
-            assert!(retrieved_banner == new_banner, EChannelBannerMismatch);
+            assert!(retrieved_banner == NEW_BANNER, EChannelBannerMismatch);
 
             let retrieved_creator = channel::get_created_by(&channel);
             assert!(retrieved_creator == ADMIN, EChannelCreatorMismatch);
@@ -4266,9 +4218,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4291,8 +4241,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4301,9 +4251,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"new-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4316,8 +4264,8 @@ module sage_channel::test_channel_actions {
                 &admin_cap,
                 &mut channel,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name
             );
@@ -4370,9 +4318,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         let key = string_helpers::to_lowercase(&name);
@@ -4397,8 +4343,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4407,9 +4353,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4429,8 +4373,8 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -4446,10 +4390,10 @@ module sage_channel::test_channel_actions {
             let channel = ts::take_shared<Channel>(scenario);
 
             let retrieved_avatar = channel::get_avatar(&channel);
-            assert!(retrieved_avatar == new_avatar, EChannelAvatarMismatch);
+            assert!(retrieved_avatar == NEW_AVATAR, EChannelAvatarMismatch);
 
             let retrieved_banner = channel::get_banner(&channel);
-            assert!(retrieved_banner == new_banner, EChannelBannerMismatch);
+            assert!(retrieved_banner == NEW_BANNER, EChannelBannerMismatch);
 
             let retrieved_creator = channel::get_created_by(&channel);
             assert!(retrieved_creator == ADMIN, EChannelCreatorMismatch);
@@ -4511,9 +4455,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4536,8 +4478,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4546,9 +4488,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"new-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4568,8 +4508,8 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -4625,9 +4565,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4650,8 +4588,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4660,9 +4598,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"channel-name");
 
         ts::next_tx(scenario, SERVER);
@@ -4682,8 +4618,8 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -4739,9 +4675,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4764,8 +4698,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4774,9 +4708,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4796,8 +4728,8 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -4853,9 +4785,7 @@ module sage_channel::test_channel_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"CHANNEL-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4878,8 +4808,8 @@ module sage_channel::test_channel_actions {
                 &reward_weights_registry,
                 &mut owned_user_admin,
                 &user_witness_config,
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4888,9 +4818,7 @@ module sage_channel::test_channel_actions {
             );
         };
 
-        let new_avatar = utf8(b"new-avatar");
-        let new_banner = utf8(b"new-banner");
-        let new_description = utf8(b"new-description");
+        let new_description = utf8(NEW_DESCRIPTION);
         let new_name = utf8(b"channel-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -4910,8 +4838,8 @@ module sage_channel::test_channel_actions {
                 &mut channel,
                 &channel_fees,
                 &clock,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,

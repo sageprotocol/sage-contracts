@@ -23,6 +23,14 @@ module sage_user::test_user_owned {
     const SERVER: address = @server;
     const SHARED: address = @0xCAFE;
 
+    const AVATAR: u256 = 0;
+    const BANNER: u256 = 1;
+    const DESCRIPTION: vector<u8> = b"description";
+
+    const NEW_AVATAR: u256 = 2;
+    const NEW_BANNER: u256 = 3;
+    const NEW_DESCRIPTION: vector<u8> = b"new-description";
+
     // --------------- Errors ---------------
 
     const EAvatarMismatch: u64 = 1;
@@ -47,9 +55,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -59,8 +65,8 @@ module sage_user::test_user_owned {
                 owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -70,10 +76,10 @@ module sage_user::test_user_owned {
             );
 
             let retrieved_avatar = user_owned::get_avatar(&owned_user);
-            assert!(avatar == retrieved_avatar, EAvatarMismatch);
+            assert!(AVATAR == retrieved_avatar, EAvatarMismatch);
 
             let retrieved_banner = user_owned::get_banner(&owned_user);
-            assert!(banner == retrieved_banner, EBannerMismatch);
+            assert!(BANNER == retrieved_banner, EBannerMismatch);
 
             let retrieved_description = user_owned::get_description(&owned_user);
             assert!(description == retrieved_description, EDescriptionMismatch);
@@ -101,9 +107,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -113,8 +117,8 @@ module sage_user::test_user_owned {
                 mut owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                AVATAR,
                 created_at,
                 description,
                 name,
@@ -123,26 +127,24 @@ module sage_user::test_user_owned {
                 ts::ctx(scenario)
             );
 
-            let new_user_avatar = utf8(b"new_avatar_hash");
-            let new_user_banner = utf8(b"banner_hash");
-            let new_user_description = utf8(b"new_description");
+            let new_user_description = utf8(NEW_DESCRIPTION);
             let new_user_name = utf8(b"USER-name");
             let updated_at: u64 = 9999;
 
             user_owned::update(
                 &mut owned_user,
-                new_user_avatar,
-                new_user_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_user_description,
                 new_user_name,
                 updated_at
             );
 
             let retrieved_avatar = user_owned::get_avatar(&owned_user);
-            assert!(new_user_avatar == retrieved_avatar, EAvatarMismatch);
+            assert!(NEW_AVATAR == retrieved_avatar, EAvatarMismatch);
 
             let retrieved_banner = user_owned::get_banner(&owned_user);
-            assert!(new_user_banner == retrieved_banner, EBannerMismatch);
+            assert!(NEW_BANNER == retrieved_banner, EBannerMismatch);
 
             let retrieved_description = user_owned::get_description(&owned_user);
             assert!(new_user_description == retrieved_description, EDescriptionMismatch);
@@ -164,9 +166,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -176,8 +176,8 @@ module sage_user::test_user_owned {
                 owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -214,9 +214,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -234,8 +232,8 @@ module sage_user::test_user_owned {
                 mut owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -310,9 +308,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -322,8 +318,8 @@ module sage_user::test_user_owned {
                 mut owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -386,9 +382,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -403,8 +397,8 @@ module sage_user::test_user_owned {
                 mut owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -443,9 +437,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -460,8 +452,8 @@ module sage_user::test_user_owned {
                 mut owned_user,
                 _user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -515,9 +507,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -535,8 +525,8 @@ module sage_user::test_user_owned {
                 owned_user,
                 user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -630,9 +620,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -647,8 +635,8 @@ module sage_user::test_user_owned {
                 owned_user,
                 user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,
@@ -706,9 +694,7 @@ module sage_user::test_user_owned {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let created_at: u64 = 999;
         let name = utf8(b"user-name");
 
@@ -723,8 +709,8 @@ module sage_user::test_user_owned {
                 owned_user,
                 user_address
             ) = user_owned::create(
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 created_at,
                 description,
                 name,

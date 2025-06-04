@@ -87,8 +87,8 @@ module sage_channel::test_channel {
 
             let _channel = channel::create(
                 APP_ADDRESS,
-                utf8(b"avatar"),
-                utf8(b"banner"),
+                0,
+                0,
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -127,7 +127,7 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
+            let avatar = 0;
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
@@ -137,7 +137,7 @@ module sage_channel::test_channel {
             let _channel_address = channel::create(
                 APP_ADDRESS,
                 avatar,
-                utf8(b"banner"),
+                0,
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -175,7 +175,7 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
+            let avatar = 0;
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
@@ -185,7 +185,7 @@ module sage_channel::test_channel {
             let _channel_address = channel::create(
                 APP_ADDRESS,
                 avatar,
-                utf8(b"banner"),
+                0,
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -216,7 +216,7 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
+            let avatar = 0;
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
@@ -226,7 +226,7 @@ module sage_channel::test_channel {
             let _channel_address = channel::create(
                 APP_ADDRESS,
                 avatar,
-                utf8(b"banner"),
+                0,
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -257,7 +257,7 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
+            let avatar = 0;
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
@@ -267,7 +267,7 @@ module sage_channel::test_channel {
             let _channel_address = channel::create(
                 APP_ADDRESS,
                 avatar,
-                utf8(b"banner"),
+                0,
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -325,7 +325,7 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         let channel_name = {
-            let avatar = utf8(b"avatar");
+            let avatar = 0;
             let channel_name = utf8(b"channel-name");
             let created_at: u64 = 999;
 
@@ -335,7 +335,7 @@ module sage_channel::test_channel {
             let _channel_address = channel::create(
                 APP_ADDRESS,
                 avatar,
-                utf8(b"banner"),
+                0,
                 utf8(b"description"),
                 created_at,
                 ADMIN,
@@ -351,8 +351,8 @@ module sage_channel::test_channel {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_channel_avatar = utf8(b"new_avatar");
-            let new_channel_banner = utf8(b"new_banner");
+            let new_channel_avatar = 0;
+            let new_channel_banner = 0;
             let new_channel_description = utf8(b"new_description");
             let new_channel_name = utf8(b"NEW-name");
 

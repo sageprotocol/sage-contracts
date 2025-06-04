@@ -157,6 +157,14 @@ module sage_user::test_user_actions {
 
     const INCORRECT_FEE: u64 = 100;
 
+    const AVATAR: u256 = 0;
+    const BANNER: u256 = 1;
+    const DESCRIPTION: vector<u8> = b"description";
+
+    const NEW_AVATAR: u256 = 2;
+    const NEW_BANNER: u256 = 3;
+    const NEW_DESCRIPTION: vector<u8> = b"new-description";
+
     // --------------- Errors ---------------
 
     const EDescriptionInvalid: u64 = 0;
@@ -416,7 +424,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
 
             user_actions::assert_user_description(&description);
         };
@@ -521,9 +529,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         let admin_cap = {
@@ -561,8 +567,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -651,9 +657,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         let admin_cap = {
@@ -691,8 +695,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -758,9 +762,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         let admin_cap = {
@@ -793,8 +795,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -841,8 +843,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -854,7 +856,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -1009,9 +1011,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         let admin_cap = {
@@ -1074,8 +1074,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1122,8 +1122,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1149,7 +1149,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -1186,7 +1186,7 @@ module sage_user::test_user_actions {
             let post = ts::take_shared<Post>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -1499,9 +1499,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         let admin_cap = {
@@ -1534,8 +1532,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1575,8 +1573,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1595,7 +1593,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -1682,9 +1680,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         let admin_cap = {
@@ -1717,8 +1713,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1758,8 +1754,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1846,9 +1842,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let key = utf8(b"user-name");
         let name = utf8(b"USER-name");
 
@@ -1877,8 +1871,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -1924,10 +1918,10 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let retrieved_avatar = user_owned::get_avatar(&owned_user);
-            assert!(retrieved_avatar == avatar, EUserAvatarMismatch);
+            assert!(retrieved_avatar == AVATAR, EUserAvatarMismatch);
 
             let retrieved_banner = user_owned::get_banner(&owned_user);
-            assert!(retrieved_banner == banner, EUserBannerMismatch);
+            assert!(retrieved_banner == BANNER, EUserBannerMismatch);
 
             let retrieved_description = user_owned::get_description(&owned_user);
             assert!(retrieved_description == description, EUserDescriptionMismatch);
@@ -1993,9 +1987,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let key = utf8(b"user-name");
         let name = utf8(b"USER-name");
 
@@ -2040,8 +2032,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::some(invite_code),
                 option::some(invite_key),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2087,10 +2079,10 @@ module sage_user::test_user_actions {
             let owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             let retrieved_avatar = user_owned::get_avatar(&owned_user);
-            assert!(retrieved_avatar == avatar, EUserAvatarMismatch);
+            assert!(retrieved_avatar == AVATAR, EUserAvatarMismatch);
 
             let retrieved_banner = user_owned::get_banner(&owned_user);
-            assert!(retrieved_banner == banner, EUserBannerMismatch);
+            assert!(retrieved_banner == BANNER, EUserBannerMismatch);
 
             let retrieved_description = user_owned::get_description(&owned_user);
             assert!(retrieved_description == description, EUserDescriptionMismatch);
@@ -2157,8 +2149,6 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
         let description = utf8(b"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefg");
         let name = utf8(b"USER-name");
 
@@ -2184,8 +2174,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2229,9 +2219,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"abcdefghijklmnopqrstuvwxyz");
 
         ts::next_tx(scenario, ADMIN);
@@ -2256,8 +2244,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2301,9 +2289,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, SERVER);
@@ -2341,8 +2327,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2386,9 +2372,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2413,8 +2397,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::some(utf8(b"code")),
                 option::some(utf8(b"key")),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2458,9 +2442,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         let invite_code = utf8(b"");
@@ -2501,8 +2483,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::some(invite_code),
                 option::some(invite_key),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2546,9 +2528,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2573,8 +2553,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2618,9 +2598,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -2645,8 +2623,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -2715,9 +2693,9 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                utf8(b"avatar"),
-                utf8(b"banner"),
-                utf8(b"description"),
+                AVATAR,
+                BANNER,
+                utf8(DESCRIPTION),
                 utf8(b"name"),
                 custom_payment,
                 sui_payment,
@@ -2833,9 +2811,9 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                utf8(b"avatar"),
-                utf8(b"banner"),
-                utf8(b"description"),
+                AVATAR,
+                BANNER,
+                utf8(DESCRIPTION),
                 utf8(b"name"),
                 custom_payment,
                 sui_payment,
@@ -2933,9 +2911,9 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                utf8(b"avatar"),
-                utf8(b"banner"),
-                utf8(b"description"),
+                AVATAR,
+                BANNER,
+                utf8(DESCRIPTION),
                 utf8(b"name"),
                 custom_payment,
                 sui_payment,
@@ -3033,9 +3011,9 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                utf8(b"avatar"),
-                utf8(b"banner"),
-                utf8(b"description"),
+                AVATAR,
+                BANNER,
+                utf8(DESCRIPTION),
                 utf8(b"name"),
                 custom_payment,
                 sui_payment,
@@ -3192,9 +3170,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -3220,8 +3196,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3256,8 +3232,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3423,9 +3399,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -3451,8 +3425,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3518,8 +3492,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3739,9 +3713,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -3767,8 +3739,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3801,8 +3773,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3877,9 +3849,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -3905,8 +3875,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -3939,8 +3909,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4015,9 +3985,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -4044,8 +4012,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4120,9 +4088,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -4148,8 +4114,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4184,8 +4150,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4280,9 +4246,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -4308,8 +4272,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4344,8 +4308,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4439,9 +4403,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -4467,8 +4429,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4503,8 +4465,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4752,9 +4714,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -4780,8 +4740,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4816,8 +4776,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4906,9 +4866,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -4934,8 +4892,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -4970,8 +4928,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -5331,9 +5289,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -5386,8 +5342,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -5422,8 +5378,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -5716,9 +5672,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -5744,8 +5698,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -5780,8 +5734,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -5861,9 +5815,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -5889,8 +5841,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -5925,8 +5877,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6006,9 +5958,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -6034,8 +5984,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6070,8 +6020,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6151,9 +6101,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -6179,8 +6127,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6215,8 +6163,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6345,9 +6293,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -6373,8 +6319,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6409,8 +6355,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6539,9 +6485,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, OTHER);
         {
@@ -6567,8 +6511,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6603,8 +6547,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6732,9 +6676,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -6759,8 +6701,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -6775,7 +6717,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -6823,7 +6765,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -6952,9 +6894,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -7003,8 +6943,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -7019,7 +6959,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -7065,7 +7005,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -7177,9 +7117,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -7204,8 +7142,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -7220,7 +7158,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -7290,9 +7228,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -7317,8 +7253,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -7333,7 +7269,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -7402,9 +7338,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -7429,8 +7363,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -7616,9 +7550,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -7642,8 +7574,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"USER-name"),
                 custom_payment,
@@ -7688,8 +7620,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -8120,9 +8052,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -8146,8 +8076,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"USER-name"),
                 custom_payment,
@@ -8192,8 +8122,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -8352,9 +8282,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -8378,8 +8306,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"USER-name"),
                 custom_payment,
@@ -8424,8 +8352,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -8451,7 +8379,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -8611,9 +8539,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -8637,8 +8563,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"USER-name"),
                 custom_payment,
@@ -8683,8 +8609,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -8710,7 +8636,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9029,9 +8955,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
 
         ts::next_tx(scenario, ADMIN);
         {
@@ -9055,8 +8979,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"USER-name"),
                 custom_payment,
@@ -9101,8 +9025,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -9128,7 +9052,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9260,9 +9184,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
-            let banner = utf8(b"banner");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9285,8 +9207,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -9297,9 +9219,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar = utf8(b"new-avatar");
-            let new_banner = utf8(b"new-banner");
-            let new_description = utf8(b"new-description");
+            let new_description = utf8(NEW_DESCRIPTION);
             let new_name = utf8(b"USER-name");
 
             let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
@@ -9318,8 +9238,8 @@ module sage_user::test_user_actions {
                 &user_registry,
                 &user_fees,
                 &mut owned_user,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -9328,10 +9248,10 @@ module sage_user::test_user_actions {
             );
 
             let retrieved_avatar = user_owned::get_avatar(&owned_user);
-            assert!(retrieved_avatar == new_avatar, EUserAvatarMismatch);
+            assert!(retrieved_avatar == NEW_AVATAR, EUserAvatarMismatch);
 
             let retrieved_banner = user_owned::get_banner(&owned_user);
-            assert!(retrieved_banner == new_banner, EUserBannerMismatch);
+            assert!(retrieved_banner == NEW_BANNER, EUserBannerMismatch);
 
             let retrieved_description = user_owned::get_description(&owned_user);
             assert!(retrieved_description == new_description, EUserDescriptionMismatch);
@@ -9395,9 +9315,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
-            let banner = utf8(b"banner");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9420,8 +9338,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -9432,9 +9350,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar = utf8(b"new-avatar");
-            let new_banner = utf8(b"new-banner");
-            let new_description = utf8(b"new-description");
+            let new_description = utf8(NEW_DESCRIPTION);
             let new_name = utf8(b"USER-name");
 
             let mut owned_user = ts::take_from_sender<UserOwned>(
@@ -9455,8 +9371,8 @@ module sage_user::test_user_actions {
                 &user_registry,
                 &user_fees,
                 &mut owned_user,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -9517,9 +9433,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
-            let banner = utf8(b"banner");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9542,8 +9456,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -9554,9 +9468,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar = utf8(b"new-avatar");
-            let new_banner = utf8(b"new-banner");
-            let new_description = utf8(b"new-description");
+            let new_description = utf8(NEW_DESCRIPTION);
             let new_name = utf8(b"USER-name");
 
             let mut owned_user = ts::take_from_sender<UserOwned>(
@@ -9577,8 +9489,8 @@ module sage_user::test_user_actions {
                 &user_registry,
                 &user_fees,
                 &mut owned_user,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -9639,9 +9551,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
-            let banner = utf8(b"banner");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9664,8 +9574,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -9676,9 +9586,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let new_avatar = utf8(b"new-avatar");
-            let new_banner = utf8(b"new-banner");
-            let new_description = utf8(b"new-description");
+            let new_description = utf8(NEW_DESCRIPTION);
             let new_name = utf8(b"different");
 
             let mut owned_user = ts::take_from_sender<UserOwned>(
@@ -9699,8 +9607,8 @@ module sage_user::test_user_actions {
                 &user_registry,
                 &user_fees,
                 &mut owned_user,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -9761,9 +9669,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let avatar = utf8(b"avatar");
-            let banner = utf8(b"banner");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let name = utf8(b"user-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9786,8 +9692,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -9798,9 +9704,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, OTHER);
         {
-            let avatar = utf8(b"avatar");
-            let banner = utf8(b"banner");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let name = utf8(b"other-name");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -9823,8 +9727,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -9835,9 +9739,7 @@ module sage_user::test_user_actions {
 
         ts::next_tx(scenario, OTHER);
         {
-            let new_avatar = utf8(b"new-avatar");
-            let new_banner = utf8(b"new-banner");
-            let new_description = utf8(b"new-description");
+            let new_description = utf8(NEW_DESCRIPTION);
             let new_name = utf8(b"USER-name");
 
             let mut owned_user = ts::take_from_sender<UserOwned>(
@@ -9858,8 +9760,8 @@ module sage_user::test_user_actions {
                 &user_registry,
                 &user_fees,
                 &mut owned_user,
-                new_avatar,
-                new_banner,
+                NEW_AVATAR,
+                NEW_BANNER,
                 new_description,
                 new_name,
                 custom_payment,
@@ -9931,9 +9833,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -9982,8 +9882,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -10069,9 +9969,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -10113,8 +10011,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -10129,7 +10027,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -10175,7 +10073,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -10286,9 +10184,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -10337,8 +10233,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -10353,7 +10249,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -10399,7 +10295,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -10514,9 +10410,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -10565,8 +10459,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -10584,7 +10478,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -10640,8 +10534,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -10768,9 +10662,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -10826,8 +10718,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -10845,7 +10737,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -10901,8 +10793,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,
@@ -11030,9 +10922,7 @@ module sage_user::test_user_actions {
 
         let scenario = &mut scenario_val;
 
-        let avatar = utf8(b"avatar");
-        let banner = utf8(b"banner");
-        let description = utf8(b"description");
+        let description = utf8(DESCRIPTION);
         let name = utf8(b"USER-name");
 
         ts::next_tx(scenario, ADMIN);
@@ -11088,8 +10978,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 name,
                 custom_payment,
@@ -11107,7 +10997,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let data = utf8(b"data");
-            let description = utf8(b"description");
+            let description = utf8(DESCRIPTION);
             let title = utf8(b"title");
 
             let custom_payment = mint_for_testing<SUI>(
@@ -11163,8 +11053,8 @@ module sage_user::test_user_actions {
                 &user_fees,
                 option::none(),
                 option::none(),
-                avatar,
-                banner,
+                AVATAR,
+                BANNER,
                 description,
                 utf8(b"other"),
                 custom_payment,

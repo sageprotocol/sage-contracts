@@ -122,8 +122,8 @@ module sage_user::user_actions {
     }
 
     public struct UserCreated has copy, drop {
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         created_at: u64,
         description: String,
         invited_by: Option<address>,
@@ -181,8 +181,8 @@ module sage_user::user_actions {
     }
 
     public struct UserUpdated has copy, drop {
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         updated_at: u64,
         user_id: address,
@@ -595,8 +595,8 @@ module sage_user::user_actions {
         user_fees: &UserFees,
         invite_code_option: Option<String>,
         invite_key_option: Option<String>,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,
@@ -1539,8 +1539,8 @@ module sage_user::user_actions {
         user_registry: &UserRegistry,
         user_fees: &UserFees,
         owned_user: &mut UserOwned,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,

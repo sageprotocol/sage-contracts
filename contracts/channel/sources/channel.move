@@ -51,8 +51,8 @@ module sage_channel::channel {
     public struct Channel has key {
         id: UID,
         app: address,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         blocklist: Blocklist,
         created_at: u64,
         created_by: address,
@@ -100,13 +100,13 @@ module sage_channel::channel {
 
     public fun get_avatar(
         channel: &Channel
-    ): String {
+    ): u256 {
         channel.avatar
     }
 
     public fun get_banner(
         channel: &Channel
-    ): String {
+    ): u256 {
         channel.banner
     }
 
@@ -193,8 +193,8 @@ module sage_channel::channel {
 
     public(package) fun create(
         app_address: address,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         created_at: u64,
         created_by: address,
@@ -236,8 +236,8 @@ module sage_channel::channel {
 
     public(package) fun update(
         channel: &mut Channel,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         updated_at: u64

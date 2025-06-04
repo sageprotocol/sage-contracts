@@ -70,8 +70,8 @@ module sage_channel::channel_actions {
 
     public struct ChannelCreated has copy, drop {
         app_id: address,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         channel_id: address,
         channel_key: String,
         channel_name: String,
@@ -108,8 +108,8 @@ module sage_channel::channel_actions {
     }
 
     public struct ChannelUpdated has copy, drop {
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         channel_id: address,
         channel_name: String,
         description: String,
@@ -223,8 +223,8 @@ module sage_channel::channel_actions {
         reward_weights_registry: &RewardWeightsRegistry,
         owned_user: &mut UserOwned,
         user_witness_config: &UserWitnessConfig,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,
@@ -768,8 +768,8 @@ module sage_channel::channel_actions {
         _: &AdminCap,
         channel: &mut Channel,
         clock: &Clock,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String
     ) {
@@ -805,8 +805,8 @@ module sage_channel::channel_actions {
         channel: &mut Channel,
         channel_fees: &ChannelFees,
         clock: &Clock,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         custom_payment: Coin<CoinType>,

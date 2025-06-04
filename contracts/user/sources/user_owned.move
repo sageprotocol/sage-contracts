@@ -65,8 +65,8 @@ module sage_user::user_owned {
 
     public struct UserOwned has key {
         id: UID,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         created_at: u64,
         description: String,
         key: String,
@@ -108,13 +108,13 @@ module sage_user::user_owned {
 
     public fun get_avatar(
         owned_user: &UserOwned
-    ): String {
+    ): u256 {
         owned_user.avatar
     }
 
     public fun get_banner(
         owned_user: &UserOwned
-    ): String {
+    ): u256 {
         owned_user.banner
     }
 
@@ -496,8 +496,8 @@ module sage_user::user_owned {
     }
 
     public(package) fun create(
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         created_at: u64,
         description: String,
         key: String,
@@ -674,8 +674,8 @@ module sage_user::user_owned {
 
     public(package) fun update(
         owned_user: &mut UserOwned,
-        avatar: String,
-        banner: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         updated_at: u64
