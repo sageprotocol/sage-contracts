@@ -19,10 +19,10 @@ module sage_trust::trust {
     // --------------- Constants ---------------
 
     const DECIMALS: u8 = 6;
-    const DESCRIPTION: vector<u8> = b"";
-    const ICON_URL: vector<u8> = b"";
-    const NAME: vector<u8> = b"";
-    const SYMBOL: vector<u8> = b"";
+    const DESCRIPTION: vector<u8> = b"Testnet TRUST";
+    const ICON_BYTES: vector<u8> = b"data:image/png;base64,xxxxxxxxx";
+    const NAME: vector<u8> = b"tTRUST";
+    const SYMBOL: vector<u8> = b"tTRUST";
 
     const SCALE_FACTOR: u64 = 1_000_000;
 
@@ -62,7 +62,7 @@ module sage_trust::trust {
             SYMBOL,
             NAME,
             DESCRIPTION,
-            option::some(new_unsafe_from_bytes(ICON_URL)),
+            option::some(new_unsafe_from_bytes(ICON_BYTES)),
             ctx
         );
 
