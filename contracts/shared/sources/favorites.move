@@ -12,16 +12,16 @@ module sage_shared::favorites {
 
     // --------------- Name Tag ---------------
 
-    public struct Favorites has store {
-        current_favorites: u64,
-        favorites: Table<address, Favorite>
-    }
-
     public struct Favorite has store {
         count: u64,
         created_at: u64,
         is_favorite: bool,
         updated_at: u64
+    }
+
+    public struct Favorites has store {
+        current_favorites: u64,
+        favorites: Table<address, Favorite>
     }
 
     // --------------- Events ---------------

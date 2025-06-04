@@ -18,17 +18,17 @@ module sage_shared::membership {
 
     // --------------- Name Tag ---------------
 
-    public struct Membership has store {
-        current_followers: u64,
-        membership: Table<address, Member>
-    }
-
     public struct Member has store {
         count: u64,
         created_at: u64,
         is_following: bool,
         member_type: u8,
         updated_at: u64
+    }
+
+    public struct Membership has store {
+        current_followers: u64,
+        membership: Table<address, Member>
     }
 
     // --------------- Events ---------------
