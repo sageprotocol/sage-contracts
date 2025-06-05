@@ -74,6 +74,7 @@ module sage_user::test_user_actions {
         test_user_invite::{Self},
         user_actions::{
             Self,
+            ECommentAppMismatch,
             EInvalidUserDescription,
             EInvalidUsername,
             EInviteRequired,
@@ -8011,6 +8012,230 @@ module sage_user::test_user_actions {
 
             destroy(parent_post);
 
+            destroy(owned_user_admin);
+            destroy(owned_user_other);
+            destroy(shared_user_admin);
+            destroy(shared_user_other);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                post_fees,
+                reward_weights_registry,
+                user_registry,
+                user_invite_registry,
+                user_fees,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ECommentAppMismatch)]
+    fun test_user_actions_comment_app_mismatch() {
+        let (
+            mut scenario_val,
+            app,
+            mut clock,
+            invite_config,
+            post_fees,
+            reward_weights_registry,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                AVATAR,
+                BANNER,
+                description,
+                utf8(b"USER-name"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            mut owned_user_admin,
+            mut shared_user_admin
+        ) = {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            (
+                owned_user,
+                shared_user
+            )
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                AVATAR,
+                BANNER,
+                description,
+                utf8(b"other"),
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        let (
+            mut owned_user_other,
+            mut shared_user_other
+        ) = {
+            let owned_user = ts::take_from_sender<UserOwned>(scenario);
+            let shared_user = ts::take_shared<UserShared>(scenario);
+
+            (
+                owned_user,
+                shared_user
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let data = utf8(b"parent-data");
+            let description = utf8(b"parent-description");
+            let title = utf8(b"parent-title");
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_TO_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_TO_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                _timestamp
+            ) = user_actions::post<SUI>(
+                &app,
+                &clock,
+                &mut owned_user_admin,
+                &reward_weights_registry,
+                &mut shared_user_admin,
+                &user_fees,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, OTHER);
+        {
+            let mut parent_post = ts::take_shared<Post>(scenario);
+
+            clock::increment_for_testing(
+                &mut clock,
+                1
+            );
+
+            let custom_payment = mint_for_testing<SUI>(
+                POST_FROM_POST_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                POST_FROM_POST_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let data = utf8(b"child-data");
+            let description = utf8(b"child-description");
+            let title = utf8(b"child-title");
+
+            let other_app = apps::create_for_testing(
+                utf8(b"other"),
+                ts::ctx(scenario)
+            );
+
+            let (
+                _post_address,
+                _self,
+                _timestamp
+            ) = user_actions::comment<SUI>(
+                &other_app,
+                &clock,
+                &mut owned_user_other,
+                &mut parent_post,
+                &post_fees,
+                &reward_weights_registry,
+                &mut shared_user_other,
+                &user_witness_config,
+                data,
+                description,
+                title,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+
+            destroy(other_app);
+            destroy(parent_post);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
             destroy(owned_user_admin);
             destroy(owned_user_other);
             destroy(shared_user_admin);

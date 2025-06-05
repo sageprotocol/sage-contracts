@@ -87,13 +87,14 @@ module sage_user::user_actions {
 
     // --------------- Errors ---------------
 
-    const EInvalidUserDescription: u64 = 370;
-    const EInvalidUsername: u64 = 371;
-    const EInviteRequired: u64 = 372;
-    const ENoSelfJoin: u64 = 373;
-    const ENotSelf: u64 = 374;
-    const ESuppliedAuthorMismatch: u64 = 375;
-    const EUserNameMismatch: u64 = 376;
+    const ECommentAppMismatch: u64 = 370;
+    const EInvalidUserDescription: u64 = 371;
+    const EInvalidUsername: u64 = 372;
+    const EInviteRequired: u64 = 373;
+    const ENoSelfJoin: u64 = 374;
+    const ENotSelf: u64 = 375;
+    const ESuppliedAuthorMismatch: u64 = 376;
+    const EUserNameMismatch: u64 = 377;
 
     // --------------- Name Tag ---------------
 
@@ -508,6 +509,12 @@ module sage_user::user_actions {
         address,
         u64
     ) {
+        let app_address = object::id_address(app);
+        let parent_app_address = parent_post.get_app();
+
+        // verify comment belongs to app
+        assert!(app_address == parent_app_address, ECommentAppMismatch);
+
         let has_rewards_enabled = app.has_rewards_enabled();
 
         let parent_author = parent_post.get_author();
@@ -523,7 +530,6 @@ module sage_user::user_actions {
 
             assert!(parent_author == supplied_author, ESuppliedAuthorMismatch);
 
-            let app_address = object::id_address(app);
             let current_epoch = reward_registry::get_current(
                 reward_weights_registry
             );
