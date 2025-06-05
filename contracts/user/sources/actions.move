@@ -571,6 +571,8 @@ module sage_user::user_actions {
             );
         };
 
+        let top_parent = parent_post.get_top_parent();
+
         post_actions::comment_for_user<CoinType, UserWitness>(
             app,
             clock,
@@ -581,6 +583,7 @@ module sage_user::user_actions {
             data,
             description,
             title,
+            top_parent,
             custom_payment,
             sui_payment,
             ctx
@@ -1183,6 +1186,7 @@ module sage_user::user_actions {
         );
 
         let app_address = object::id_address(app);
+        let shared_user_address = object::id_address(shared_user);
 
         let mut posts = user_shared::take_posts(
             shared_user,
@@ -1205,6 +1209,7 @@ module sage_user::user_actions {
             data,
             description,
             title,
+            shared_user_address,
             ctx
         );
 

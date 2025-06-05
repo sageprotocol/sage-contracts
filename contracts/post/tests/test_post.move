@@ -25,6 +25,7 @@ module sage_post::test_post {
         let scenario = &mut scenario_val;
 
         let timestamp: u64 = 999;
+        let top_parent = @0xcafe;
 
         ts::next_tx(scenario, ADMIN);
         let (
@@ -38,6 +39,7 @@ module sage_post::test_post {
                 utf8(b"description"),
                 timestamp,
                 utf8(b"title"),
+                top_parent,
                 ts::ctx(scenario)
             );
 
@@ -82,6 +84,10 @@ module sage_post::test_post {
 
             assert!(retrieved_updated_at == timestamp);
 
+            let retrieved_top_parent = post::get_top_parent(&post);
+
+            assert!(retrieved_top_parent == top_parent);
+
             destroy(post);
         };
 
@@ -104,6 +110,7 @@ module sage_post::test_post {
                 utf8(b"description"),
                 timestamp,
                 utf8(b"title"),
+                @0xcafe,
                 ts::ctx(scenario)
             );
         };
@@ -136,6 +143,7 @@ module sage_post::test_post {
                 utf8(b"description"),
                 timestamp,
                 utf8(b"title"),
+                @0xcafe,
                 ts::ctx(scenario)
             );
         };

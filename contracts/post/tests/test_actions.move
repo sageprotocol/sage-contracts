@@ -319,6 +319,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -416,6 +417,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -481,6 +483,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -578,6 +581,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -643,6 +647,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -740,6 +745,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -805,6 +811,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -847,6 +854,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -947,6 +955,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -991,6 +1000,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1060,6 +1070,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -1099,6 +1110,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1168,6 +1180,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -1207,6 +1220,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 custom_payment,
                 sui_payment,
                 ts::ctx(scenario)
@@ -1275,6 +1289,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -1385,6 +1400,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -1481,6 +1497,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 
@@ -1578,6 +1595,7 @@ module sage_post::test_post_actions {
                 data,
                 description,
                 title,
+                @0xcafe,
                 ts::ctx(scenario)
             );
 

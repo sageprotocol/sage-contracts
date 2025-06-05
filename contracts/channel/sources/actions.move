@@ -545,6 +545,7 @@ module sage_channel::channel_actions {
 
         let channel_witness = channel_witness::create_witness();
 
+        let channel_address = object::id_address(channel);
         let posts = channel.borrow_posts_mut();
 
         let (
@@ -560,6 +561,7 @@ module sage_channel::channel_actions {
             data,
             description,
             title,
+            channel_address,
             ctx
         );
 

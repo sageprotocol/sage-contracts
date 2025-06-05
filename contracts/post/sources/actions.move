@@ -70,6 +70,7 @@ module sage_post::post_actions {
         data: String,
         description: String,
         title: String,
+        top_parent: address,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>,
         ctx: &mut TxContext
@@ -105,6 +106,7 @@ module sage_post::post_actions {
             description,
             timestamp,
             title,
+            top_parent,
             ctx
         );
 
@@ -144,6 +146,7 @@ module sage_post::post_actions {
         data: String,
         description: String,
         title: String,
+        top_parent: address,
         ctx: &mut TxContext
     ): (address, address, u64) {
         admin_access::assert_channel_witness(
@@ -161,6 +164,7 @@ module sage_post::post_actions {
             1,
             description,
             title,
+            top_parent,
             ctx
         )
     }
@@ -174,6 +178,7 @@ module sage_post::post_actions {
         data: String,
         description: String,
         title: String,
+        top_parent: address,
         ctx: &mut TxContext
     ): (address, address, u64) {
         admin_access::assert_group_witness(
@@ -191,6 +196,7 @@ module sage_post::post_actions {
             1,
             description,
             title,
+            top_parent,
             ctx
         )
     }
@@ -204,6 +210,7 @@ module sage_post::post_actions {
         data: String,
         description: String,
         title: String,
+        top_parent: address,
         ctx: &mut TxContext
     ): (address, address, u64) {
         admin_access::assert_user_witness(
@@ -221,6 +228,7 @@ module sage_post::post_actions {
             1,
             description,
             title,
+            top_parent,
             ctx
         )
     }
@@ -292,6 +300,7 @@ module sage_post::post_actions {
         depth: u64,
         description: String,
         title: String,
+        top_parent: address,
         ctx: &mut TxContext
     ): (address, address, u64) {
         let timestamp = clock.timestamp_ms();
@@ -303,6 +312,7 @@ module sage_post::post_actions {
             description,
             timestamp,
             title,
+            top_parent,
             ctx
         );
 

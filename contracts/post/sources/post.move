@@ -25,6 +25,7 @@ module sage_post::post {
         is_deleted: bool,
         is_edited: bool,
         title: String,
+        top_parent: address,
         updated_at: u64
     }
 
@@ -76,6 +77,12 @@ module sage_post::post {
         post.likes.get_length()
     }
 
+    public fun get_top_parent(
+        post: &Post
+    ): address {
+        post.top_parent
+    }
+
     public fun get_updated_at(
         post: &Post
     ): u64 {
@@ -103,6 +110,7 @@ module sage_post::post {
         description: String,
         timestamp: u64,
         title: String,
+        top_parent: address,
         ctx: &mut TxContext
     ): (address, address) {
         let self = tx_context::sender(ctx);
@@ -123,6 +131,7 @@ module sage_post::post {
             likes,
             posts,
             title,
+            top_parent,
             updated_at: timestamp
         };
 
