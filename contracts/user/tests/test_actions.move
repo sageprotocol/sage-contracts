@@ -10356,7 +10356,7 @@ module sage_user::test_user_actions {
 
             let total_rewards = owned_user.get_total_rewards();
 
-            assert!(total_rewards == ((2 * WEIGHT_USER_TEXT_POST) / GRAIN_PER_TRUST));
+            assert!(total_rewards == (2 * WEIGHT_USER_TEXT_POST));
 
             ts::return_to_sender(scenario, owned_user);
             
@@ -10371,7 +10371,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == ((2 * WEIGHT_USER_TEXT_POST) / GRAIN_PER_TRUST));
+            assert!(balance == (2 * WEIGHT_USER_TEXT_POST));
 
             destroy(coin);
 
@@ -10623,7 +10623,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == (WEIGHT_USER_POST_LIKED / GRAIN_PER_TRUST));
+            assert!(balance == WEIGHT_USER_POST_LIKED);
 
             destroy(coin);
 
@@ -10882,7 +10882,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == ((WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST) / GRAIN_PER_TRUST));
+            assert!(balance == (WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST));
 
             destroy(coin);
 

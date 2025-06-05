@@ -558,7 +558,7 @@ module sage_reward::test_reward_actions {
             let coin = coin_option.destroy_some();
             let balance = coin.balance();
 
-            assert!(balance.value() == claim);
+            assert!(balance.value() == weight);
 
             destroy(coin);
         };
