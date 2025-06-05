@@ -42,12 +42,10 @@ module sage_trust::test_trust {
     const ADMIN: address = @admin;
 
     const DECIMALS: u8 = 6;
-    const DESCRIPTION: vector<u8> = b"";
-    const ICON_URL: vector<u8> = b"";
-    const NAME: vector<u8> = b"";
-    const SYMBOL: vector<u8> = b"";
-
-    const SCALE_FACTOR: u64 = 1_000_000;
+    const DESCRIPTION: vector<u8> = b"Testnet TRUST";
+    const ICON_BYTES: vector<u8> = b"data:image/png;base64,xxxxxxxxx";
+    const NAME: vector<u8> = b"tTRUST";
+    const SYMBOL: vector<u8> = b"tTRUST";
 
     // --------------- Errors ---------------
 
@@ -150,7 +148,7 @@ module sage_trust::test_trust {
 
             assert!(metadata.get_decimals() == DECIMALS);
             assert!(metadata.get_description() == utf8(DESCRIPTION));
-            assert!(metadata.get_icon_url() == option::some(new_unsafe_from_bytes((ICON_URL))));
+            assert!(metadata.get_icon_url() == option::some(new_unsafe_from_bytes((ICON_BYTES))));
             assert!(metadata.get_name() == utf8(NAME));
             assert!(metadata.get_symbol() == to_ascii(utf8(SYMBOL)));
 
@@ -349,7 +347,7 @@ module sage_trust::test_trust {
                 &reward_witness,
                 &reward_witness_config,
                 &mut protected_treasury,
-                5 * SCALE_FACTOR,
+                5,
                 ts::ctx(scenario)
             );
 
@@ -363,6 +361,125 @@ module sage_trust::test_trust {
                 &reward_witness_config,
                 coin
             );
+
+            destroy_for_testing(
+                admin_cap,
+                governance_witness_config,
+                mint_config,
+                protected_treasury,
+                reward_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_mint_extremes() {
+        let (
+            mut scenario_val,
+            admin_cap,
+            governance_witness_config,
+            mint_config,
+            mut protected_treasury,
+            reward_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_witness = trust_access::create_valid_witness();
+
+            let large = 100_000_000;
+
+            let coin = trust::mint<ValidWitness>(
+                &mint_config,
+                &reward_witness,
+                &reward_witness_config,
+                &mut protected_treasury,
+                large,
+                ts::ctx(scenario)
+            );
+
+            let balance = coin.balance();
+
+            assert!(balance.value() == large);
+            assert!(balance.value() != 0);
+
+            destroy(coin);
+
+            let extra_large = 100_000_000_000;
+
+            let coin = trust::mint<ValidWitness>(
+                &mint_config,
+                &reward_witness,
+                &reward_witness_config,
+                &mut protected_treasury,
+                extra_large,
+                ts::ctx(scenario)
+            );
+
+            let balance = coin.balance();
+
+            assert!(balance.value() == extra_large);
+            assert!(balance.value() != 0);
+
+            destroy(coin);
+
+            let small = 100;
+
+            let coin = trust::mint<ValidWitness>(
+                &mint_config,
+                &reward_witness,
+                &reward_witness_config,
+                &mut protected_treasury,
+                small,
+                ts::ctx(scenario)
+            );
+
+            let balance = coin.balance();
+
+            assert!(balance.value() == small);
+            assert!(balance.value() != 0);
+
+            destroy(coin);
+
+            let smaller = (10);
+
+            let coin = trust::mint<ValidWitness>(
+                &mint_config,
+                &reward_witness,
+                &reward_witness_config,
+                &mut protected_treasury,
+                smaller,
+                ts::ctx(scenario)
+            );
+
+            let balance = coin.balance();
+
+            assert!(balance.value() == smaller);
+            assert!(balance.value() != 0);
+
+            destroy(coin);
+
+            let smallest = 1;
+
+            let coin = trust::mint<ValidWitness>(
+                &mint_config,
+                &reward_witness,
+                &reward_witness_config,
+                &mut protected_treasury,
+                smallest,
+                ts::ctx(scenario)
+            );
+
+            let balance = coin.balance();
+
+            assert!(balance.value() == smallest);
+            assert!(balance.value() != 0);
+
+            destroy(coin);
 
             destroy_for_testing(
                 admin_cap,
@@ -467,13 +584,13 @@ module sage_trust::test_trust {
                 &reward_witness,
                 &reward_witness_config,
                 &mut protected_treasury,
-                (49 / 10) * SCALE_FACTOR,
+                4,
                 ts::ctx(scenario)
             );
 
             let balance = coin.balance();
 
-            assert!(balance.value() == ((49 / 10)));
+            assert!(balance.value() == (4));
 
             destroy(coin);
 
@@ -482,43 +599,28 @@ module sage_trust::test_trust {
                 &reward_witness,
                 &reward_witness_config,
                 &mut protected_treasury,
-                5 * SCALE_FACTOR,
+                5,
+                ts::ctx(scenario)
+            );
+
+            let balance = coin.balance();
+
+            assert!(balance.value() == 1);
+
+            destroy(coin);
+
+            let coin = trust::mint<ValidWitness>(
+                &mint_config,
+                &reward_witness,
+                &reward_witness_config,
+                &mut protected_treasury,
+                1,
                 ts::ctx(scenario)
             );
 
             let balance = coin.balance();
 
             assert!(balance.value() == 0);
-
-            destroy(coin);
-
-            let coin = trust::mint<ValidWitness>(
-                &mint_config,
-                &reward_witness,
-                &reward_witness_config,
-                &mut protected_treasury,
-                (2 / 10) * SCALE_FACTOR,
-                ts::ctx(scenario)
-            );
-
-            let balance = coin.balance();
-
-            assert!(balance.value() == 0);
-
-            destroy(coin);
-
-            let coin = trust::mint<ValidWitness>(
-                &mint_config,
-                &reward_witness,
-                &reward_witness_config,
-                &mut protected_treasury,
-                (1 / 10) * SCALE_FACTOR,
-                ts::ctx(scenario)
-            );
-
-            let balance = coin.balance();
-
-            assert!(balance.value() == (1 / 10));
 
             destroy(coin);
             destroy(mint_cap);
@@ -647,7 +749,7 @@ module sage_trust::test_trust {
                 &reward_witness,
                 &reward_witness_config,
                 &mut protected_treasury,
-                amount * SCALE_FACTOR,
+                amount,
                 ts::ctx(scenario)
             );
 

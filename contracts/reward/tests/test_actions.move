@@ -49,7 +49,7 @@ module sage_reward::test_reward_actions {
 
     const ADMIN: address = @admin;
 
-    const SCALE_FACTOR: u64 = 1_000_000;
+    const GRAIN_PER_TRUST: u64 = 1_000_000;
 
     // --------------- Errors ---------------
 
@@ -505,7 +505,7 @@ module sage_reward::test_reward_actions {
 
         let claim = 100;
         let metric = utf8(b"reward-weight");
-        let weight = claim * SCALE_FACTOR;
+        let weight = claim * GRAIN_PER_TRUST;
 
         ts::next_tx(scenario, ADMIN);
         {

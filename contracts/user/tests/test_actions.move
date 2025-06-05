@@ -109,7 +109,7 @@ module sage_user::test_user_actions {
     const SERVER: address = @server;
     const TREASURY: address = @treasury;
 
-    const SCALE_FACTOR: u64 = 1_000_000;
+    const GRAIN_PER_TRUST: u64 = 1_000_000;
 
     const METRIC_COMMENT_GIVEN: vector<u8> = b"comment-given";
     const METRIC_COMMENT_RECEIVED: vector<u8> = b"comment-received";
@@ -122,16 +122,16 @@ module sage_user::test_user_actions {
     const METRIC_USER_FRIENDS: vector<u8> = b"user-friends";
     const METRIC_USER_TEXT_POST: vector<u8> = b"user-text-posts";
 
-    const WEIGHT_COMMENT_GIVEN: u64 = 1 * SCALE_FACTOR;
-    const WEIGHT_COMMENT_RECEIVED: u64 = 2 * SCALE_FACTOR;
-    const WEIGHT_FAVORITED_USER_POST: u64 = 3 * SCALE_FACTOR;
-    const WEIGHT_FOLLOWED_USER: u64 = 4 * SCALE_FACTOR;
-    const WEIGHT_USER_FOLLOWED: u64 = 5 * SCALE_FACTOR;
-    const WEIGHT_USER_FRIENDS: u64 = 6 * SCALE_FACTOR;
-    const WEIGHT_USER_LIKED_POST: u64 = 7 * SCALE_FACTOR;
-    const WEIGHT_USER_POST_FAVORITED: u64 = 8 * SCALE_FACTOR;
-    const WEIGHT_USER_POST_LIKED: u64 = 9 * SCALE_FACTOR;
-    const WEIGHT_USER_TEXT_POST: u64 = 10 * SCALE_FACTOR;
+    const WEIGHT_COMMENT_GIVEN: u64 = 1 * GRAIN_PER_TRUST;
+    const WEIGHT_COMMENT_RECEIVED: u64 = 2 * GRAIN_PER_TRUST;
+    const WEIGHT_FAVORITED_USER_POST: u64 = 3 * GRAIN_PER_TRUST;
+    const WEIGHT_FOLLOWED_USER: u64 = 4 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_FOLLOWED: u64 = 5 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_FRIENDS: u64 = 6 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_LIKED_POST: u64 = 7 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_POST_FAVORITED: u64 = 8 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_POST_LIKED: u64 = 9 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_TEXT_POST: u64 = 10 * GRAIN_PER_TRUST;
 
     const CREATE_INVITE_CUSTOM_FEE: u64 = 1;
     const CREATE_INVITE_SUI_FEE: u64 = 2;
@@ -10356,7 +10356,7 @@ module sage_user::test_user_actions {
 
             let total_rewards = owned_user.get_total_rewards();
 
-            assert!(total_rewards == ((2 * WEIGHT_USER_TEXT_POST) / SCALE_FACTOR));
+            assert!(total_rewards == ((2 * WEIGHT_USER_TEXT_POST) / GRAIN_PER_TRUST));
 
             ts::return_to_sender(scenario, owned_user);
             
@@ -10371,7 +10371,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == ((2 * WEIGHT_USER_TEXT_POST) / SCALE_FACTOR));
+            assert!(balance == ((2 * WEIGHT_USER_TEXT_POST) / GRAIN_PER_TRUST));
 
             destroy(coin);
 
@@ -10623,7 +10623,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == (WEIGHT_USER_POST_LIKED / SCALE_FACTOR));
+            assert!(balance == (WEIGHT_USER_POST_LIKED / GRAIN_PER_TRUST));
 
             destroy(coin);
 
@@ -10882,7 +10882,7 @@ module sage_user::test_user_actions {
             let coin = ts::take_from_sender<Coin<TRUST>>(scenario);
             let balance = coin.value();
 
-            assert!(balance == ((WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST) / SCALE_FACTOR));
+            assert!(balance == ((WEIGHT_USER_POST_LIKED + WEIGHT_USER_TEXT_POST) / GRAIN_PER_TRUST));
 
             destroy(coin);
 

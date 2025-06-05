@@ -24,8 +24,6 @@ module sage_trust::trust {
     const NAME: vector<u8> = b"tTRUST";
     const SYMBOL: vector<u8> = b"tTRUST";
 
-    const SCALE_FACTOR: u64 = 1_000_000;
-
     // --------------- Errors ---------------
 
     // --------------- Name Tag ---------------
@@ -40,8 +38,6 @@ module sage_trust::trust {
         id: UID,
         cap: TreasuryCap<TRUST>
     }
-
-    public struct TreasuryCapKey has copy, drop, store {}
 
     public struct TRUST has drop {}
 
@@ -123,21 +119,19 @@ module sage_trust::trust {
             reward_witness_config
         );
 
-        let scaled_amount = amount / SCALE_FACTOR;
-
         let mint_amount = if (!mint_config.enabled) {
             0
         } else if (option::is_some(&mint_config.max_supply)) {
             let max_supply = *option::borrow(&mint_config.max_supply);
             let total_supply = total_supply(treasury);
 
-            if (total_supply + scaled_amount <= max_supply) {
-                scaled_amount
+            if (total_supply + amount <= max_supply) {
+                amount
             } else {
-                0
+                max_supply - total_supply
             }
         } else {
-            scaled_amount
+            amount
         };
 
         treasury.cap.mint(
