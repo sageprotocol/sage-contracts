@@ -24,7 +24,7 @@ module sage_reward::reward_actions {
 
     use sage_reward::{
         reward::{Self},
-        reward_registry::{RewardWeightsRegistry},
+        reward_registry::{RewardCostWeightsRegistry},
         reward_witness::{Self, RewardWitness}
     };
 
@@ -56,14 +56,14 @@ module sage_reward::reward_actions {
 
     public fun add_weight(
         _: &RewardCap,
-        reward_weights_registry: &mut RewardWeightsRegistry,
+        reward_cost_weights_registry: &mut RewardCostWeightsRegistry,
         metric: String,
         value: u64
     ) {
-        let reward_weights = reward_weights_registry.borrow_current_mut();
+        let reward_cost_weights = reward_cost_weights_registry.borrow_current_mut();
 
         reward::add_weight(
-            reward_weights,
+            reward_cost_weights,
             metric,
             value
         );
@@ -100,26 +100,26 @@ module sage_reward::reward_actions {
     public fun complete_epoch(
         _: &RewardCap,
         clock: &Clock,
-        reward_weights_registry: &mut RewardWeightsRegistry,
+        reward_cost_weights_registry: &mut RewardCostWeightsRegistry,
         ctx: &mut TxContext
     ) {
         let timestamp = clock.timestamp_ms();
 
-        let old_weights = reward_weights_registry.borrow_current_mut();
+        let old_weights = reward_cost_weights_registry.borrow_current_mut();
 
         reward::complete_weights(
             old_weights,
             timestamp
         );
 
-        let reward_weights = reward::create_weights(
+        let reward_cost_weights = reward::create_weights(
             0,
             timestamp,
             ctx
         );
 
-        reward_weights_registry.add(
-            reward_weights,
+        reward_cost_weights_registry.add(
+            reward_cost_weights,
             timestamp
         );
     }
@@ -127,23 +127,23 @@ module sage_reward::reward_actions {
     public fun start_epochs(
         _: &RewardCap,
         clock: &Clock,
-        reward_weights_registry: &mut RewardWeightsRegistry,
+        reward_cost_weights_registry: &mut RewardCostWeightsRegistry,
         ctx: &mut TxContext
     ) {
-        let length = reward_weights_registry.get_length();
+        let length = reward_cost_weights_registry.get_length();
 
         assert!(length == 0, ERewardsAlreadyStarted);
 
         let timestamp = clock.timestamp_ms();
 
-        let reward_weights = reward::create_weights(
+        let reward_cost_weights = reward::create_weights(
             0,
             timestamp,
             ctx
         );
 
-        reward_weights_registry.add(
-            reward_weights,
+        reward_cost_weights_registry.add(
+            reward_cost_weights,
             timestamp
         );
     }

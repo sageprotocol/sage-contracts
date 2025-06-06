@@ -29,7 +29,7 @@ module sage_reward::test_reward_actions {
 
     use sage_reward::{
         reward_actions::{Self, ERewardsAlreadyStarted},
-        reward_registry::{Self, RewardWeightsRegistry},
+        reward_registry::{Self, RewardCostWeightsRegistry},
         reward_witness::{RewardWitness}
     };
 
@@ -62,7 +62,7 @@ module sage_reward::test_reward_actions {
         mint_config: MintConfig,
         protected_treasury: ProtectedTreasury,
         reward_cap: RewardCap,
-        reward_weights_registry: RewardWeightsRegistry,
+        reward_cost_weights_registry: RewardCostWeightsRegistry,
         reward_witness_config: RewardWitnessConfig,
         user_witness_config: UserWitnessConfig
     ) {
@@ -71,7 +71,7 @@ module sage_reward::test_reward_actions {
         destroy(mint_config);
         destroy(protected_treasury);
         destroy(reward_cap);
-        destroy(reward_weights_registry);
+        destroy(reward_cost_weights_registry);
         destroy(reward_witness_config);
         destroy(user_witness_config);
     }
@@ -84,7 +84,7 @@ module sage_reward::test_reward_actions {
         MintConfig,
         ProtectedTreasury,
         RewardCap,
-        RewardWeightsRegistry,
+        RewardCostWeightsRegistry,
         RewardWitnessConfig,
         UserWitnessConfig
     ) {
@@ -139,7 +139,7 @@ module sage_reward::test_reward_actions {
             app,
             mint_config,
             protected_treasury,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             user_witness_config
         ) = {
             let app = apps::create_for_testing(
@@ -149,14 +149,14 @@ module sage_reward::test_reward_actions {
 
             let mint_config = scenario.take_shared<MintConfig>();
             let protected_treasury = scenario.take_shared<ProtectedTreasury>();
-            let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
+            let reward_cost_weights_registry = scenario.take_shared<RewardCostWeightsRegistry>();
             let user_witness_config = scenario.take_shared<UserWitnessConfig>();
 
             (
                 app,
                 mint_config,
                 protected_treasury,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_witness_config
             )
         };
@@ -168,7 +168,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             protected_treasury,
             reward_cap,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         )
@@ -183,7 +183,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -195,15 +195,15 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
-            let length = reward_weights_registry.get_length();
+            let length = reward_cost_weights_registry.get_length();
 
             assert!(length == 1);
 
-            let _reward_weights = reward_weights_registry.borrow_current();
+            let _reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             destroy_for_testing(
                 app,
@@ -211,7 +211,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -230,7 +230,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -242,14 +242,14 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );      
 
@@ -259,7 +259,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -277,7 +277,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -289,7 +289,7 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
@@ -304,15 +304,15 @@ module sage_reward::test_reward_actions {
             reward_actions::complete_epoch(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
-            let length = reward_weights_registry.get_length();
+            let length = reward_cost_weights_registry.get_length();
 
             assert!(length == 2);
 
-            let _reward_weights = reward_weights_registry.borrow_current();
+            let _reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             destroy_for_testing(
                 app,
@@ -320,7 +320,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -338,7 +338,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -350,7 +350,7 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
         };
@@ -362,14 +362,14 @@ module sage_reward::test_reward_actions {
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 metric,
                 value
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
-            let weight = reward_weights.get_weight(metric);
+            let weight = reward_cost_weights.get_weight(metric);
 
             assert!(weight == value);
 
@@ -379,7 +379,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -397,7 +397,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             mut protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -409,7 +409,7 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
         };
@@ -459,14 +459,14 @@ module sage_reward::test_reward_actions {
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 metric,
                 value
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
-            let weight = reward_weights.get_weight(metric);
+            let weight = reward_cost_weights.get_weight(metric);
 
             assert!(weight == value);
 
@@ -478,7 +478,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -496,7 +496,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             mut protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -512,13 +512,13 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 metric,
                 weight
             );
@@ -565,9 +565,9 @@ module sage_reward::test_reward_actions {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
-            let retrieved_weight = reward_weights.get_weight(metric);
+            let retrieved_weight = reward_cost_weights.get_weight(metric);
 
             assert!(retrieved_weight == weight);
 
@@ -579,7 +579,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -597,7 +597,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             mut protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -609,7 +609,7 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
         };
@@ -646,7 +646,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );
@@ -665,7 +665,7 @@ module sage_reward::test_reward_actions {
             mint_config,
             mut protected_treasury,
             reward_cap,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             reward_witness_config,
             user_witness_config
         ) = setup_for_testing();
@@ -677,7 +677,7 @@ module sage_reward::test_reward_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
         };
@@ -714,7 +714,7 @@ module sage_reward::test_reward_actions {
                 mint_config,
                 protected_treasury,
                 reward_cap,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 reward_witness_config,
                 user_witness_config
             );

@@ -13,11 +13,11 @@ module sage_reward::reward {
 
     // --------------- Name Tag ---------------
 
-    public struct RewardWeight has copy, drop, store {
+    public struct RewardCostWeight has copy, drop, store {
         metric: String
     }
 
-    public struct RewardWeights has key, store {
+    public struct RewardCostWeights has key, store {
         id: UID,
         end: u64,
         start: u64
@@ -30,48 +30,48 @@ module sage_reward::reward {
     // --------------- Public Functions ---------------
 
     public fun field_exists(
-        reward_weights: &RewardWeights,
+        reward_cost_weights: &RewardCostWeights,
         metric: String
     ): bool {
-        let reward_weight = RewardWeight {
+        let reward_cost_weight = RewardCostWeight {
             metric
         };
 
-        df::exists_with_type<RewardWeight, u64>(
-            &reward_weights.id,
-            reward_weight
+        df::exists_with_type<RewardCostWeight, u64>(
+            &reward_cost_weights.id,
+            reward_cost_weight
         )
     }
 
     public fun get_end(
-        reward_weights: &RewardWeights
+        reward_cost_weights: &RewardCostWeights
     ): u64 {
-        reward_weights.end
+        reward_cost_weights.end
     }
 
     public fun get_start(
-        reward_weights: &RewardWeights
+        reward_cost_weights: &RewardCostWeights
     ): u64 {
-        reward_weights.start
+        reward_cost_weights.start
     }
 
     public fun get_weight(
-        reward_weights: &RewardWeights,
+        reward_cost_weights: &RewardCostWeights,
         metric: String
     ): u64 {
         let does_exist = field_exists(
-            reward_weights,
+            reward_cost_weights,
             metric
         );
 
         if (does_exist) {
-            let reward_weight = RewardWeight {
+            let reward_cost_weight = RewardCostWeight {
                 metric
             };
 
-            *df::borrow<RewardWeight, u64>(
-                &reward_weights.id,
-                reward_weight
+            *df::borrow<RewardCostWeight, u64>(
+                &reward_cost_weights.id,
+                reward_cost_weight
             )
         } else {
             0
@@ -79,44 +79,44 @@ module sage_reward::reward {
     }
 
     public fun is_current(
-        reward_weights: &RewardWeights,
+        reward_cost_weights: &RewardCostWeights,
         timestamp: u64
     ): bool {
-        timestamp <= reward_weights.end &&
-        timestamp >= reward_weights.start
+        timestamp <= reward_cost_weights.end &&
+        timestamp >= reward_cost_weights.start
     }
 
     // --------------- Friend Functions ---------------
 
     public(package) fun add_weight(
-        reward_weights: &mut RewardWeights,
+        reward_cost_weights: &mut RewardCostWeights,
         metric: String,
         value: u64
     ) {
-        let reward_weight = RewardWeight {
+        let reward_cost_weight = RewardCostWeight {
             metric
         };
 
         df::add(
-            &mut reward_weights.id,
-            reward_weight,
+            &mut reward_cost_weights.id,
+            reward_cost_weight,
             value
         );
     }
 
     public(package) fun complete_weights(
-        reward_weights: &mut RewardWeights,
+        reward_cost_weights: &mut RewardCostWeights,
         end: u64
     ) {
-        reward_weights.end = end;
+        reward_cost_weights.end = end;
     }
 
     public(package) fun create_weights(
         end: u64,
         start: u64,
         ctx: &mut TxContext
-    ): RewardWeights {
-        RewardWeights {
+    ): RewardCostWeights {
+        RewardCostWeights {
             id: object::new(ctx),
             end,
             start

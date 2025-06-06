@@ -35,7 +35,7 @@ module sage_channel::channel_actions {
     };
 
     use sage_reward::{
-        reward_registry::{Self, RewardWeightsRegistry}
+        reward_registry::{Self, RewardCostWeightsRegistry}
     };
 
     use sage_shared::{
@@ -220,7 +220,7 @@ module sage_channel::channel_actions {
         channel_registry: &mut ChannelRegistry,
         channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         owned_user: &mut UserOwned,
         user_witness_config: &UserWitnessConfig,
         avatar: u256,
@@ -303,7 +303,7 @@ module sage_channel::channel_actions {
         if (has_rewards_enabled) {
             let channel_witness = channel_witness::create_witness();
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
             let analytics = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
@@ -316,10 +316,10 @@ module sage_channel::channel_actions {
                 ctx
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric = utf8(METRIC_CHANNEL_CREATED);
-            let claim = reward_weights.get_weight(metric);
+            let claim = reward_cost_weights.get_weight(metric);
 
             analytics_actions::increment_analytics_for_channel<ChannelWitness>(
                 analytics,
@@ -391,7 +391,7 @@ module sage_channel::channel_actions {
         channel_fees: &ChannelFees,
         channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         owned_user: &mut UserOwned,
         user_witness_config: &UserWitnessConfig,
         custom_payment: Coin<CoinType>,
@@ -442,16 +442,16 @@ module sage_channel::channel_actions {
         if (has_rewards_enabled && count == 1) {
             let channel_witness = channel_witness::create_witness();
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric_channel = utf8(METRIC_CHANNEL_FOLLOWED);
             let metric_user = utf8(METRIC_FOLLOWED_CHANNEL);
 
-            let claim_channel = reward_weights.get_weight(metric_channel);
-            let claim_user = reward_weights.get_weight(metric_user);
+            let claim_channel = reward_cost_weights.get_weight(metric_channel);
+            let claim_user = reward_cost_weights.get_weight(metric_user);
 
             let analytics_channel = channel::borrow_analytics_mut(
                 channel,
@@ -506,7 +506,7 @@ module sage_channel::channel_actions {
         channel_fees: &ChannelFees,
         channel_witness_config: &ChannelWitnessConfig,
         clock: &Clock,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         owned_user: &mut UserOwned,
         user_witness_config: &UserWitnessConfig,
         data: String,
@@ -578,13 +578,13 @@ module sage_channel::channel_actions {
             let app_address = object::id_address(app);
             let channel_witness = channel_witness::create_witness();
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric = utf8(METRIC_CHANNEL_TEXT_POST);
-            let claim = reward_weights.get_weight(metric);
+            let claim = reward_cost_weights.get_weight(metric);
 
             let analytics = user_owned::borrow_analytics_mut_for_channel<ChannelWitness>(
                 &channel_witness,

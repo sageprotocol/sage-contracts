@@ -8,8 +8,8 @@ module sage_reward::test_reward_weights_registry {
     use sage_admin::{admin::{Self}};
 
     use sage_reward::{
-        reward::{Self, RewardWeights},
-        reward_registry::{Self, RewardWeightsRegistry}
+        reward::{Self, RewardCostWeights},
+        reward_registry::{Self, RewardCostWeightsRegistry}
     };
 
     // --------------- Constants ---------------
@@ -21,20 +21,20 @@ module sage_reward::test_reward_weights_registry {
     // --------------- Test Functions ---------------
 
     #[test_only]
-    fun create_reward_weights(
+    fun create_reward_cost_weights(
         scenario: &mut Scenario
-    ): RewardWeights {
-        let reward_weights = reward::create_weights(
+    ): RewardCostWeights {
+        let reward_cost_weights = reward::create_weights(
             1,
             0,
             ts::ctx(scenario)
         );
 
-        reward_weights
+        reward_cost_weights
     }
 
     #[test_only]
-    fun setup_for_testing(): (Scenario, RewardWeightsRegistry) {
+    fun setup_for_testing(): (Scenario, RewardCostWeightsRegistry) {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
         {
@@ -43,35 +43,35 @@ module sage_reward::test_reward_weights_registry {
         };
 
         ts::next_tx(scenario, ADMIN);
-        let reward_weights_registry = {
-            let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
+        let reward_cost_weights_registry = {
+            let reward_cost_weights_registry = scenario.take_shared<RewardCostWeightsRegistry>();
 
-            reward_weights_registry
+            reward_cost_weights_registry
         };
 
-        (scenario_val, reward_weights_registry)
+        (scenario_val, reward_cost_weights_registry)
     }
 
     #[test]
     fun test_init() {
         let (
             mut scenario_val,
-            reward_weights_registry
+            reward_cost_weights_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let current = reward_weights_registry.get_current();
+            let current = reward_cost_weights_registry.get_current();
 
             assert!(current == 0);
 
-            let length = reward_weights_registry.get_length();
+            let length = reward_cost_weights_registry.get_length();
 
             assert!(length == 0);
 
-            destroy(reward_weights_registry);
+            destroy(reward_cost_weights_registry);
         };
 
         ts::end(scenario_val);
@@ -81,30 +81,30 @@ module sage_reward::test_reward_weights_registry {
     fun test_add() {
         let (
             mut scenario_val,
-            mut reward_weights_registry
+            mut reward_cost_weights_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_weights = create_reward_weights(scenario);
+            let reward_cost_weights = create_reward_cost_weights(scenario);
             let timestamp = 1000;
 
-            reward_weights_registry.add(
-                reward_weights,
+            reward_cost_weights_registry.add(
+                reward_cost_weights,
                 timestamp
             );
 
-            let current = reward_weights_registry.get_current();
+            let current = reward_cost_weights_registry.get_current();
 
             assert!(current == timestamp);
 
-            let length = reward_weights_registry.get_length();
+            let length = reward_cost_weights_registry.get_length();
 
             assert!(length == 1);
 
-            destroy(reward_weights_registry);
+            destroy(reward_cost_weights_registry);
         };
 
         ts::end(scenario_val);
@@ -114,7 +114,7 @@ module sage_reward::test_reward_weights_registry {
     fun test_borrow() {
         let (
             mut scenario_val,
-            mut reward_weights_registry
+            mut reward_cost_weights_registry
         ) = setup_for_testing();
 
         let scenario = &mut scenario_val;
@@ -123,23 +123,23 @@ module sage_reward::test_reward_weights_registry {
 
         ts::next_tx(scenario, ADMIN);
         {
-            let reward_weights = create_reward_weights(scenario);
+            let reward_cost_weights = create_reward_cost_weights(scenario);
 
-            reward_weights_registry.add(
-                reward_weights,
+            reward_cost_weights_registry.add(
+                reward_cost_weights,
                 timestamp
             );
         };
 
         ts::next_tx(scenario, ADMIN);
         {
-            let _ = reward_weights_registry.borrow(timestamp);
-            let _ = reward_weights_registry.borrow_current();
+            let _ = reward_cost_weights_registry.borrow(timestamp);
+            let _ = reward_cost_weights_registry.borrow_current();
 
-            let _ = reward_weights_registry.borrow_mut(timestamp);
-            let _ = reward_weights_registry.borrow_current_mut();
+            let _ = reward_cost_weights_registry.borrow_mut(timestamp);
+            let _ = reward_cost_weights_registry.borrow_current_mut();
 
-            destroy(reward_weights_registry);
+            destroy(reward_cost_weights_registry);
         };
 
         ts::end(scenario_val);

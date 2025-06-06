@@ -34,7 +34,7 @@ module sage_user::user_actions {
 
     use sage_reward::{
         reward_actions::{Self},
-        reward_registry::{Self, RewardWeightsRegistry}
+        reward_registry::{Self, RewardCostWeightsRegistry}
     };
 
     use sage_shared::{
@@ -237,7 +237,7 @@ module sage_user::user_actions {
         clock: &Clock,
         owned_user: &mut UserOwned,
         post: &Post,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         user: &mut UserShared,
         user_witness_config: &UserWitnessConfig,
         ctx: &mut TxContext
@@ -271,7 +271,7 @@ module sage_user::user_actions {
             count == 1
         ) {
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -282,13 +282,13 @@ module sage_user::user_actions {
                 ctx
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric_author = utf8(METRIC_POST_FAVORITED);
             let metric_self = utf8(METRIC_FAVORITED_POST);
 
-            let claim_author = reward_weights.get_weight(metric_author);
-            let claim_self = reward_weights.get_weight(metric_self);
+            let claim_author = reward_cost_weights.get_weight(metric_author);
+            let claim_self = reward_cost_weights.get_weight(metric_self);
             
             let user_witness = user_witness::create_witness();
 
@@ -495,7 +495,7 @@ module sage_user::user_actions {
         owned_user: &mut UserOwned,
         parent_post: &mut Post,
         post_fees: &PostFees,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         shared_user: &mut UserShared,
         user_witness_config: &UserWitnessConfig,
         data: String,
@@ -531,16 +531,16 @@ module sage_user::user_actions {
             assert!(parent_author == supplied_author, ESuppliedAuthorMismatch);
 
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric_parent = utf8(METRIC_COMMENT_RECEIVED);
             let metric_self = utf8(METRIC_COMMENT_GIVEN);
 
-            let claim_parent = reward_weights.get_weight(metric_parent);
-            let claim_self = reward_weights.get_weight(metric_self);
+            let claim_parent = reward_cost_weights.get_weight(metric_parent);
+            let claim_self = reward_cost_weights.get_weight(metric_self);
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
@@ -796,7 +796,7 @@ module sage_user::user_actions {
         app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
         user_witness_config: &UserWitnessConfig,
@@ -849,16 +849,16 @@ module sage_user::user_actions {
 
         if (has_rewards_enabled && membership_count == 1) {
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric_followed = utf8(METRIC_USER_FOLLOWED);
             let metric_self = utf8(METRIC_FOLLOWED_USER);
 
-            let claim_followed = reward_weights.get_weight(metric_followed);
-            let claim_self = reward_weights.get_weight(metric_self);
+            let claim_followed = reward_cost_weights.get_weight(metric_followed);
+            let claim_self = reward_cost_weights.get_weight(metric_self);
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
                 owned_user,
@@ -910,7 +910,7 @@ module sage_user::user_actions {
     public fun friend_user<CoinType> (
         app: &App,
         clock: &Clock,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         user_fees: &UserFees,
         user_friend: &mut UserShared,
         user_shared: &mut UserShared,
@@ -989,14 +989,14 @@ module sage_user::user_actions {
 
             if (has_rewards_enabled && membership_count == 1) {
                 let current_epoch = reward_registry::get_current(
-                    reward_weights_registry
+                    reward_cost_weights_registry
                 );
 
-                let reward_weights = reward_weights_registry.borrow_current();
+                let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
                 let metric = utf8(METRIC_USER_FRIENDS);
 
-                let claim = reward_weights.get_weight(metric);
+                let claim = reward_cost_weights.get_weight(metric);
 
                 let analytics = user_shared::borrow_or_create_analytics_mut(
                     user_shared,
@@ -1082,7 +1082,7 @@ module sage_user::user_actions {
         owned_user: &mut UserOwned,
         post: &mut Post,
         post_fees: &PostFees,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         royalties: &Royalties,
         shared_user: &mut UserShared,
         user_witness_config: &UserWitnessConfig,
@@ -1118,7 +1118,7 @@ module sage_user::user_actions {
         ) {
             let app_address = object::id_address(app);
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -1129,13 +1129,13 @@ module sage_user::user_actions {
                 ctx
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric_author = utf8(METRIC_POST_LIKED);
             let metric_self = utf8(METRIC_LIKED_POST);
 
-            let claim_author = reward_weights.get_weight(metric_author);
-            let claim_self = reward_weights.get_weight(metric_self);
+            let claim_author = reward_cost_weights.get_weight(metric_author);
+            let claim_self = reward_cost_weights.get_weight(metric_self);
 
             let user_witness = user_witness::create_witness();
 
@@ -1171,7 +1171,7 @@ module sage_user::user_actions {
         app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
-        reward_weights_registry: &RewardWeightsRegistry,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
         shared_user: &mut UserShared,
         user_fees: &UserFees,
         user_witness_config: &UserWitnessConfig,
@@ -1236,14 +1236,14 @@ module sage_user::user_actions {
 
         if (has_rewards_enabled) {
             let current_epoch = reward_registry::get_current(
-                reward_weights_registry
+                reward_cost_weights_registry
             );
 
-            let reward_weights = reward_weights_registry.borrow_current();
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
 
             let metric = utf8(METRIC_USER_TEXT_POST);
 
-            let claim = reward_weights.get_weight(metric);
+            let claim = reward_cost_weights.get_weight(metric);
 
             let analytics = user_owned::borrow_or_create_analytics_mut(
                 owned_user,

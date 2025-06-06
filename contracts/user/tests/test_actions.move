@@ -48,7 +48,7 @@ module sage_user::test_user_actions {
 
     use sage_reward::{
         reward_actions::{Self},
-        reward_registry::{Self, RewardWeightsRegistry},
+        reward_registry::{Self, RewardCostWeightsRegistry},
         reward_witness::{RewardWitness}
     };
 
@@ -206,7 +206,7 @@ module sage_user::test_user_actions {
         invite_config: InviteConfig,
         owned_user_config: UserOwnedConfig,
         post_fees: PostFees,
-        reward_weights_registry: RewardWeightsRegistry,
+        reward_cost_weights_registry: RewardCostWeightsRegistry,
         user_registry: UserRegistry,
         user_invite_registry: UserInviteRegistry,
         user_fees: UserFees,
@@ -217,7 +217,7 @@ module sage_user::test_user_actions {
         destroy(invite_config);
         destroy(owned_user_config);
         destroy(post_fees);
-        destroy(reward_weights_registry);
+        destroy(reward_cost_weights_registry);
         destroy(user_registry);
         destroy(user_invite_registry);
         destroy(user_fees);
@@ -231,7 +231,7 @@ module sage_user::test_user_actions {
         Clock,
         InviteConfig,
         PostFees,
-        RewardWeightsRegistry,
+        RewardCostWeightsRegistry,
         UserOwnedConfig,
         UserRegistry,
         UserInviteRegistry,
@@ -263,12 +263,12 @@ module sage_user::test_user_actions {
             app,
             clock,
             invite_config,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             user_registry,
             user_invite_registry
         ) = {
             let invite_config = scenario.take_shared<InviteConfig>();
-            let reward_weights_registry = scenario.take_shared<RewardWeightsRegistry>();
+            let reward_cost_weights_registry = scenario.take_shared<RewardCostWeightsRegistry>();
             let user_registry = scenario.take_shared<UserRegistry>();
             let user_invite_registry = scenario.take_shared<UserInviteRegistry>();
 
@@ -340,7 +340,7 @@ module sage_user::test_user_actions {
                 app,
                 clock,
                 invite_config,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry
             )
@@ -372,7 +372,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             user_registry,
             user_invite_registry,
@@ -389,7 +389,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             user_registry,
             user_invite_registry,
@@ -407,7 +407,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -520,7 +520,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -628,7 +628,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -648,7 +648,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -734,7 +734,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -753,7 +753,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -876,7 +876,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -898,7 +898,7 @@ module sage_user::test_user_actions {
                 &clock,
                 &mut owned_user_admin,
                 &post,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_witness_config,
                 ts::ctx(scenario)
@@ -926,7 +926,7 @@ module sage_user::test_user_actions {
 
             assert!(length == 0, EFavoritesMismatch);
 
-            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+            let current_epoch = reward_registry::get_current(&reward_cost_weights_registry);
 
             let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
@@ -983,7 +983,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -1002,7 +1002,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -1028,20 +1028,20 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_FAVORITED_POST),
                 WEIGHT_FAVORITED_USER_POST
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_POST_FAVORITED),
                 WEIGHT_USER_POST_FAVORITED
             );
@@ -1169,7 +1169,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -1206,7 +1206,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_other,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_fees,
                 &user_witness_config,
@@ -1233,13 +1233,13 @@ module sage_user::test_user_actions {
                 &clock,
                 &mut owned_user_admin,
                 &post_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_witness_config,
                 ts::ctx(scenario)
             );
 
-            let current_epoch = reward_registry::get_current(&reward_weights_registry);
+            let current_epoch = reward_registry::get_current(&reward_cost_weights_registry);
 
             let analytics_author = user_shared::borrow_or_create_analytics_mut(
                 &mut shared_user_admin,
@@ -1312,7 +1312,7 @@ module sage_user::test_user_actions {
                 &clock,
                 &mut owned_user_admin,
                 &post_other,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_witness_config,
                 ts::ctx(scenario)
@@ -1392,7 +1392,7 @@ module sage_user::test_user_actions {
                 &clock,
                 &mut owned_user_admin,
                 &post_other,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_witness_config,
                 ts::ctx(scenario)
@@ -1470,7 +1470,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -1490,7 +1490,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -1613,7 +1613,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_fees,
                 &user_witness_config,
@@ -1635,7 +1635,7 @@ module sage_user::test_user_actions {
                 &clock,
                 &mut owned_user_admin,
                 &post,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_witness_config,
                 ts::ctx(scenario)
@@ -1652,7 +1652,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -1671,7 +1671,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -1814,7 +1814,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -1833,7 +1833,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -1959,7 +1959,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -1978,7 +1978,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2120,7 +2120,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2140,7 +2140,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2190,7 +2190,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2210,7 +2210,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2260,7 +2260,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2280,7 +2280,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2343,7 +2343,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2363,7 +2363,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2413,7 +2413,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2433,7 +2433,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2499,7 +2499,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2519,7 +2519,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2569,7 +2569,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2589,7 +2589,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2639,7 +2639,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2658,7 +2658,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2756,7 +2756,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2776,7 +2776,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2856,7 +2856,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2876,7 +2876,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -2956,7 +2956,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -2976,7 +2976,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -3072,7 +3072,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -3091,7 +3091,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             user_registry,
             mut user_invite_registry,
@@ -3142,7 +3142,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -3161,7 +3161,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -3262,7 +3262,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -3272,7 +3272,7 @@ module sage_user::test_user_actions {
             );
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics = user_owned::borrow_or_create_analytics_mut(
@@ -3371,7 +3371,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -3390,7 +3390,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -3449,20 +3449,20 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_FOLLOWED_USER),
                 WEIGHT_FOLLOWED_USER
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_FOLLOWED),
                 WEIGHT_USER_FOLLOWED
             );
@@ -3525,7 +3525,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -3535,7 +3535,7 @@ module sage_user::test_user_actions {
             );
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -3622,7 +3622,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -3684,7 +3684,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -3704,7 +3704,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -3802,7 +3802,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -3820,7 +3820,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -3840,7 +3840,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -3938,7 +3938,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -3956,7 +3956,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -3976,7 +3976,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -4041,7 +4041,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -4059,7 +4059,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -4079,7 +4079,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -4180,7 +4180,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -4217,7 +4217,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -4237,7 +4237,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -4338,7 +4338,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut other_shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -4375,7 +4375,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -4394,7 +4394,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -4494,7 +4494,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -4614,7 +4614,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -4685,7 +4685,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -4705,7 +4705,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -4805,7 +4805,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -4838,7 +4838,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -4857,7 +4857,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -4957,7 +4957,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -4984,7 +4984,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -4995,7 +4995,7 @@ module sage_user::test_user_actions {
             );
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics = user_shared::borrow_or_create_analytics_mut(
@@ -5150,7 +5150,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -5175,7 +5175,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -5261,7 +5261,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -5280,7 +5280,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -5305,13 +5305,13 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_FRIENDS),
                 WEIGHT_USER_FRIENDS
             );
@@ -5407,7 +5407,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -5434,7 +5434,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -5445,7 +5445,7 @@ module sage_user::test_user_actions {
             );
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics = user_shared::borrow_or_create_analytics_mut(
@@ -5549,7 +5549,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -5574,7 +5574,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -5643,7 +5643,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -5663,7 +5663,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -5763,7 +5763,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -5786,7 +5786,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -5806,7 +5806,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -5906,7 +5906,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -5929,7 +5929,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -5949,7 +5949,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6049,7 +6049,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -6072,7 +6072,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -6092,7 +6092,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6192,7 +6192,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -6219,7 +6219,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -6264,7 +6264,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -6284,7 +6284,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6384,7 +6384,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -6411,7 +6411,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -6456,7 +6456,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -6476,7 +6476,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6576,7 +6576,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut other_shared_user,
                 &mut shared_user,
@@ -6603,7 +6603,7 @@ module sage_user::test_user_actions {
             user_actions::friend_user<SUI>(
                 &app,
                 &clock,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &user_fees,
                 &mut shared_user,
                 &mut other_shared_user,
@@ -6648,7 +6648,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -6667,7 +6667,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6737,7 +6737,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -6785,7 +6785,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -6809,7 +6809,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics = user_owned::borrow_or_create_analytics_mut(
@@ -6866,7 +6866,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -6885,7 +6885,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -6911,13 +6911,13 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_TEXT_POST),
                 WEIGHT_USER_TEXT_POST
             );
@@ -6979,7 +6979,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -7025,7 +7025,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -7047,7 +7047,7 @@ module sage_user::test_user_actions {
             let shared_user = ts::take_shared<UserShared>(scenario);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics = user_owned::borrow_or_create_analytics_mut(
@@ -7088,7 +7088,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -7108,7 +7108,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -7178,7 +7178,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -7199,7 +7199,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -7219,7 +7219,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -7289,7 +7289,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -7310,7 +7310,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -7329,7 +7329,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -7402,7 +7402,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -7452,7 +7452,7 @@ module sage_user::test_user_actions {
                 &mut owned_user,
                 &mut parent_post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_witness_config,
                 data,
@@ -7477,7 +7477,7 @@ module sage_user::test_user_actions {
             assert!(comment.get_depth() == 2);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -7522,7 +7522,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -7541,7 +7541,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -7667,7 +7667,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -7712,7 +7712,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut parent_post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_witness_config,
                 data,
@@ -7729,7 +7729,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -7790,20 +7790,20 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_COMMENT_GIVEN),
                 WEIGHT_COMMENT_GIVEN
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_COMMENT_RECEIVED),
                 WEIGHT_COMMENT_RECEIVED
             );
@@ -7841,7 +7841,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_admin,
                 &mut parent_post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_witness_config,
                 data,
@@ -7856,7 +7856,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -7934,7 +7934,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut parent_post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_witness_config,
                 data,
@@ -7949,7 +7949,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_self = user_owned::borrow_or_create_analytics_mut(
@@ -8023,7 +8023,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -8043,7 +8043,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -8169,7 +8169,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -8219,7 +8219,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut parent_post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_witness_config,
                 data,
@@ -8247,7 +8247,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -8267,7 +8267,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -8393,7 +8393,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -8451,7 +8451,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut parent_post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_other,
                 &user_witness_config,
                 data,
@@ -8478,7 +8478,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -8497,7 +8497,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -8623,7 +8623,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -8669,7 +8669,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user_admin,
                 &user_witness_config,
@@ -8688,7 +8688,7 @@ module sage_user::test_user_actions {
             assert!(num_likes == 1);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_author = user_shared::borrow_or_create_analytics_mut(
@@ -8735,7 +8735,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -8754,7 +8754,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -8880,7 +8880,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -8906,20 +8906,20 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_LIKED_POST),
                 WEIGHT_USER_LIKED_POST
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_POST_LIKED),
                 WEIGHT_USER_POST_LIKED
             );
@@ -8960,7 +8960,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_admin,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user_admin,
                 &user_witness_config,
@@ -8979,7 +8979,7 @@ module sage_user::test_user_actions {
             assert!(num_likes == 1);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_author = user_shared::borrow_or_create_analytics_mut(
@@ -9058,7 +9058,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user_admin,
                 &user_witness_config,
@@ -9075,7 +9075,7 @@ module sage_user::test_user_actions {
             assert!(num_likes == 2);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
 
             let analytics_author = user_shared::borrow_or_create_analytics_mut(
@@ -9150,7 +9150,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -9170,7 +9170,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -9296,7 +9296,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user_admin,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user_admin,
                 &user_fees,
                 &user_witness_config,
@@ -9342,7 +9342,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user_other,
                 &user_witness_config,
@@ -9365,7 +9365,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -9384,7 +9384,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -9495,7 +9495,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -9515,7 +9515,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -9613,7 +9613,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -9633,7 +9633,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -9731,7 +9731,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -9751,7 +9751,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -9849,7 +9849,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -9869,7 +9869,7 @@ module sage_user::test_user_actions {
             clock,
             mut invite_config,
             post_fees,
-            reward_weights_registry,
+            reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -10002,7 +10002,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -10048,7 +10048,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -10074,13 +10074,13 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_TEXT_POST),
                 WEIGHT_USER_TEXT_POST
             );
@@ -10123,7 +10123,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
             let mint_config = ts::take_shared<MintConfig>(scenario);
             let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
@@ -10164,7 +10164,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -10177,14 +10177,14 @@ module sage_user::test_user_actions {
 
     #[test]
     #[expected_failure(abort_code = EEmptyInventory)]
-    fun test_user_actions_claim_zero_reward_weight() {
+    fun test_user_actions_claim_zero_reward_cost_weight() {
         let (
             mut scenario_val,
             mut app,
             mut clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -10210,7 +10210,7 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
@@ -10271,7 +10271,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -10317,7 +10317,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -10339,7 +10339,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
             let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
@@ -10380,7 +10380,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -10399,7 +10399,7 @@ module sage_user::test_user_actions {
             mut clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -10425,13 +10425,13 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_TEXT_POST),
                 WEIGHT_USER_TEXT_POST
             );
@@ -10493,7 +10493,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -10539,7 +10539,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -10561,7 +10561,7 @@ module sage_user::test_user_actions {
             let mut shared_user = ts::take_shared<UserShared>(scenario);
 
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
             let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
@@ -10606,7 +10606,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -10625,7 +10625,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -10651,13 +10651,13 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_POST_LIKED),
                 WEIGHT_USER_POST_LIKED
             );
@@ -10722,7 +10722,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -10799,7 +10799,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user,
                 &user_witness_config,
@@ -10817,7 +10817,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
             let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
@@ -10858,7 +10858,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -10877,7 +10877,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -10903,20 +10903,20 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_TEXT_POST),
                 WEIGHT_USER_TEXT_POST
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_POST_LIKED),
                 WEIGHT_USER_POST_LIKED
             );
@@ -10981,7 +10981,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -11058,7 +11058,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user,
                 &user_witness_config,
@@ -11076,7 +11076,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
             let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
@@ -11117,7 +11117,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
@@ -11137,7 +11137,7 @@ module sage_user::test_user_actions {
             clock,
             invite_config,
             post_fees,
-            mut reward_weights_registry,
+            mut reward_cost_weights_registry,
             owned_user_config,
             mut user_registry,
             mut user_invite_registry,
@@ -11163,20 +11163,20 @@ module sage_user::test_user_actions {
             reward_actions::start_epochs(
                 &reward_cap,
                 &clock,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 ts::ctx(scenario)
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_USER_TEXT_POST),
                 WEIGHT_USER_TEXT_POST
             );
 
             reward_actions::add_weight(
                 &reward_cap,
-                &mut reward_weights_registry,
+                &mut reward_cost_weights_registry,
                 utf8(METRIC_POST_LIKED),
                 WEIGHT_USER_POST_LIKED
             );
@@ -11241,7 +11241,7 @@ module sage_user::test_user_actions {
                 &app,
                 &clock,
                 &mut owned_user,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &mut shared_user,
                 &user_fees,
                 &user_witness_config,
@@ -11319,7 +11319,7 @@ module sage_user::test_user_actions {
                 &mut owned_user_other,
                 &mut post,
                 &post_fees,
-                &reward_weights_registry,
+                &reward_cost_weights_registry,
                 &royalties,
                 &mut shared_user,
                 &user_witness_config,
@@ -11339,7 +11339,7 @@ module sage_user::test_user_actions {
         ts::next_tx(scenario, ADMIN);
         {
             let current_epoch = reward_registry::get_current(
-                &reward_weights_registry
+                &reward_cost_weights_registry
             );
             let mint_config = ts::take_shared<MintConfig>(scenario);
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
@@ -11371,7 +11371,7 @@ module sage_user::test_user_actions {
                 invite_config,
                 owned_user_config,
                 post_fees,
-                reward_weights_registry,
+                reward_cost_weights_registry,
                 user_registry,
                 user_invite_registry,
                 user_fees,
