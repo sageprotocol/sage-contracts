@@ -2,12 +2,13 @@
 
 [move]
 version = 3
-manifest_digest = "BCE0E5FEA8D259B5F0E3CB8729ECFAF521E8CFF08BF5D619C41E0E4E55F598D0"
-deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
+manifest_digest = "488C390419C28DE1686AE2510D71E1386F5CDEB676E54C5440663147867E11CB"
+deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
+  { id = "SageTrust", name = "SageTrust" },
   { id = "Sui", name = "Sui" },
   { id = "SuiSystem", name = "SuiSystem" },
 ]
@@ -34,6 +35,18 @@ dependencies = [
   { id = "Bridge", name = "Bridge" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageUtils", name = "SageUtils" },
+  { id = "Sui", name = "Sui" },
+  { id = "SuiSystem", name = "SuiSystem" },
+]
+
+[[move.package]]
+id = "SageTrust"
+source = { local = "../trust" }
+
+dependencies = [
+  { id = "Bridge", name = "Bridge" },
+  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "SageAdmin", name = "SageAdmin" },
   { id = "Sui", name = "Sui" },
   { id = "SuiSystem", name = "SuiSystem" },
 ]
@@ -75,6 +88,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x35eb700015d73433bb6c79cee20c840ac2ffaf4ffc873ab6941d2bd2db8f4cb6"
-latest-published-id = "0x35eb700015d73433bb6c79cee20c840ac2ffaf4ffc873ab6941d2bd2db8f4cb6"
+original-published-id = "0x6b036bf71df827fc2375099f710e42ecb892f2bfeebdc5bfee501b725e6bd5e4"
+latest-published-id = "0x6b036bf71df827fc2375099f710e42ecb892f2bfeebdc5bfee501b725e6bd5e4"
 published-version = "1"

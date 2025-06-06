@@ -2,7 +2,7 @@
 name = "SageShared"
 edition = "2024.beta"
 version = "0.0.1"
-# published-at = "0x1d2243fe726abaf068c2ac8620e1a760b6b6925a13fd71ffab45939922f228f2"
+published-at = "0x35eb700015d73433bb6c79cee20c840ac2ffaf4ffc873ab6941d2bd2db8f4cb6"
 
 [dependencies]
 SageAdmin = { local = "../admin" }
@@ -11,8 +11,8 @@ SageAdmin = { local = "../admin" }
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 
-# sage_admin = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
-# sage_shared = "0x1d2243fe726abaf068c2ac8620e1a760b6b6925a13fd71ffab45939922f228f2"
+sage_admin = "0x87f276ef50ad4e219b8abcc849050b4badbbe92e4e2d2cc3a30830fcc4305efb"
+sage_shared = "0x35eb700015d73433bb6c79cee20c840ac2ffaf4ffc873ab6941d2bd2db8f4cb6"
 
-sage_admin = "0x0"
-sage_shared = "0x0"
+# sage_admin = "0x0"
+# sage_shared = "0x0"

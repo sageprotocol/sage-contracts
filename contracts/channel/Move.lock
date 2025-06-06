@@ -2,11 +2,10 @@
 
 [move]
 version = 3
-manifest_digest = "ECF1184AE1AE6D47C19825C65A32057466004414037C4E8A148E3C1DF4F474F2"
-deps_digest = "8D8E72BAA06E63572166CA7E7F6E159CA2D11E27ADE3961B15E29922A04B0D32"
+manifest_digest = "FFEA933DDC9583CA4DC2F6FB08B80C206BB3ABD9D994CE1DB6784892B59A645F"
+deps_digest = "D7FB1F2E1A893B9A0E80A392473710373DE5791D3AC8F6D898803754B2ADAE6B"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "SageAnalytics", name = "SageAnalytics" },
@@ -21,7 +20,7 @@ dependencies = [
 
 [[move.package]]
 id = "Bridge"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "9c04e1840eb5", subdir = "crates/sui-framework/packages/bridge" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/bridge" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -30,17 +29,8 @@ dependencies = [
 ]
 
 [[move.package]]
-id = "DeepBook"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "9c04e1840eb5", subdir = "crates/sui-framework/packages/deepbook" }
-
-dependencies = [
-  { id = "MoveStdlib", name = "MoveStdlib" },
-  { id = "Sui", name = "Sui" },
-]
-
-[[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "9c04e1840eb5", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 id = "SageAdmin"
@@ -48,7 +38,6 @@ source = { local = "../admin" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageUtils", name = "SageUtils" },
   { id = "Sui", name = "Sui" },
@@ -61,7 +50,6 @@ source = { local = "../analytics" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "SageTrust", name = "SageTrust" },
@@ -75,7 +63,6 @@ source = { local = "../post" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "SageShared", name = "SageShared" },
@@ -89,7 +76,6 @@ source = { local = "../reward" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "SageAnalytics", name = "SageAnalytics" },
@@ -104,7 +90,6 @@ source = { local = "../shared" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "Sui", name = "Sui" },
@@ -117,7 +102,6 @@ source = { local = "../trust" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "Sui", name = "Sui" },
@@ -130,7 +114,6 @@ source = { local = "../user" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "SageAdmin", name = "SageAdmin" },
   { id = "SageAnalytics", name = "SageAnalytics" },
@@ -143,29 +126,20 @@ dependencies = [
   { id = "SuiSystem", name = "SuiSystem" },
 ]
 
-[env]
-
 [[move.package]]
 id = "SageUtils"
 source = { local = "../utils" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
   { id = "SuiSystem", name = "SuiSystem" },
 ]
 
-[env.testnet]
-chain-id = "4c78adac"
-original-published-id = "0x1027bae7a9ca2c2afe4e5936921b9f313d9366959130e93bf66c8536a1011686"
-latest-published-id = "0x1027bae7a9ca2c2afe4e5936921b9f313d9366959130e93bf66c8536a1011686"
-published-version = "1"
-
 [[move.package]]
 id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "9c04e1840eb5", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -173,7 +147,7 @@ dependencies = [
 
 [[move.package]]
 id = "SuiSystem"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "9c04e1840eb5", subdir = "crates/sui-framework/packages/sui-system" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/sui-system" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -181,6 +155,14 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.45.2"
+compiler-version = "1.49.2"
 edition = "2024.beta"
 flavor = "sui"
+
+[env]
+
+[env.testnet]
+chain-id = "4c78adac"
+original-published-id = "0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905"
+latest-published-id = "0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905"
+published-version = "1"

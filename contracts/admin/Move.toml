@@ -2,17 +2,17 @@
 name = "SageAdmin"
 edition = "2024.beta"
 version = "0.0.1"
-# published-at = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
+published-at = "0x87f276ef50ad4e219b8abcc849050b4badbbe92e4e2d2cc3a30830fcc4305efb"
 
 [dependencies]
 SageUtils = { local = "../utils" }
 
 [addresses]
-# sage_admin = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
-# sage_utils = "0xd626b3afff05e23c5948712871dc4dfbd359d31a65e6bf9d7750e6f77c395d69"
+sage_admin = "0x87f276ef50ad4e219b8abcc849050b4badbbe92e4e2d2cc3a30830fcc4305efb"
+sage_utils = "0x2ce743f87281d7933f02a1f124665d1f43d7a9e57147e7005709cdcd1d6f7b7d"
 
-sage_admin = "0x0"
-sage_utils = "0x0"
+# sage_admin = "0x0"
+# sage_utils = "0x0"
 
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"

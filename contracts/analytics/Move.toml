@@ -2,6 +2,7 @@
 name = "SageAnalytics"
 edition = "2024.beta"
 version = "0.0.1"
+published-at = "0x6b036bf71df827fc2375099f710e42ecb892f2bfeebdc5bfee501b725e6bd5e4"
 
 [dependencies]
 SageAdmin = { local = "../admin" }
@@ -12,10 +13,10 @@ admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
 treasury = "0x083819196bd7923be95bba14ab1f89931dc392a0d41c71a3eb5e2e9ad914acc9"
 
-# sage_admin = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
-# sage_analytics = ""
-# sage_trust = ""
+sage_admin = "0x87f276ef50ad4e219b8abcc849050b4badbbe92e4e2d2cc3a30830fcc4305efb"
+sage_analytics = "0x6b036bf71df827fc2375099f710e42ecb892f2bfeebdc5bfee501b725e6bd5e4"
+sage_trust = "0x15a23833eba24a8d6f723031c7ac23d06bcb66648241ab0646e528a99e5b2de2"
 
-sage_admin = "0x0"
-sage_analytics = "0x0"
-sage_trust = "0x0"
+# sage_admin = "0x0"
+# sage_analytics = "0x0"
+# sage_trust = "0x0"
