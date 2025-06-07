@@ -11,18 +11,19 @@ module sage_admin::test_actions {
     };
 
     use sage_admin::{
+        admin_access::{
+            Self,
+            UserOwnedConfig,
+            ValidType
+        },
         admin::{
             Self,
             AdminCap,
-            FeeCap
+            FeeCap,
+            RewardCap
         },
         admin_actions::{Self},
-        apps::{Self, AppRegistry},
-        authentication::{
-            Self,
-            AuthenticationConfig,
-            ValidAuthSoul
-        },
+        apps::{Self, App, AppRegistry},
         fees::{Royalties}
     };
 
@@ -48,7 +49,6 @@ module sage_admin::test_actions {
         {
             admin::init_for_testing(ts::ctx(scenario));
             apps::init_for_testing(ts::ctx(scenario));
-            authentication::init_for_testing(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
@@ -92,28 +92,31 @@ module sage_admin::test_actions {
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
 
-            let mut authentication_config = ts::take_shared<AuthenticationConfig>(scenario);
-
-            authentication::update_soul<ValidAuthSoul>(
+            admin_access::create_owned_user_config<ValidType>(
                 &admin_cap,
-                &mut authentication_config
-            );
-
-            let soul = authentication::create_valid_auth_soul(ts::ctx(scenario));
-
-            let _app_address = admin_actions::create_app<ValidAuthSoul>(
-                &mut app_registry,
-                &authentication_config,
-                &soul,
-                utf8(b"sage"),
                 ts::ctx(scenario)
             );
 
             ts::return_to_sender(scenario, admin_cap);
-            ts::return_shared(authentication_config);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user_config = scenario.take_shared<UserOwnedConfig>();
+            let valid_type = admin_access::create_valid_type_for_testing(ts::ctx(scenario));
+
+            let _app_address = admin_actions::create_app<ValidType>(
+                &mut app_registry,
+                utf8(b"sage"),
+                &valid_type,
+                &owned_user_config,
+                ts::ctx(scenario)
+            );
+            
+            ts::return_shared(owned_user_config);
 
             destroy(app_registry);
-            destroy(soul);
+            destroy(valid_type);
         };
 
         ts::end(scenario_val);
@@ -179,6 +182,71 @@ module sage_admin::test_actions {
 
             destroy(app);
             destroy(app_registry_val);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun update_app_rewards() {
+        let (
+            mut scenario_val,
+            mut app_registry
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let admin_cap = ts::take_from_sender<AdminCap>(scenario);
+
+            admin_access::create_owned_user_config<ValidType>(
+                &admin_cap,
+                ts::ctx(scenario)
+            );
+
+            ts::return_to_sender(scenario, admin_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let owned_user_config = scenario.take_shared<UserOwnedConfig>();
+            let valid_type = admin_access::create_valid_type_for_testing(ts::ctx(scenario));
+
+            let _app_address = admin_actions::create_app<ValidType>(
+                &mut app_registry,
+                utf8(b"sage"),
+                &valid_type,
+                &owned_user_config,
+                ts::ctx(scenario)
+            );
+            
+            ts::return_shared(owned_user_config);
+
+            destroy(valid_type);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut app = ts::take_shared<App>(scenario);
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            let rewards_enabled = apps::has_rewards_enabled(
+                &app
+            );
+
+            assert!(rewards_enabled);
+            
+            ts::return_to_sender(scenario, reward_cap);
+
+            destroy(app);
+            destroy(app_registry);
         };
 
         ts::end(scenario_val);

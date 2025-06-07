@@ -7,9 +7,20 @@ module sage_user::test_user_invite {
         test_utils::{destroy}
     };
 
-    use sage_admin::{admin::{Self, InviteCap}};
+    use sage_admin::{
+        admin::{Self, InviteCap}
+    };
 
-    use sage_user::{user_invite::{Self, InviteConfig, UserInviteRegistry}};
+    use sage_user::{
+        user_invite::{
+            Self,
+            InviteConfig,
+            UserInviteRegistry,
+            EInviteDoesNotExist,
+            EInviteInvalid,
+            EInviteNotAllowed
+        }
+    };
 
     // --------------- Constants ---------------
 
@@ -19,37 +30,51 @@ module sage_user::test_user_invite {
 
     // --------------- Errors ---------------
 
-    const EConfigMismatch: u64 = 370;
-    // const EInvalidHashLength: u64 = 371;
-    const EInviteInvalid: u64 = 372;
-    const EInviteRecord: u64 = 373;
+    const EConfigMismatch: u64 = 0;
+    const EInvalidHashLength: u64 = 1;
+    const EInvalidHexCharacter: u64 = 2;
+    const EInviteRecord: u64 = 3;
+    const ETestInviteInvalid: u64 = 4;
 
     // --------------- Test Functions ---------------
 
-    // #[test_only]
-    // fun create_hash_array(
-    //     hash: vector<u8>
-    // ): vector<u8> {
-    //     assert!(hash.length() == 64, EInvalidHashLength);
+    #[test_only]
+    public fun create_hash_array(
+        hash: vector<u8>
+    ): vector<u8> {
+        assert!(hash.length() == 64, EInvalidHashLength);
 
-    //     let mut index = 0;
-    //     let mut bytes = vector::empty<u8>();
+        let mut index = 0;
+        let mut bytes = vector::empty<u8>();
 
-    //     while (index < hash.length()) {
-    //         let first = hash[index] << 4 & 0xF0;
-    //         let second = hash[index + 1] & 0x0F;
+        while (index < hash.length()) {
+            let first = convert_hex_char(hash[index]);
+            let second = convert_hex_char(hash[index + 1]);
 
-    //         let val = first | second;
+            let val = (first << 4) | second;
 
-    //         bytes.push_back(val);
+            bytes.push_back(val);
 
-    //         index = index + 2;
-    //     };
+            index = index + 2;
+        };
 
-    //     assert!(bytes.length() == 32, EInvalidHashLength);
+        assert!(bytes.length() == 32, EInvalidHashLength);
 
-    //     bytes
-    // }
+        bytes
+    }
+
+    #[test_only]
+    fun convert_hex_char(character: u8): u8 {
+        if (character >= 0x30 && character <= 0x39) {  // '0' to '9'
+            character - 0x30
+        } else if (character >= 0x61 && character <= 0x66) {  // 'a' to 'f'
+            character - 0x61 + 10
+        } else if (character >= 0x41 && character <= 0x46) {  // 'A' to 'F'
+            character - 0x41 + 10
+        } else {
+            abort(EInvalidHexCharacter)
+        }
+    }
 
     #[test_only]
     fun destroy_for_testing(
@@ -213,193 +238,247 @@ module sage_user::test_user_invite {
         {
             // test known cases of sha3 computed in javascript
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
-            // );
-
-            invite_hash.push_back(0xa7);
-            invite_hash.push_back(0xff);
-            invite_hash.push_back(0xc6);
-            invite_hash.push_back(0xf8);
-            invite_hash.push_back(0xbf);
-            invite_hash.push_back(0x1e);
-            invite_hash.push_back(0xd7);
-            invite_hash.push_back(0x66);
-            invite_hash.push_back(0x51);
-            invite_hash.push_back(0xc1);
-            invite_hash.push_back(0x47);
-            invite_hash.push_back(0x56);
-            invite_hash.push_back(0xa0);
-            invite_hash.push_back(0x61);
-            invite_hash.push_back(0xd6);
-            invite_hash.push_back(0x62);
-            invite_hash.push_back(0xf5);
-            invite_hash.push_back(0x80);
-            invite_hash.push_back(0xff);
-            invite_hash.push_back(0x4d);
-            invite_hash.push_back(0xe4);
-            invite_hash.push_back(0x3b);
-            invite_hash.push_back(0x49);
-            invite_hash.push_back(0xfa);
-            invite_hash.push_back(0x82);
-            invite_hash.push_back(0xd8);
-            invite_hash.push_back(0x0a);
-            invite_hash.push_back(0x4b);
-            invite_hash.push_back(0x80);
-            invite_hash.push_back(0xf8);
-            invite_hash.push_back(0x43);
-            invite_hash.push_back(0x4a);
+            let invite_code = utf8(b"");
+            let invite_key = utf8(b"");
+            let invite_hash = create_hash_array(
+                b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+            );
 
             let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b""),
-                utf8(b""),
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            assert!(is_invite_valid, ETestInviteInvalid);
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"1c76e98fcac0e60aa45ceb9dd68cb8f8c6e9beb6baee207bee9902aa01e88fc7"
-            // );
-
-            invite_hash.push_back(0x1c);
-            invite_hash.push_back(0x76);
-            invite_hash.push_back(0xe9);
-            invite_hash.push_back(0x8f);
-            invite_hash.push_back(0xca);
-            invite_hash.push_back(0xc0);
-            invite_hash.push_back(0xe6);
-            invite_hash.push_back(0x0a);
-            invite_hash.push_back(0xa4);
-            invite_hash.push_back(0x5c);
-            invite_hash.push_back(0xeb);
-            invite_hash.push_back(0x9d);
-            invite_hash.push_back(0xd6);
-            invite_hash.push_back(0x8c);
-            invite_hash.push_back(0xb8);
-            invite_hash.push_back(0xf8);
-            invite_hash.push_back(0xc6);
-            invite_hash.push_back(0xe9);
-            invite_hash.push_back(0xbe);
-            invite_hash.push_back(0xb6);
-            invite_hash.push_back(0xba);
-            invite_hash.push_back(0xee);
-            invite_hash.push_back(0x20);
-            invite_hash.push_back(0x7b);
-            invite_hash.push_back(0xee);
-            invite_hash.push_back(0x99);
-            invite_hash.push_back(0x02);
-            invite_hash.push_back(0xaa);
-            invite_hash.push_back(0x01);
-            invite_hash.push_back(0xe8);
-            invite_hash.push_back(0x8f);
-            invite_hash.push_back(0xc7);
-
-            let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b"code"),
-                utf8(b""),
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
-
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"20c635d10270fdb360e84bf63e519d5e76df7c57c8ff01a96bc523ee66cd0b2e"
-            // );
-
-            invite_hash.push_back(0x20);
-            invite_hash.push_back(0xc6);
-            invite_hash.push_back(0x35);
-            invite_hash.push_back(0xd1);
-            invite_hash.push_back(0x02);
-            invite_hash.push_back(0x70);
-            invite_hash.push_back(0xfd);
-            invite_hash.push_back(0xb3);
-            invite_hash.push_back(0x60);
-            invite_hash.push_back(0xe8);
-            invite_hash.push_back(0x4b);
-            invite_hash.push_back(0xf6);
-            invite_hash.push_back(0x3e);
-            invite_hash.push_back(0x51);
-            invite_hash.push_back(0x9d);
-            invite_hash.push_back(0x5e);
-            invite_hash.push_back(0x76);
-            invite_hash.push_back(0xdf);
-            invite_hash.push_back(0x7c);
-            invite_hash.push_back(0x57);
-            invite_hash.push_back(0xc8);
-            invite_hash.push_back(0xff);
-            invite_hash.push_back(0x01);
-            invite_hash.push_back(0xa9);
-            invite_hash.push_back(0x6b);
-            invite_hash.push_back(0xc5);
-            invite_hash.push_back(0x23);
-            invite_hash.push_back(0xee);
-            invite_hash.push_back(0x66);
-            invite_hash.push_back(0xcd);
-            invite_hash.push_back(0x0b);
-            invite_hash.push_back(0x2e);
+            let invite_code = utf8(b"code");
+            let invite_key = utf8(b"");
+            let invite_hash = create_hash_array(
+                b"1c76e98fcac0e60aa45ceb9dd68cb8f8c6e9beb6baee207bee9902aa01e88fc7"
+            );
 
             let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b""),
-                utf8(b"key"),
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            assert!(is_invite_valid, ETestInviteInvalid);
 
-            let mut invite_hash = vector::empty<u8>();
-
-            // let invite_hash = create_hash_array(
-            //     b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
-            // );
-
-            invite_hash.push_back(0xd4);
-            invite_hash.push_back(0x9b);
-            invite_hash.push_back(0x04);
-            invite_hash.push_back(0x7a);
-            invite_hash.push_back(0xac);
-            invite_hash.push_back(0xa5);
-            invite_hash.push_back(0xfd);
-            invite_hash.push_back(0x3e);
-            invite_hash.push_back(0x37);
-            invite_hash.push_back(0xea);
-            invite_hash.push_back(0x3b);
-            invite_hash.push_back(0xe6);
-            invite_hash.push_back(0x31);
-            invite_hash.push_back(0x1e);
-            invite_hash.push_back(0x68);
-            invite_hash.push_back(0xfc);
-            invite_hash.push_back(0x91);
-            invite_hash.push_back(0x8e);
-            invite_hash.push_back(0x7e);
-            invite_hash.push_back(0x16);
-            invite_hash.push_back(0xbd);
-            invite_hash.push_back(0x31);
-            invite_hash.push_back(0xbf);
-            invite_hash.push_back(0xcd);
-            invite_hash.push_back(0x24);
-            invite_hash.push_back(0xc4);
-            invite_hash.push_back(0x4b);
-            invite_hash.push_back(0xa5);
-            invite_hash.push_back(0xc9);
-            invite_hash.push_back(0x38);
-            invite_hash.push_back(0xe9);
-            invite_hash.push_back(0x4a);
-
-            let is_invite_valid = user_invite::is_invite_valid(
-                utf8(b"code"),
-                utf8(b"key"),
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
                 invite_hash
             );
 
-            assert!(is_invite_valid, EInviteInvalid);
+            let invite_code = utf8(b"");
+            let invite_key = utf8(b"key");
+            let invite_hash = create_hash_array(
+                b"20c635d10270fdb360e84bf63e519d5e76df7c57c8ff01a96bc523ee66cd0b2e"
+            );
+
+            let is_invite_valid = user_invite::is_invite_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            assert!(is_invite_valid, ETestInviteInvalid);
+
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            let invite_code = utf8(b"code");
+            let invite_key = utf8(b"key");
+            let invite_hash = create_hash_array(
+                b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
+            );
+
+            let is_invite_valid = user_invite::is_invite_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            assert!(is_invite_valid, ETestInviteInvalid);
+
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_assert_not_required_pass() {
+        let (
+            mut scenario_val,
+            user_invite_registry_val,
+            invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_not_required(&invite_config_val);
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_invite_assert_exists_pass() {
+        let (
+            mut scenario_val,
+            mut user_invite_registry_val,
+            invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let invite_key = utf8(b"key");
+        let invite_hash = create_hash_array(
+            b"d49b047aaca5fd3e37ea3be6311e68fc918e7e16bd31bfcd24c44ba5c938e94a"
+        );
+
+        ts::next_tx(scenario, SERVER);
+        {
+            user_invite::create_invite(
+                &mut user_invite_registry_val,
+                invite_hash,
+                invite_key,
+                OTHER
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_exists(
+                &user_invite_registry_val,
+                invite_key
+            );
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteDoesNotExist)]
+    fun test_user_invite_assert_exists_fail() {
+        let (
+            mut scenario_val,
+            user_invite_registry_val,
+            invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let invite_key = utf8(b"key");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_exists(
+                &user_invite_registry_val,
+                invite_key
+            );
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteNotAllowed)]
+    fun test_user_invite_assert_not_required_fail() {
+        let (
+            mut scenario_val,
+            user_invite_registry_val,
+            mut invite_config_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, SERVER);
+        {
+            let invite_cap = ts::take_from_sender<InviteCap>(scenario);
+
+            user_invite::set_invite_config(
+                &invite_cap,
+                &mut invite_config_val,
+                true
+            );
+
+            ts::return_to_sender(scenario, invite_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            user_invite::assert_invite_not_required(&invite_config_val);
+
+            destroy_for_testing(
+                user_invite_registry_val,
+                invite_config_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInviteInvalid)]
+    fun test_user_invite_assert_validity_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let invite_code = utf8(b"");
+            let invite_key = utf8(b"key");
+            let invite_hash = create_hash_array(
+                b"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"
+            );
+
+            let is_invite_valid = user_invite::is_invite_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
+
+            assert!(!is_invite_valid, ETestInviteInvalid);
+
+            user_invite::assert_invite_is_valid(
+                invite_code,
+                invite_key,
+                invite_hash
+            );
         };
 
         ts::end(scenario_val);

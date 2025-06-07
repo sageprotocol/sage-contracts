@@ -4,9 +4,16 @@ module sage_admin::admin_actions {
     use sui::{event};
 
     use sage_admin::{
-        admin::{AdminCap, FeeCap},
+        admin::{
+            AdminCap,
+            FeeCap,
+            RewardCap
+        },
+        admin_access::{
+            Self,
+            UserOwnedConfig
+        },
         apps::{Self, App, AppRegistry},
-        authentication::{Self, AuthenticationConfig},
         fees::{Self, Royalties}
     };
 
@@ -23,7 +30,7 @@ module sage_admin::admin_actions {
     // --------------- Events ---------------
 
     public struct AppCreated has copy, drop {
-        id: address,
+        app_id: address,
         name: String
     }
 
@@ -31,16 +38,16 @@ module sage_admin::admin_actions {
 
     // --------------- Public Functions ---------------
 
-    public fun create_app<SoulType: key> (
+    public fun create_app<OwnedUserType: key> (
         app_registry: &mut AppRegistry,
-        authentication_config: &AuthenticationConfig,
-        soul: &SoulType,
         app_name: String,
+        owned_user: &OwnedUserType,
+        owned_user_config: &UserOwnedConfig,
         ctx: &mut TxContext
     ): address {
-        authentication::assert_authentication<SoulType>(
-            authentication_config,
-            soul
+        admin_access::assert_owned_user<OwnedUserType>(
+            owned_user_config,
+            owned_user
         );
 
         create_app_internal(
@@ -83,6 +90,17 @@ module sage_admin::admin_actions {
         );
     }
 
+    public fun update_app_rewards(
+        _: &RewardCap,
+        app: &mut App,
+        rewards_enabled: bool
+    ) {
+        apps::update_rewards(
+            app,
+            rewards_enabled
+        );
+    }
+
     public fun update_royalties<CoinType> (
         _: &FeeCap,
         royalties: &mut Royalties,
@@ -120,7 +138,7 @@ module sage_admin::admin_actions {
         );
 
         event::emit(AppCreated {
-            id: app,
+            app_id: app,
             name: app_key
         });
 

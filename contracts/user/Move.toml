@@ -2,28 +2,36 @@
 name = "SageUser"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0xe8865e96400ea6049fb5e1b2ec7fe9c23d28785bb3fb23b250b05443ffb695ad"
+published-at = "0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
-
 SageAdmin = { local = "../admin" }
+SageAnalytics = { local = "../analytics" }
 SagePost = { local = "../post" }
+SageReward = { local = "../reward" }
 SageShared = { local = "../shared" }
+SageTrust = { local = "../trust" }
 SageUtils = { local = "../utils" }
 
 [addresses]
 admin = "0xa6fb1f501d1288da5d344d21345735eba363db19236ad169944361aaf510214f"
 server = "0x0aa9267138b058b7eaf0c349284fe222a05f7de101efdf0734b41e1690f65696"
+treasury = "0x083819196bd7923be95bba14ab1f89931dc392a0d41c71a3eb5e2e9ad914acc9"
 
-sage_admin = "0x63e3d31e7a33c100f78d779d06f1c5b8474ff8d3111bbac4abafadaf79bc288a"
-sage_post = "0x96266bc39a31ca5aeb0e888fdae433d96700027c1db0be875a6dd8b8be7c4a3d"
-sage_shared = "0x1d2243fe726abaf068c2ac8620e1a760b6b6925a13fd71ffab45939922f228f2"
-sage_user = "0xe8865e96400ea6049fb5e1b2ec7fe9c23d28785bb3fb23b250b05443ffb695ad"
-sage_utils = "0xd626b3afff05e23c5948712871dc4dfbd359d31a65e6bf9d7750e6f77c395d69"
+sage_admin = "0x87f276ef50ad4e219b8abcc849050b4badbbe92e4e2d2cc3a30830fcc4305efb"
+sage_analytics = "0x6b036bf71df827fc2375099f710e42ecb892f2bfeebdc5bfee501b725e6bd5e4"
+sage_post = "0x1bb982b71af3f6e7fb46a41f82ce6deb799176b55ca48aee547fad684e2b4d93"
+sage_reward = "0xf2b80913a9ab40923ac0e130829c59d5351c609b1a76663e2e3497910657ce00"
+sage_shared = "0x35eb700015d73433bb6c79cee20c840ac2ffaf4ffc873ab6941d2bd2db8f4cb6"
+sage_trust = "0x15a23833eba24a8d6f723031c7ac23d06bcb66648241ab0646e528a99e5b2de2"
+sage_user = "0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee"
+sage_utils = "0x2ce743f87281d7933f02a1f124665d1f43d7a9e57147e7005709cdcd1d6f7b7d"
 
 # sage_admin = "0x0"
+# sage_analytics = "0x0"
 # sage_post = "0x0"
+# sage_reward = "0x0"
 # sage_shared = "0x0"
+# sage_trust = "0x0"
 # sage_user = "0x0"
 # sage_utils  = "0x0"

@@ -48,10 +48,10 @@ module sage_channel::channel_fees {
     // --------------- Events ---------------
 
     public struct ChannelFeesCreated has copy, drop {
-        id: address,
+        app_id: address,
+        channel_fees_id: address,
         add_channel_moderator_fee_custom: u64,
         add_channel_moderator_fee_sui: u64,
-        app: address,
         create_channel_fee_custom: u64,
         create_channel_fee_sui: u64,
         custom_coin_type: TypeName,
@@ -68,7 +68,7 @@ module sage_channel::channel_fees {
     }
 
     public struct ChannelFeesUpdated has copy, drop {
-        id: address,
+        channel_fees_id: address,
         add_channel_moderator_fee_custom: u64,
         add_channel_moderator_fee_sui: u64,
         create_channel_fee_custom: u64,
@@ -142,10 +142,10 @@ module sage_channel::channel_fees {
         );
 
         event::emit(ChannelFeesCreated {
-            id: fees_address,
+            app_id: app_address,
+            channel_fees_id: fees_address,
             add_channel_moderator_fee_custom,
             add_channel_moderator_fee_sui,
-            app: app_address,
             create_channel_fee_custom,
             create_channel_fee_sui,
             custom_coin_type,
@@ -201,7 +201,7 @@ module sage_channel::channel_fees {
         fees.update_channel_fee_sui = update_channel_fee_sui;
 
         event::emit(ChannelFeesUpdated {
-            id: fees.id.to_address(),
+            channel_fees_id: fees.id.to_address(),
             add_channel_moderator_fee_custom,
             add_channel_moderator_fee_sui,
             create_channel_fee_custom,

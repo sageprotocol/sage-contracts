@@ -1,10 +1,28 @@
 module sage_channel::channel {
+    use sui::{
+        dynamic_object_field::{Self as dof}
+    };
+
     use std::string::{String};
 
+    use sage_admin::{
+        admin_access::{ChannelWitnessConfig}
+    };
+
+    use sage_analytics::{
+        analytics::{Analytics},
+        analytics_actions::{Self}
+    };
+
+    use sage_channel::{
+        channel_witness::{Self}
+    };
+
     use sage_shared::{
+        blocklist::{Self, Blocklist},
         membership::{Membership},
         moderation::{Moderation},
-        posts::{Posts}
+        posts::{Self, Posts}
     };
 
     use sage_utils::{
@@ -20,20 +38,27 @@ module sage_channel::channel {
 
     // --------------- Errors ---------------
 
-    const EInvalidChannelDescription: u64 = 370;
-    const EInvalidChannelName: u64 = 371;
+    const EAppChannelMismatch: u64 = 370;
+    const EInvalidChannelDescription: u64 = 371;
+    const EInvalidChannelName: u64 = 372;
 
     // --------------- Name Tag ---------------
 
+    public struct AnalyticsKey has copy, drop, store {
+        epoch: u64
+    }
+
     public struct Channel has key {
         id: UID,
-        avatar_hash: String,
-        banner_hash: String,
+        app: address,
+        avatar: u256,
+        banner: u256,
+        blocklist: Blocklist,
         created_at: u64,
         created_by: address,
         description: String,
+        follows: Membership,
         key: String,
-        members: Membership,
         moderators: Moderation,
         name: String,
         posts: Posts,
@@ -45,6 +70,13 @@ module sage_channel::channel {
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun assert_app_channel_match(
+        channel: &Channel,
+        app_address: address
+    ) {
+        assert!(channel.app == app_address, EAppChannelMismatch);
+    }
 
     public fun assert_channel_description(
         description: &String
@@ -68,14 +100,14 @@ module sage_channel::channel {
 
     public fun get_avatar(
         channel: &Channel
-    ): String {
-        channel.avatar_hash
+    ): u256 {
+        channel.avatar
     }
 
     public fun get_banner(
         channel: &Channel
-    ): String {
-        channel.banner_hash
+    ): u256 {
+        channel.banner
     }
 
     public fun get_created_by(
@@ -104,10 +136,47 @@ module sage_channel::channel {
 
     // --------------- Friend Functions ---------------
 
-    public(package) fun borrow_members_mut(
+    public(package) fun borrow_analytics_mut(
+        channel: &mut Channel,
+        channel_witness_config: &ChannelWitnessConfig,
+        epoch: u64,
+        ctx: &mut TxContext
+    ): &mut Analytics {
+        let analytics_key = AnalyticsKey {
+            epoch
+        };
+
+        let does_exist = dof::exists_with_type<AnalyticsKey, Analytics>(
+            &channel.id,
+            analytics_key
+        );
+
+        if (!does_exist) {
+            let channel_witness = channel_witness::create_witness();
+
+            let analytics = analytics_actions::create_analytics_for_channel(
+                &channel_witness,
+                channel_witness_config,
+                ctx
+            );
+
+            dof::add(
+                &mut channel.id,
+                analytics_key,
+                analytics
+            );
+        };
+
+        dof::borrow_mut<AnalyticsKey, Analytics>(
+            &mut channel.id,
+            analytics_key
+        )
+    }
+
+    public(package) fun borrow_follows_mut(
         channel: &mut Channel
     ): &mut Membership {
-        &mut channel.members
+        &mut channel.follows
     }
 
     public(package) fun borrow_moderators_mut(
@@ -123,30 +192,35 @@ module sage_channel::channel {
     }
 
     public(package) fun create(
-        avatar_hash: String,
-        banner_hash: String,
+        app_address: address,
+        avatar: u256,
+        banner: u256,
         description: String,
         created_at: u64,
         created_by: address,
+        follows: Membership,
         key: String,
-        members: Membership,
         moderators: Moderation,
         name: String,
-        posts: Posts,
         ctx: &mut TxContext
     ): address {
         assert_channel_name(&name);
         assert_channel_description(&description);
 
+        let blocklist = blocklist::create(ctx);
+        let posts = posts::create(ctx);
+
         let channel = Channel {
             id: object::new(ctx),
-            avatar_hash,
-            banner_hash,
+            app: app_address,
+            avatar,
+            banner,
+            blocklist,
             created_at,
             created_by,
             description,
+            follows,
             key,
-            members,
             moderators,
             name,
             posts,
@@ -162,16 +236,16 @@ module sage_channel::channel {
 
     public(package) fun update(
         channel: &mut Channel,
-        avatar_hash: String,
-        banner_hash: String,
+        avatar: u256,
+        banner: u256,
         description: String,
         name: String,
         updated_at: u64
     ) {
         assert_channel_description(&description);
 
-        channel.avatar_hash = avatar_hash;
-        channel.banner_hash = banner_hash;
+        channel.avatar = avatar;
+        channel.banner = banner;
         channel.description = description;
         channel.name = name;
         channel.updated_at = updated_at;

@@ -4,7 +4,7 @@ module sage_admin::apps {
     };
 
     use sui::{
-        dynamic_field,
+        dynamic_field::{Self as df},
         package::{claim_and_keep},
         table::{Self, Table}
     };
@@ -21,12 +21,17 @@ module sage_admin::apps {
 
     public struct App has key {
         id: UID,
-        name: String
+        name: String,
+        rewards_enabled: bool
     }
 
-    public struct AppRegistry has key, store {
+    public struct AppRegistry has key {
         id: UID,
         registry: Table<String, address>
+    }
+
+    public struct FeeConfigKey has copy, drop, store {
+        name: String
     }
 
     public struct APPS has drop {}
@@ -57,9 +62,13 @@ module sage_admin::apps {
         name: String,
         value: address
     ) {
-        dynamic_field::add(
+        let fee_key = FeeConfigKey {
+            name
+        };
+
+        df::add(
             &mut app.id,
-            name,
+            fee_key,
             value
         );
     }
@@ -83,6 +92,12 @@ module sage_admin::apps {
         app_registry.registry.contains(app_key)
     }
 
+    public fun has_rewards_enabled(
+        app: &App
+    ): bool {
+        app.rewards_enabled
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun create(
@@ -92,7 +107,8 @@ module sage_admin::apps {
     ): address {
         let app = App {
             id: object::new(ctx),
-            name: app_key
+            name: app_key,
+            rewards_enabled: false
         };
 
         let app_address = app.id.to_address();
@@ -107,6 +123,13 @@ module sage_admin::apps {
         app_address
     }
 
+    public(package) fun update_rewards(
+        app: &mut App,
+        rewards_enabled: bool
+    ) {
+        app.rewards_enabled = rewards_enabled;
+    }
+
     // --------------- Internal Functions ---------------
 
     // --------------- Test Functions ---------------
@@ -118,7 +141,8 @@ module sage_admin::apps {
     ): App {
         App {
             id: object::new(ctx),
-            name: app_key
+            name: app_key,
+            rewards_enabled: false
         }
     }
 

@@ -22,9 +22,6 @@ module sage_admin::test_apps {
 
     // --------------- Errors ---------------
 
-    const EAppAddressMismatch: u64 = 0;
-    const EMissingAppRecord: u64 = 1;
-
     // --------------- Test Functions ---------------
 
     #[test_only]
@@ -133,7 +130,7 @@ module sage_admin::test_apps {
                 app_name
             );
 
-            assert!(has_record, EMissingAppRecord);
+            assert!(has_record);
 
             let new_app = ts::take_shared<App>(
                 scenario
@@ -141,7 +138,13 @@ module sage_admin::test_apps {
 
             let retrieved_address = apps::get_address(&new_app);
 
-            assert!(app_address == retrieved_address, EAppAddressMismatch);
+            assert!(app_address == retrieved_address);
+
+            let rewards_enabled = apps::has_rewards_enabled(
+                &new_app
+            );
+
+            assert!(!rewards_enabled);
 
             destroy(new_app);
 
@@ -186,6 +189,57 @@ module sage_admin::test_apps {
             );
 
             destroy(fee_cap);
+
+            destroy_for_testing(
+                app,
+                app_registry_val
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun update_rewards() {
+        let (
+            mut scenario_val,
+            app,
+            mut app_registry_val
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let app_registry = &mut app_registry_val;
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let app_name = utf8(b"new-app");
+
+            let _app_address = apps::create(
+                app_registry,
+                app_name,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut new_app = ts::take_shared<App>(
+                scenario
+            );
+
+            apps::update_rewards(
+                &mut new_app,
+                true
+            );
+
+            let rewards_enabled = apps::has_rewards_enabled(
+                &new_app
+            );
+
+            assert!(rewards_enabled);
+
+            destroy(new_app);
 
             destroy_for_testing(
                 app,

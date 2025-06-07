@@ -38,8 +38,8 @@ module sage_post::post_fees {
     // --------------- Events ---------------
 
     public struct PostFeesCreated has copy, drop {
-        id: address,
-        app: address,
+        app_id: address,
+        post_fees_id: address,
         custom_coin_type: TypeName,
         like_post_fee_custom: u64,
         like_post_fee_sui: u64,
@@ -48,7 +48,7 @@ module sage_post::post_fees {
     }
 
     public struct PostFeesUpdated has copy, drop {
-        id: address,
+        post_fees_id: address,
         custom_coin_type: TypeName,
         like_post_fee_custom: u64,
         like_post_fee_sui: u64,
@@ -92,8 +92,8 @@ module sage_post::post_fees {
         );
 
         event::emit(PostFeesCreated {
-            id: fees_address,
-            app: app_address,
+            app_id: app_address,
+            post_fees_id: fees_address,
             custom_coin_type,
             like_post_fee_custom,
             like_post_fee_sui,
@@ -121,7 +121,7 @@ module sage_post::post_fees {
         fees.post_from_post_fee_sui = post_from_post_fee_sui;
 
         event::emit(PostFeesUpdated {
-            id: fees.id.to_address(),
+            post_fees_id: fees.id.to_address(),
             custom_coin_type,
             like_post_fee_custom,
             like_post_fee_sui,

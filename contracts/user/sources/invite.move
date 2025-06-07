@@ -18,10 +18,9 @@ module sage_user::user_invite {
 
     // --------------- Errors ---------------
 
-    const EInviteNotAllowed: u64 = 370;
-    const EInviteDoesNotExist: u64 = 371;
-    const EInviteExists: u64 = 372;
-    const EInviteInvalid: u64 = 373;
+    const EInviteDoesNotExist: u64 = 370;
+    const EInviteInvalid: u64 = 371;
+    const EInviteNotAllowed: u64 = 372;
 
     // --------------- Name Tag ---------------
 
@@ -30,12 +29,12 @@ module sage_user::user_invite {
         user: address
     }
 
-    public struct InviteConfig has key, store {
+    public struct InviteConfig has key {
         id: UID,
         required: bool
     }
 
-    public struct UserInviteRegistry has key, store {
+    public struct UserInviteRegistry has key {
         id: UID,
         registry: Table<String, Invite>
     }
@@ -105,7 +104,7 @@ module sage_user::user_invite {
             invite_hash
         );
 
-        assert!(!is_invite_valid, EInviteInvalid);
+        assert!(is_invite_valid, EInviteInvalid);
     }
 
     public fun get_destructured_invite(
@@ -183,18 +182,11 @@ module sage_user::user_invite {
         user_invite_registry: &mut UserInviteRegistry,
         invite_hash: vector<u8>,
         invite_key: String,
-        user: address
+        wallet_address: address
     ) {
-        let has_record = has_record(
-            user_invite_registry,
-            invite_key
-        );
-
-        assert!(!has_record, EInviteExists);
-
         let invite = Invite {
             hash: invite_hash,
-            user
+            user: wallet_address
         };
 
         user_invite_registry.registry.add(invite_key, invite);

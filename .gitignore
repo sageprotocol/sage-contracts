@@ -4,3 +4,7 @@ build
 .env
 
 repopack-output.txt
+repomix-output.md
+repomix-output.xml
+
+.DS_Store

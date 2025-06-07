@@ -33,12 +33,16 @@ module sage_user::user_fees {
         create_invite_fee_sui: u64,
         create_user_fee_custom: u64,
         create_user_fee_sui: u64,
-        join_user_fee_custom: u64,
-        join_user_fee_sui: u64,
-        leave_user_fee_custom: u64,
-        leave_user_fee_sui: u64,
+        follow_user_fee_custom: u64,
+        follow_user_fee_sui: u64,
+        friend_user_fee_custom: u64,
+        friend_user_fee_sui: u64,
         post_to_user_fee_custom: u64,
         post_to_user_fee_sui: u64,
+        unfollow_user_fee_custom: u64,
+        unfollow_user_fee_sui: u64,
+        unfriend_user_fee_custom: u64,
+        unfriend_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64
     }
@@ -46,36 +50,44 @@ module sage_user::user_fees {
     // --------------- Events ---------------
 
     public struct UserFeesCreated has copy, drop {
-        id: address,
-        app: address,
+        app_id: address,
+        user_fees_id: address,
         custom_coin_type: TypeName,
         create_invite_fee_custom: u64,
         create_invite_fee_sui: u64,
         create_user_fee_custom: u64,
         create_user_fee_sui: u64,
-        join_user_fee_custom: u64,
-        join_user_fee_sui: u64,
-        leave_user_fee_custom: u64,
-        leave_user_fee_sui: u64,
+        follow_user_fee_custom: u64,
+        follow_user_fee_sui: u64,
+        friend_user_fee_custom: u64,
+        friend_user_fee_sui: u64,
         post_to_user_fee_custom: u64,
         post_to_user_fee_sui: u64,
+        unfollow_user_fee_custom: u64,
+        unfollow_user_fee_sui: u64,
+        unfriend_user_fee_custom: u64,
+        unfriend_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64
     }
 
     public struct UserFeesUpdated has copy, drop {
-        id: address,
+        user_fees_id: address,
         custom_coin_type: TypeName,
         create_invite_fee_custom: u64,
         create_invite_fee_sui: u64,
         create_user_fee_custom: u64,
         create_user_fee_sui: u64,
-        join_user_fee_custom: u64,
-        join_user_fee_sui: u64,
-        leave_user_fee_custom: u64,
-        leave_user_fee_sui: u64,
+        follow_user_fee_custom: u64,
+        follow_user_fee_sui: u64,
+        friend_user_fee_custom: u64,
+        friend_user_fee_sui: u64,
         post_to_user_fee_custom: u64,
         post_to_user_fee_sui: u64,
+        unfollow_user_fee_custom: u64,
+        unfollow_user_fee_sui: u64,
+        unfriend_user_fee_custom: u64,
+        unfriend_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64
     }
@@ -91,12 +103,16 @@ module sage_user::user_fees {
         create_invite_fee_sui: u64,
         create_user_fee_custom: u64,
         create_user_fee_sui: u64,
-        join_user_fee_custom: u64,
-        join_user_fee_sui: u64,
-        leave_user_fee_custom: u64,
-        leave_user_fee_sui: u64,
+        follow_user_fee_custom: u64,
+        follow_user_fee_sui: u64,
+        friend_user_fee_custom: u64,
+        friend_user_fee_sui: u64,
         post_to_user_fee_custom: u64,
         post_to_user_fee_sui: u64,
+        unfollow_user_fee_custom: u64,
+        unfollow_user_fee_sui: u64,
+        unfriend_user_fee_custom: u64,
+        unfriend_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64,
         ctx: &mut TxContext
@@ -112,12 +128,16 @@ module sage_user::user_fees {
             create_invite_fee_sui,
             create_user_fee_custom,
             create_user_fee_sui,
-            join_user_fee_custom,
-            join_user_fee_sui,
-            leave_user_fee_custom,
-            leave_user_fee_sui,
+            follow_user_fee_custom,
+            follow_user_fee_sui,
+            friend_user_fee_custom,
+            friend_user_fee_sui,
             post_to_user_fee_custom,
             post_to_user_fee_sui,
+            unfollow_user_fee_custom,
+            unfollow_user_fee_sui,
+            unfriend_user_fee_custom,
+            unfriend_user_fee_sui,
             update_user_fee_custom,
             update_user_fee_sui
         };
@@ -132,19 +152,23 @@ module sage_user::user_fees {
         );
 
         event::emit(UserFeesCreated {
-            id: fees_address,
-            app: app_address,
+            app_id: app_address,
+            user_fees_id: fees_address,
             custom_coin_type,
             create_invite_fee_custom,
             create_invite_fee_sui,
             create_user_fee_custom,
             create_user_fee_sui,
-            join_user_fee_custom,
-            join_user_fee_sui,
-            leave_user_fee_custom,
-            leave_user_fee_sui,
+            follow_user_fee_custom,
+            follow_user_fee_sui,
+            friend_user_fee_custom,
+            friend_user_fee_sui,
             post_to_user_fee_custom,
             post_to_user_fee_sui,
+            unfollow_user_fee_custom,
+            unfollow_user_fee_sui,
+            unfriend_user_fee_custom,
+            unfriend_user_fee_sui,
             update_user_fee_custom,
             update_user_fee_sui
         });
@@ -159,12 +183,16 @@ module sage_user::user_fees {
         create_invite_fee_sui: u64,
         create_user_fee_custom: u64,
         create_user_fee_sui: u64,
-        join_user_fee_custom: u64,
-        join_user_fee_sui: u64,
-        leave_user_fee_custom: u64,
-        leave_user_fee_sui: u64,
+        follow_user_fee_custom: u64,
+        follow_user_fee_sui: u64,
+        friend_user_fee_custom: u64,
+        friend_user_fee_sui: u64,
         post_to_user_fee_custom: u64,
         post_to_user_fee_sui: u64,
+        unfollow_user_fee_custom: u64,
+        unfollow_user_fee_sui: u64,
+        unfriend_user_fee_custom: u64,
+        unfriend_user_fee_sui: u64,
         update_user_fee_custom: u64,
         update_user_fee_sui: u64
     ) {
@@ -175,28 +203,36 @@ module sage_user::user_fees {
         fees.create_invite_fee_sui = create_invite_fee_sui;
         fees.create_user_fee_custom = create_user_fee_custom;
         fees.create_user_fee_sui = create_user_fee_sui;
-        fees.join_user_fee_custom = join_user_fee_custom;
-        fees.join_user_fee_sui = join_user_fee_sui;
-        fees.leave_user_fee_custom = leave_user_fee_custom;
-        fees.leave_user_fee_sui = leave_user_fee_sui;
+        fees.follow_user_fee_custom = follow_user_fee_custom;
+        fees.follow_user_fee_sui = follow_user_fee_sui;
+        fees.friend_user_fee_custom = friend_user_fee_custom;
+        fees.friend_user_fee_sui = friend_user_fee_sui;
         fees.post_to_user_fee_custom = post_to_user_fee_custom;
         fees.post_to_user_fee_sui = post_to_user_fee_sui;
+        fees.unfollow_user_fee_custom = unfollow_user_fee_custom;
+        fees.unfollow_user_fee_sui = unfollow_user_fee_sui;
+        fees.unfriend_user_fee_custom = unfriend_user_fee_custom;
+        fees.unfriend_user_fee_sui = unfriend_user_fee_sui;
         fees.update_user_fee_custom = update_user_fee_custom;
         fees.update_user_fee_sui = update_user_fee_sui;
 
         event::emit(UserFeesUpdated {
-            id: fees.id.to_address(),
+            user_fees_id: fees.id.to_address(),
             custom_coin_type,
             create_invite_fee_custom,
             create_invite_fee_sui,
             create_user_fee_custom,
             create_user_fee_sui,
-            join_user_fee_custom,
-            join_user_fee_sui,
-            leave_user_fee_custom,
-            leave_user_fee_sui,
+            follow_user_fee_custom,
+            follow_user_fee_sui,
+            friend_user_fee_custom,
+            friend_user_fee_sui,
             post_to_user_fee_custom,
             post_to_user_fee_sui,
+            unfollow_user_fee_custom,
+            unfollow_user_fee_sui,
+            unfriend_user_fee_custom,
+            unfriend_user_fee_sui,
             update_user_fee_custom,
             update_user_fee_sui
         });
@@ -234,7 +270,7 @@ module sage_user::user_fees {
         )
     }
 
-    public(package) fun assert_join_user_payment<CoinType> (
+    public(package) fun assert_follow_user_payment<CoinType> (
         fees: &UserFees,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>
@@ -244,12 +280,12 @@ module sage_user::user_fees {
         assert_payment<CoinType>(
             custom_payment,
             sui_payment,
-            fees.join_user_fee_custom,
-            fees.join_user_fee_sui
+            fees.follow_user_fee_custom,
+            fees.follow_user_fee_sui
         )
     }
 
-    public(package) fun assert_leave_user_payment<CoinType> (
+    public(package) fun assert_friend_user_payment<CoinType> (
         fees: &UserFees,
         custom_payment: Coin<CoinType>,
         sui_payment: Coin<SUI>
@@ -259,8 +295,8 @@ module sage_user::user_fees {
         assert_payment<CoinType>(
             custom_payment,
             sui_payment,
-            fees.leave_user_fee_custom,
-            fees.leave_user_fee_sui
+            fees.friend_user_fee_custom,
+            fees.friend_user_fee_sui
         )
     }
 
@@ -276,6 +312,36 @@ module sage_user::user_fees {
             sui_payment,
             fees.post_to_user_fee_custom,
             fees.post_to_user_fee_sui
+        )
+    }
+
+    public(package) fun assert_unfollow_user_payment<CoinType> (
+        fees: &UserFees,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>
+    ): (Coin<CoinType>, Coin<SUI>) {
+        assert_coin_type<CoinType>(fees);
+
+        assert_payment<CoinType>(
+            custom_payment,
+            sui_payment,
+            fees.unfollow_user_fee_custom,
+            fees.unfollow_user_fee_sui
+        )
+    }
+
+    public(package) fun assert_unfriend_user_payment<CoinType> (
+        fees: &UserFees,
+        custom_payment: Coin<CoinType>,
+        sui_payment: Coin<SUI>
+    ): (Coin<CoinType>, Coin<SUI>) {
+        assert_coin_type<CoinType>(fees);
+
+        assert_payment<CoinType>(
+            custom_payment,
+            sui_payment,
+            fees.unfriend_user_fee_custom,
+            fees.unfriend_user_fee_sui
         )
     }
 
