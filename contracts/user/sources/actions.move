@@ -100,6 +100,26 @@ module sage_user::user_actions {
 
     // --------------- Events ---------------
 
+    public struct AppProfileCreated has copy, drop {
+        app_id: address,
+        avatar: u256,
+        banner: u256,
+        created_at: u64,
+        description: String,
+        name: String,
+        user_id: address
+    }
+
+    public struct AppProfileUpdated has copy, drop {
+        app_id: address,
+        avatar: u256,
+        banner: u256,
+        description: String,
+        name: String,
+        updated_at: u64,
+        user_id: address
+    }
+
     public struct ChannelFavoritesUpdate has copy, drop {
         app_id: address,
         favorited_channel_id: address,
@@ -193,6 +213,42 @@ module sage_user::user_actions {
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun add_app_profile(
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        app: &App,
+        avatar: u256,
+        banner: u256,
+        description: String,
+        name: String,
+        ctx: &mut TxContext
+    ) {
+        let app_address = object::id_address(app);
+
+        let timestamp = clock.timestamp_ms();
+
+        owned_user.add_profile(
+            app_address,
+            avatar,
+            banner,
+            timestamp,
+            description,
+            name
+        );
+
+        let self = tx_context::sender(ctx);
+
+        event::emit(AppProfileCreated {
+            app_id: app_address,
+            avatar,
+            banner,
+            created_at: timestamp,
+            description,
+            name,
+            user_id: self
+        });
+    }
 
     public fun add_favorite_channel<ChannelType: key> (
         app: &App,
@@ -398,6 +454,9 @@ module sage_user::user_actions {
         assert!(owner == self, ENotSelf);
 
         let app_address = object::id_address(app);
+
+        owned_user.assert_profile(app_address);
+
         let user_witness = user_witness::create_witness();
 
         let mut total_coin_option: Option<Coin<TRUST>> = option::none();
@@ -482,6 +541,10 @@ module sage_user::user_actions {
             let amount = balance.value();
 
             owned_user.add_to_total_rewards(amount);
+            owned_user.add_to_profile_rewards(
+                app_address,
+                amount
+            );
 
             transfer::public_transfer(total_coin, self);
         } else {
@@ -1603,6 +1666,42 @@ module sage_user::user_actions {
             user_name: name,
             description,
             updated_at
+        });
+    }
+
+    public fun update_app_profile(
+        clock: &Clock,
+        owned_user: &mut UserOwned,
+        app: &App,
+        avatar: u256,
+        banner: u256,
+        description: String,
+        name: String,
+        ctx: &mut TxContext
+    ) {
+        let app_address = object::id_address(app);
+
+        let timestamp = clock.timestamp_ms();
+
+        owned_user.update_profile(
+            app_address,
+            avatar,
+            banner,
+            description,
+            name,
+            timestamp
+        );
+
+        let self = tx_context::sender(ctx);
+
+        event::emit(AppProfileUpdated {
+            app_id: app_address,
+            avatar,
+            banner,
+            description,
+            name,
+            updated_at: timestamp,
+            user_id: self
         });
     }
 
