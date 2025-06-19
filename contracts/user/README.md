@@ -1,12 +1,12 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee) - 0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee
+[Package](https://testnet.suivision.xyz/package/0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee)
 
-[Publisher](https://testnet.suivision.xyz/object/0xa48507da90592ebb93430f2a518d3d58d12297ca3b894e83018c8adb355869d3) - 0xa48507da90592ebb93430f2a518d3d58d12297ca3b894e83018c8adb355869d3
-[Publisher](https://testnet.suivision.xyz/object/0xdc9acb7b070247790deaf34eb43353d4cd767be86bab2abfbf44ed8b9128352f) - 0xdc9acb7b070247790deaf34eb43353d4cd767be86bab2abfbf44ed8b9128352f
-[UpgradeCap](https://testnet.suivision.xyz/object/0xa41ddccedc6c3f262ab7c484d0d231682004b416f6a11d95017740258141e750) - 0xa41ddccedc6c3f262ab7c484d0d231682004b416f6a11d95017740258141e750
+[Publisher](https://testnet.suivision.xyz/object/0xa48507da90592ebb93430f2a518d3d58d12297ca3b894e83018c8adb355869d3)
+[Publisher](https://testnet.suivision.xyz/object/0xdc9acb7b070247790deaf34eb43353d4cd767be86bab2abfbf44ed8b9128352f)
+[UpgradeCap](https://testnet.suivision.xyz/object/0xa41ddccedc6c3f262ab7c484d0d231682004b416f6a11d95017740258141e750)
 
-[InviteConfig](https://testnet.suivision.xyz/object/0x3224f58efbd0a336a34f7e098f3cc521094e3d98e29a7e1a51ef1c2313812dff) - 0x3224f58efbd0a336a34f7e098f3cc521094e3d98e29a7e1a51ef1c2313812dff
-[UserFees](https://testnet.suivision.xyz/object/0xb67d6f1382de7f8f0281d03ee09d65abfe3b04c00c5a63565d8ccdbb8227f753) - 0xb67d6f1382de7f8f0281d03ee09d65abfe3b04c00c5a63565d8ccdbb8227f753
-[UserRegistry](https://testnet.suivision.xyz/object/0x6c08dddc6a122cb6ed0370b58b71f598658f89d41a01884c672261f3eb5ea271) - 0x6c08dddc6a122cb6ed0370b58b71f598658f89d41a01884c672261f3eb5ea271
-[UserInviteRegistry](https://testnet.suivision.xyz/object/0xb3abed9374fb59592e51acefee65588a20b8d160edd3ab7339e1f67ae5eeb630) - 0xb3abed9374fb59592e51acefee65588a20b8d160edd3ab7339e1f67ae5eeb630
+[InviteConfig](https://testnet.suivision.xyz/object/0x3224f58efbd0a336a34f7e098f3cc521094e3d98e29a7e1a51ef1c2313812dff)
+[UserFees](https://testnet.suivision.xyz/object/0xb67d6f1382de7f8f0281d03ee09d65abfe3b04c00c5a63565d8ccdbb8227f753)
+[UserRegistry](https://testnet.suivision.xyz/object/0x6c08dddc6a122cb6ed0370b58b71f598658f89d41a01884c672261f3eb5ea271)
+[UserInviteRegistry](https://testnet.suivision.xyz/object/0xb3abed9374fb59592e51acefee65588a20b8d160edd3ab7339e1f67ae5eeb630)

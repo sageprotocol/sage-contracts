@@ -1,10 +1,10 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905) - 0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905
+[Package](https://testnet.suivision.xyz/package/0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905)
 
-[Publisher](https://testnet.suivision.xyz/object/0x99e5a6b382882fba7af04fc81b568cbcf8633b48840a6045253c82c0844aec1e) - 0x99e5a6b382882fba7af04fc81b568cbcf8633b48840a6045253c82c0844aec1e
-[UpgradeCap](https://testnet.suivision.xyz/object/0xcb5bd898dee4e96e558863fe5bf202cab4ace60ed9e7278bf18e8be14b201201) - 0xcb5bd898dee4e96e558863fe5bf202cab4ace60ed9e7278bf18e8be14b201201
+[Publisher](https://testnet.suivision.xyz/object/0x99e5a6b382882fba7af04fc81b568cbcf8633b48840a6045253c82c0844aec1e)
+[UpgradeCap](https://testnet.suivision.xyz/object/0xcb5bd898dee4e96e558863fe5bf202cab4ace60ed9e7278bf18e8be14b201201)
 
-[AppChannelRegistry](https://testnet.suivision.xyz/object/0xb5e0ab5e4f411def8daab0992c97021eb4baddacd00e34ebbaa60231240767b9) - 0xb5e0ab5e4f411def8daab0992c97021eb4baddacd00e34ebbaa60231240767b9
-[ChannelRegistry](https://testnet.suivision.xyz/object/0x0c2777af91b16d6f0457593a7ffc1621533d360f564699962f4ea32686259af3) - 0x0c2777af91b16d6f0457593a7ffc1621533d360f564699962f4ea32686259af3
-[ChannelFees](https://testnet.suivision.xyz/object/0xfe3138b54dd20407daa1f9623b7e9912d5b7bd33903398a43f5479e864b73884) - 0xfe3138b54dd20407daa1f9623b7e9912d5b7bd33903398a43f5479e864b73884
+[AppChannelRegistry](https://testnet.suivision.xyz/object/0xb5e0ab5e4f411def8daab0992c97021eb4baddacd00e34ebbaa60231240767b9)
+[ChannelRegistry](https://testnet.suivision.xyz/object/0x0c2777af91b16d6f0457593a7ffc1621533d360f564699962f4ea32686259af3)
+[ChannelFees](https://testnet.suivision.xyz/object/0xfe3138b54dd20407daa1f9623b7e9912d5b7bd33903398a43f5479e864b73884)
