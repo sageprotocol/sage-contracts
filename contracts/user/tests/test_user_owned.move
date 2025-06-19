@@ -12,7 +12,12 @@ module sage_user::test_user_owned {
     };
 
     use sage_user::{
-        user_owned::{Self, UserOwned, ENoAppFavorites},
+        user_owned::{
+            Self,
+            UserOwned,
+            ENoAppFavorites,
+            ENoAppProfile
+        },
         user_shared::{Self, UserShared}
     };
 
@@ -159,6 +164,87 @@ module sage_user::test_user_owned {
 
             let retrieved_rewards = user_owned::get_profile_rewards(&owned_user, app_address);
             assert!(retrieved_rewards == 0);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_owned_user_profile_assert_pass() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                mut owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            user_owned::add_profile(
+                &mut owned_user,
+                app_address,
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name
+            );
+
+            owned_user.assert_profile(app_address);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENoAppProfile)]
+    fun test_owned_user_profile_assert_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            owned_user.assert_profile(app_address);
 
             destroy(owned_user);
         };

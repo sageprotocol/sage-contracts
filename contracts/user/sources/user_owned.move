@@ -43,6 +43,7 @@ module sage_user::user_owned {
     // --------------- Errors ---------------
 
     const ENoAppFavorites: u64 = 370;
+    const ENoAppProfile: u64 = 371;
 
     // --------------- Name Tag ---------------
 
@@ -96,6 +97,18 @@ module sage_user::user_owned {
     // --------------- Constructor ---------------
 
     // --------------- Public Functions ---------------
+
+    public fun assert_profile(
+        owned_user: &UserOwned,
+        app_address: address
+    ) {
+        let has_profile = has_profile(
+            owned_user,
+            app_address
+        );
+
+        assert!(has_profile, ENoAppProfile);
+    }
 
     public fun borrow_analytics_mut_for_channel<ChannelWitness: drop>(
         channel_witness: &ChannelWitness,
