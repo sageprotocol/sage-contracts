@@ -129,6 +129,9 @@ module sage_user::test_user_owned {
 
             let app_address = @0xBABE;
 
+            let has_profile = owned_user.has_profile(app_address);
+            assert!(!has_profile);
+
             user_owned::add_profile(
                 &mut owned_user,
                 app_address,
@@ -138,6 +141,9 @@ module sage_user::test_user_owned {
                 description,
                 name
             );
+
+            let has_profile = owned_user.has_profile(app_address);
+            assert!(has_profile);
 
             let retrieved_avatar = user_owned::get_profile_avatar(&owned_user, app_address);
             assert!(AVATAR == retrieved_avatar, EAvatarMismatch);

@@ -265,6 +265,20 @@ module sage_user::user_owned {
         )
     }
 
+    public fun has_profile(
+        owned_user: &UserOwned,
+        app_address: address
+    ): bool {
+        let profile_key = ProfileKey {
+            app: app_address
+        };
+
+        df::exists_with_type<ProfileKey, Profile>(
+            &owned_user.id,
+            profile_key
+        )
+    }
+
     public fun get_profile_avatar(
         owned_user: &UserOwned,
         app_address: address
