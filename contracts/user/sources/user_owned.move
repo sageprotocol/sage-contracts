@@ -59,6 +59,20 @@ module sage_user::user_owned {
         app: address
     }
 
+    public struct ProfileKey has copy, drop, store {
+        app: address
+    }
+
+    public struct Profile has store {
+        avatar: u256,
+        banner: u256,
+        created_at: u64,
+        description: String,
+        name: String,
+        total_rewards: u64,
+        updated_at: u64
+    }
+
     public struct UserFavoritesKey has copy, drop, store {
         app: address
     }
@@ -251,6 +265,66 @@ module sage_user::user_owned {
         )
     }
 
+    public fun get_profile_avatar(
+        owned_user: &UserOwned,
+        app_address: address
+    ): u256 {
+        let profile = borrow_profile(
+            owned_user,
+            app_address
+        );
+
+        profile.avatar
+    }
+
+    public fun get_profile_banner(
+        owned_user: &UserOwned,
+        app_address: address
+    ): u256 {
+        let profile = borrow_profile(
+            owned_user,
+            app_address
+        );
+
+        profile.banner
+    }
+
+    public fun get_profile_description(
+        owned_user: &UserOwned,
+        app_address: address
+    ): String {
+        let profile = borrow_profile(
+            owned_user,
+            app_address
+        );
+
+        profile.description
+    }
+
+    public fun get_profile_name(
+        owned_user: &UserOwned,
+        app_address: address
+    ): String {
+        let profile = borrow_profile(
+            owned_user,
+            app_address
+        );
+
+        profile.name
+    }
+
+    public fun get_profile_rewards(
+        owned_user: &UserOwned,
+        app_address: address
+    ): u64 {
+        let profile = borrow_profile(
+            owned_user,
+            app_address
+        );
+
+        profile.total_rewards
+    }
+
     // --------------- Friend Functions ---------------
 
     public(package) fun add_favorite_channel<ChannelType: key>(
@@ -431,6 +505,49 @@ module sage_user::user_owned {
             favorite_user_wallet_address,
             count
         )
+    }
+
+    public(package) fun add_profile(
+        owned_user: &mut UserOwned,
+        app_address: address,
+        avatar: u256,
+        banner: u256,
+        created_at: u64,
+        description: String,
+        name: String
+    ) {
+        let profile_key = ProfileKey {
+            app: app_address
+        };
+
+        let profile = Profile {
+            avatar,
+            banner,
+            created_at,
+            description,
+            name,
+            total_rewards: 0,
+            updated_at: created_at
+        };
+
+        df::add<ProfileKey, Profile>(
+            &mut owned_user.id,
+            profile_key,
+            profile
+        );
+    }
+
+    public(package) fun add_to_profile_rewards(
+        owned_user: &mut UserOwned,
+        app_address: address,
+        amount: u64
+    ) {
+        let profile = borrow_profile_mut(
+            owned_user,
+            app_address
+        );
+
+        profile.total_rewards = profile.total_rewards + amount;
     }
 
     public(package) fun add_to_total_rewards(
@@ -687,7 +804,56 @@ module sage_user::user_owned {
         owned_user.updated_at = updated_at;
     }
 
+    public(package) fun update_profile(
+        owned_user: &mut UserOwned,
+        app_address: address,
+        avatar: u256,
+        banner: u256,
+        description: String,
+        name: String,
+        updated_at: u64
+    ) {
+        let profile = borrow_profile_mut(
+            owned_user,
+            app_address
+        );
+
+        profile.avatar = avatar;
+        profile.banner = banner;
+        profile.description = description;
+        profile.name = name;
+        profile.updated_at = updated_at;
+    }
+
     // --------------- Internal Functions ---------------
+
+    fun borrow_profile(
+        owned_user: &UserOwned,
+        app_address: address
+    ): &Profile {
+        let profile_key = ProfileKey {
+            app: app_address
+        };
+
+        df::borrow<ProfileKey, Profile>(
+            &owned_user.id,
+            profile_key
+        )
+    }
+
+    fun borrow_profile_mut(
+        owned_user: &mut UserOwned,
+        app_address: address
+    ): &mut Profile {
+        let profile_key = ProfileKey {
+            app: app_address
+        };
+
+        df::borrow_mut<ProfileKey, Profile>(
+            &mut owned_user.id,
+            profile_key
+        )
+    }
 
     // --------------- Test Functions ---------------
 }
