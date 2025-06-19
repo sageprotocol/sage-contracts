@@ -78,6 +78,7 @@ module sage_user::user_actions {
     const METRIC_LIKED_POST: vector<u8> = b"liked-post";
     const METRIC_POST_FAVORITED: vector<u8> = b"post-favorited";
     const METRIC_POST_LIKED: vector<u8> = b"post-liked";
+    const METRIC_PROFILE_CREATED: vector<u8> = b"profile-created";
     const METRIC_USER_FOLLOWED: vector<u8> = b"user-followed";
     const METRIC_USER_FRIENDS: vector<u8> = b"user-friends";
     const METRIC_USER_TEXT_POST: vector<u8> = b"user-text-posts";
@@ -215,9 +216,11 @@ module sage_user::user_actions {
     // --------------- Public Functions ---------------
 
     public fun add_app_profile(
+        app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
-        app: &App,
+        reward_cost_weights_registry: &RewardCostWeightsRegistry,
+        user_witness_config: &UserWitnessConfig,
         avatar: u256,
         banner: u256,
         description: String,
@@ -236,6 +239,38 @@ module sage_user::user_actions {
             description,
             name
         );
+
+        let has_rewards_enabled = app.has_rewards_enabled();
+
+        if (has_rewards_enabled) {
+            let current_epoch = reward_registry::get_current(
+                reward_cost_weights_registry
+            );
+
+            let analytics = user_owned::borrow_or_create_analytics_mut(
+                owned_user,
+                user_witness_config,
+                app_address,
+                current_epoch,
+                ctx
+            );
+
+            let reward_cost_weights = reward_cost_weights_registry.borrow_current();
+
+            let metric = utf8(METRIC_PROFILE_CREATED);
+            let claim = reward_cost_weights.get_weight(metric);
+
+            let user_witness = user_witness::create_witness();
+
+            analytics_actions::increment_analytics_for_user<UserWitness>(
+                analytics,
+                app,
+                &user_witness,
+                user_witness_config,
+                claim,
+                metric
+            );
+        };
 
         let self = tx_context::sender(ctx);
 
@@ -1670,9 +1705,9 @@ module sage_user::user_actions {
     }
 
     public fun update_app_profile(
+        app: &App,
         clock: &Clock,
         owned_user: &mut UserOwned,
-        app: &App,
         avatar: u256,
         banner: u256,
         description: String,

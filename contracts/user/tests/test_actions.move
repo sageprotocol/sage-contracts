@@ -119,6 +119,7 @@ module sage_user::test_user_actions {
     const METRIC_LIKED_POST: vector<u8> = b"liked-post";
     const METRIC_POST_FAVORITED: vector<u8> = b"post-favorited";
     const METRIC_POST_LIKED: vector<u8> = b"post-liked";
+    const METRIC_PROFILE_CREATED: vector<u8> = b"profile-created";
     const METRIC_USER_FOLLOWED: vector<u8> = b"user-followed";
     const METRIC_USER_FRIENDS: vector<u8> = b"user-friends";
     const METRIC_USER_TEXT_POST: vector<u8> = b"user-text-posts";
@@ -127,12 +128,13 @@ module sage_user::test_user_actions {
     const WEIGHT_COMMENT_RECEIVED: u64 = 2 * GRAIN_PER_TRUST;
     const WEIGHT_FAVORITED_USER_POST: u64 = 3 * GRAIN_PER_TRUST;
     const WEIGHT_FOLLOWED_USER: u64 = 4 * GRAIN_PER_TRUST;
-    const WEIGHT_USER_FOLLOWED: u64 = 5 * GRAIN_PER_TRUST;
-    const WEIGHT_USER_FRIENDS: u64 = 6 * GRAIN_PER_TRUST;
-    const WEIGHT_USER_LIKED_POST: u64 = 7 * GRAIN_PER_TRUST;
-    const WEIGHT_USER_POST_FAVORITED: u64 = 8 * GRAIN_PER_TRUST;
-    const WEIGHT_USER_POST_LIKED: u64 = 9 * GRAIN_PER_TRUST;
-    const WEIGHT_USER_TEXT_POST: u64 = 10 * GRAIN_PER_TRUST;
+    const WEIGHT_PROFILE_CREATED: u64 = 5 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_FOLLOWED: u64 = 6 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_FRIENDS: u64 = 7 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_LIKED_POST: u64 = 8 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_POST_FAVORITED: u64 = 9 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_POST_LIKED: u64 = 10 * GRAIN_PER_TRUST;
+    const WEIGHT_USER_TEXT_POST: u64 = 11 * GRAIN_PER_TRUST;
 
     const CREATE_INVITE_CUSTOM_FEE: u64 = 1;
     const CREATE_INVITE_SUI_FEE: u64 = 2;
@@ -2189,9 +2191,11 @@ module sage_user::test_user_actions {
             let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -2218,6 +2222,148 @@ module sage_user::test_user_actions {
 
             let retrieved_rewards = user_owned::get_profile_rewards(&owned_user, app_address);
             assert!(retrieved_rewards == 0);
+
+            ts::return_to_sender(scenario, owned_user);
+
+            destroy_for_testing(
+                app,
+                clock,
+                invite_config,
+                owned_user_config,
+                post_fees,
+                reward_cost_weights_registry,
+                user_registry,
+                user_invite_registry,
+                user_fees,
+                user_witness_config
+            );
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_user_actions_create_profile_rewards() {
+        let (
+            mut scenario_val,
+            mut app,
+            clock,
+            invite_config,
+            post_fees,
+            mut reward_cost_weights_registry,
+            owned_user_config,
+            mut user_registry,
+            mut user_invite_registry,
+            user_fees,
+            user_witness_config
+        ) = setup_for_testing();
+
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let name = utf8(b"USER-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let reward_cap = ts::take_from_sender<RewardCap>(scenario);
+
+            admin_actions::update_app_rewards(
+                &reward_cap,
+                &mut app,
+                true
+            );
+
+            reward_actions::start_epochs(
+                &reward_cap,
+                &clock,
+                &mut reward_cost_weights_registry,
+                ts::ctx(scenario)
+            );
+
+            reward_actions::add_weight(
+                &reward_cap,
+                &mut reward_cost_weights_registry,
+                utf8(METRIC_PROFILE_CREATED),
+                WEIGHT_PROFILE_CREATED
+            );
+
+            ts::return_to_sender(scenario, reward_cap);
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let custom_payment = mint_for_testing<SUI>(
+                CREATE_USER_CUSTOM_FEE,
+                ts::ctx(scenario)
+            );
+            let sui_payment = mint_for_testing<SUI>(
+                CREATE_USER_SUI_FEE,
+                ts::ctx(scenario)
+            );
+
+            let (
+                _owned_user_address,
+                _shared_user_address
+            ) = user_actions::create<SUI>(
+                &clock,
+                &invite_config,
+                &mut user_registry,
+                &mut user_invite_registry,
+                &user_fees,
+                option::none(),
+                option::none(),
+                AVATAR,
+                BANNER,
+                description,
+                name,
+                custom_payment,
+                sui_payment,
+                ts::ctx(scenario)
+            );
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
+
+            user_actions::add_app_profile(
+                &app,
+                &clock,
+                &mut owned_user,
+                &reward_cost_weights_registry,
+                &user_witness_config,
+                AVATAR,
+                BANNER,
+                description,
+                name,
+                ts::ctx(scenario)
+            );
+
+            let current_epoch = reward_registry::get_current(
+                &reward_cost_weights_registry
+            );
+
+            let analytics = user_owned::borrow_or_create_analytics_mut(
+                &mut owned_user,
+                &user_witness_config,
+                object::id_address(&app),
+                current_epoch,
+                ts::ctx(scenario)
+            );
+
+            let analytics_exists = analytics::field_exists(
+                analytics,
+                utf8(METRIC_PROFILE_CREATED)
+            );
+
+            assert!(analytics_exists);
+
+            let claim = analytics::get_claim(
+                analytics,
+                object::id_address(&app)
+            );
+
+            assert!(claim == WEIGHT_PROFILE_CREATED);
 
             ts::return_to_sender(scenario, owned_user);
 
@@ -9671,9 +9817,11 @@ module sage_user::test_user_actions {
             let mut owned_user = ts::take_from_sender<UserOwned>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -9685,9 +9833,9 @@ module sage_user::test_user_actions {
             let new_name = utf8(b"new-display-name");
 
             user_actions::update_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
                 NEW_AVATAR,
                 NEW_BANNER,
                 new_description,
@@ -10532,9 +10680,11 @@ module sage_user::test_user_actions {
             let mut treasury = ts::take_shared<ProtectedTreasury>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -10765,9 +10915,11 @@ module sage_user::test_user_actions {
             let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -10998,9 +11150,11 @@ module sage_user::test_user_actions {
             let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -11265,9 +11419,11 @@ module sage_user::test_user_actions {
             let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -11535,9 +11691,11 @@ module sage_user::test_user_actions {
             let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
@@ -11809,9 +11967,11 @@ module sage_user::test_user_actions {
             let reward_witness_config = ts::take_shared<RewardWitnessConfig>(scenario);
 
             user_actions::add_app_profile(
+                &app,
                 &clock,
                 &mut owned_user,
-                &app,
+                &reward_cost_weights_registry,
+                &user_witness_config,
                 AVATAR,
                 BANNER,
                 description,
