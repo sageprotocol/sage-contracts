@@ -1,6 +1,7 @@
 # Testnet
 
-[Package](https://testnet.suivision.xyz/package/0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee)
+[Package - v1](https://testnet.suivision.xyz/package/0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee)
+[Package - v2](https://testnet.suivision.xyz/package/0x01bb081e07825940785a94e1e589de10c44d548f073ca3b3204552918a8330de)
 
 [Publisher](https://testnet.suivision.xyz/object/0xa48507da90592ebb93430f2a518d3d58d12297ca3b894e83018c8adb355869d3)
 [Publisher](https://testnet.suivision.xyz/object/0xdc9acb7b070247790deaf34eb43353d4cd767be86bab2abfbf44ed8b9128352f)
