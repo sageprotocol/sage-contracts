@@ -12,7 +12,12 @@ module sage_user::test_user_owned {
     };
 
     use sage_user::{
-        user_owned::{Self, UserOwned, ENoAppFavorites},
+        user_owned::{
+            Self,
+            UserOwned,
+            ENoAppFavorites,
+            ENoAppProfile
+        },
         user_shared::{Self, UserShared}
     };
 
@@ -103,6 +108,151 @@ module sage_user::test_user_owned {
     }
 
     #[test]
+    fun test_owned_user_profile_create() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                mut owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            let has_profile = owned_user.has_profile(app_address);
+            assert!(!has_profile);
+
+            user_owned::add_profile(
+                &mut owned_user,
+                app_address,
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name
+            );
+
+            let has_profile = owned_user.has_profile(app_address);
+            assert!(has_profile);
+
+            let retrieved_avatar = user_owned::get_profile_avatar(&owned_user, app_address);
+            assert!(AVATAR == retrieved_avatar, EAvatarMismatch);
+
+            let retrieved_banner = user_owned::get_profile_banner(&owned_user, app_address);
+            assert!(BANNER == retrieved_banner, EBannerMismatch);
+
+            let retrieved_description = user_owned::get_profile_description(&owned_user, app_address);
+            assert!(description == retrieved_description, EDescriptionMismatch);
+
+            let retrieved_name = user_owned::get_profile_name(&owned_user, app_address);
+            assert!(name == retrieved_name, ENameMismatch);
+
+            let retrieved_rewards = user_owned::get_profile_rewards(&owned_user, app_address);
+            assert!(retrieved_rewards == 0);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_owned_user_profile_assert_pass() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                mut owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            user_owned::add_profile(
+                &mut owned_user,
+                app_address,
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name
+            );
+
+            owned_user.assert_profile(app_address);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ENoAppProfile)]
+    fun test_owned_user_profile_assert_fail() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            owned_user.assert_profile(app_address);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
     fun test_owned_user_update() {
         let mut scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -153,6 +303,86 @@ module sage_user::test_user_owned {
             assert!(name == retrieved_key, EKeyMismatch);
 
             let retrieved_name = user_owned::get_name(&owned_user);
+            assert!(new_user_name == retrieved_name, ENameMismatch);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_owned_user_profile_update() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        let (
+            mut owned_user,
+            app_address
+        ) = {
+            let (
+                mut owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                AVATAR,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            user_owned::add_profile(
+                &mut owned_user,
+                app_address,
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name
+            );
+
+            (
+                owned_user,
+                app_address
+            )
+        };
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let new_user_description = utf8(NEW_DESCRIPTION);
+            let new_user_name = utf8(b"USER-name");
+            let updated_at: u64 = 9999;
+
+            user_owned::update_profile(
+                &mut owned_user,
+                app_address,
+                NEW_AVATAR,
+                NEW_BANNER,
+                new_user_description,
+                new_user_name,
+                updated_at
+            );
+
+            let retrieved_avatar = user_owned::get_profile_avatar(&owned_user, app_address);
+            assert!(NEW_AVATAR == retrieved_avatar, EAvatarMismatch);
+
+            let retrieved_banner = user_owned::get_profile_banner(&owned_user, app_address);
+            assert!(NEW_BANNER == retrieved_banner, EBannerMismatch);
+
+            let retrieved_description = user_owned::get_profile_description(&owned_user, app_address);
+            assert!(new_user_description == retrieved_description, EDescriptionMismatch);
+
+            let retrieved_name = user_owned::get_profile_name(&owned_user, app_address);
             assert!(new_user_name == retrieved_name, ENameMismatch);
 
             destroy(owned_user);
@@ -367,6 +597,122 @@ module sage_user::test_user_owned {
             owned_user.add_to_total_rewards(amount);
 
             let total_rewards = owned_user.get_total_rewards();
+
+            assert!(total_rewards == running_total);
+
+            destroy(owned_user);
+        };
+
+        ts::end(scenario_val);
+    }
+
+    #[test]
+    fun test_owned_user_add_to_profile_rewards() {
+        let mut scenario_val = ts::begin(ADMIN);
+        let scenario = &mut scenario_val;
+
+        let description = utf8(DESCRIPTION);
+        let created_at: u64 = 999;
+        let name = utf8(b"user-name");
+
+        ts::next_tx(scenario, ADMIN);
+        {
+            let (
+                mut owned_user,
+                _user_address
+            ) = user_owned::create(
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name,
+                name,
+                ADMIN,
+                ts::ctx(scenario)
+            );
+
+            let app_address = @0xBABE;
+
+            user_owned::add_profile(
+                &mut owned_user,
+                app_address,
+                AVATAR,
+                BANNER,
+                created_at,
+                description,
+                name
+            );
+
+            let mut running_total = 0;
+
+            let total_rewards = user_owned::get_profile_rewards(
+                &owned_user,
+                app_address
+            );
+
+            assert!(total_rewards == running_total);
+
+            let amount = 5;
+            running_total = running_total + amount;
+
+            user_owned::add_to_profile_rewards(
+                &mut owned_user,
+                app_address,
+                amount
+            );
+
+            let total_rewards = user_owned::get_profile_rewards(
+                &owned_user,
+                app_address
+            );
+
+            assert!(total_rewards == running_total);
+
+            let amount = (1005 / 1000);
+            running_total = running_total + amount;
+
+            user_owned::add_to_profile_rewards(
+                &mut owned_user,
+                app_address,
+                amount
+            );
+
+            let total_rewards = user_owned::get_profile_rewards(
+                &owned_user,
+                app_address
+            );
+
+            assert!(total_rewards == running_total);
+
+            let amount = (105000 / 100000);
+            running_total = running_total + amount;
+
+            user_owned::add_to_profile_rewards(
+                &mut owned_user,
+                app_address,
+                amount
+            );
+
+            let total_rewards = user_owned::get_profile_rewards(
+                &owned_user,
+                app_address
+            );
+
+            assert!(total_rewards == running_total);
+
+            let amount = (1050000 / 1000000);
+            running_total = running_total + amount;
+
+            user_owned::add_to_profile_rewards(
+                &mut owned_user,
+                app_address,
+                amount
+            );
+
+            let total_rewards = user_owned::get_profile_rewards(
+                &owned_user,
+                app_address
+            );
 
             assert!(total_rewards == running_total);
 
