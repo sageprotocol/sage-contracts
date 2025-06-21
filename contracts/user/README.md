@@ -1,13 +1,12 @@
 # Testnet
 
-[Package - v1](https://testnet.suivision.xyz/package/0x9a7c292ac593101aef1fba2d3b7b6ff51385a9f8af5fdf701e019987479a99ee)
-[Package - v2](https://testnet.suivision.xyz/package/0x01bb081e07825940785a94e1e589de10c44d548f073ca3b3204552918a8330de)
+[Package](https://testnet.suivision.xyz/package/0xcaab3bd6fb3f6aafd3eb06335398c17b4713fdc09cb5a55cd46a7e0ad4d0de15)
 
-[Publisher](https://testnet.suivision.xyz/object/0xa48507da90592ebb93430f2a518d3d58d12297ca3b894e83018c8adb355869d3)
-[Publisher](https://testnet.suivision.xyz/object/0xdc9acb7b070247790deaf34eb43353d4cd767be86bab2abfbf44ed8b9128352f)
-[UpgradeCap](https://testnet.suivision.xyz/object/0xa41ddccedc6c3f262ab7c484d0d231682004b416f6a11d95017740258141e750)
+[Publisher](https://testnet.suivision.xyz/object/0x6c50bf79a1b4ddcd251aa4e69f9a0519eaacd991d1330fca222ae50cd7c8c39f)
+[Publisher](https://testnet.suivision.xyz/object/0xef9175707557838c93da3fd9b4ed2c46dd5446847fe0466d6e7460e09b8e54a2)
+[UpgradeCap](https://testnet.suivision.xyz/object/0x02eb2efe7bc939ae6426bb07669c69e5229471c8fee7666f5afa84f576424797)
 
-[InviteConfig](https://testnet.suivision.xyz/object/0x3224f58efbd0a336a34f7e098f3cc521094e3d98e29a7e1a51ef1c2313812dff)
-[UserFees](https://testnet.suivision.xyz/object/0xb67d6f1382de7f8f0281d03ee09d65abfe3b04c00c5a63565d8ccdbb8227f753)
-[UserRegistry](https://testnet.suivision.xyz/object/0x6c08dddc6a122cb6ed0370b58b71f598658f89d41a01884c672261f3eb5ea271)
-[UserInviteRegistry](https://testnet.suivision.xyz/object/0xb3abed9374fb59592e51acefee65588a20b8d160edd3ab7339e1f67ae5eeb630)
+[InviteConfig](https://testnet.suivision.xyz/object/0x21409b2bf56bd804f3c425da3bec2a9b4e2d1caf764f52c2ed87f5a3c9618f62)
+[UserFees](https://testnet.suivision.xyz/object/0xc1dbde88a9915700acbd6b7909692e3a716a3aa8580d90d7c850662a6f73e100)
+[UserRegistry](https://testnet.suivision.xyz/object/0xa8350e09646fdb2a22ed5d93fd208ac0e39a54eae1946b35d75b40fa95c0ad2f)
+[UserInviteRegistry](https://testnet.suivision.xyz/object/0x14c083581b50ff124ea98515a06b3c265ec2e3043264fb49e49b6cd5bb9dbcff)

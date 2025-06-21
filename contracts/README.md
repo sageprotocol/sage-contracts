@@ -44,13 +44,19 @@ Enable rewards on Sage:
 $ sui client call --package <ADMIN_PKG_ID> --module admin_actions --function update_app_rewards --args <REWARD_CAP_ID> <APP_ID> true
 ```
 
+Create a channel registry:
+
+```sh
+$ sui client call --package <CHANNEL_PKG_ID> --module channel_actions --function create_registry --args <APP_CHANNEL_REG_ID> <APP_ID>
+```
+
 Create a royalties object:
 
 ```sh
 $ sui client call --package <ADMIN_PKG_ID> --module admin_actions --function create_royalties --type-args 0x2::sui::SUI --args <FEE_CAP_ID> <APP_ID> 0 0x083819196bd7923be95bba14ab1f89931dc392a0d41c71a3eb5e2e9ad914acc9 0 0x083819196bd7923be95bba14ab1f89931dc392a0d41c71a3eb5e2e9ad914acc9
 ```
 
-Create admin config objects (e.g. <CHANNEL_PKG_ID>::channel::Channel):
+Create admin config objects (e.g. `<CHANNEL_PKG_ID>::channel::Channel`):
 
 ```sh
 $ sui client call --package <ADMIN_PKG_ID> --module admin_access --function create_channel_config --type-args <CHANNEL_TYPE> --args <ADMIN_CAP_ID>
@@ -137,6 +143,7 @@ $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function a
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "liked-post" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "post-favorited" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "post-liked" 1000000
+$ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "profile-created" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "user-followed" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "user-friends" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "user-text-posts" 1000000

@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "FFEA933DDC9583CA4DC2F6FB08B80C206BB3ABD9D994CE1DB6784892B59A645F"
+manifest_digest = "F225F48D937C28E729DDA4FFD92A3682DF8F87123C3474A38A773ACA815E11D4"
 deps_digest = "D7FB1F2E1A893B9A0E80A392473710373DE5791D3AC8F6D898803754B2ADAE6B"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -20,7 +20,7 @@ dependencies = [
 
 [[move.package]]
 id = "Bridge"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/bridge" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "af5297b292c3", subdir = "crates/sui-framework/packages/bridge" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -30,7 +30,7 @@ dependencies = [
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "af5297b292c3", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 id = "SageAdmin"
@@ -139,7 +139,7 @@ dependencies = [
 
 [[move.package]]
 id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "af5297b292c3", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -147,7 +147,7 @@ dependencies = [
 
 [[move.package]]
 id = "SuiSystem"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "25804c243d07", subdir = "crates/sui-framework/packages/sui-system" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "af5297b292c3", subdir = "crates/sui-framework/packages/sui-system" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -155,7 +155,7 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.49.2"
+compiler-version = "1.50.1"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -163,6 +163,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905"
-latest-published-id = "0x825e2878d346fb70c4e480b7b3a42b195d988c5396321b39eb223471f9cd6905"
+original-published-id = "0x4d85d741b109bb5d4290c8899d09c3714c2603888ccc476cac8119a15df945ad"
+latest-published-id = "0x4d85d741b109bb5d4290c8899d09c3714c2603888ccc476cac8119a15df945ad"
 published-version = "1"

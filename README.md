@@ -18,11 +18,16 @@ $ cd contracts/<directory>
 $ sui move test
 ```
 
-### Deploy contract
-
-- SWAP WALLET TO SAGE ADMIN
+### Publish contract
 
 ```sh
 $ cd contracts/<directory>
-$ sui client publish --gas-budget 100000000
+$ sui client publish --gas-budget 100000000 --verify-deps
+```
+
+### Update contract
+
+```sh
+$ cd contracts/<directory>
+$ sui client upgrade --upgrade-capability <UPGRADE_CAP> --gas-budget 100000000 --verify-deps
 ```
