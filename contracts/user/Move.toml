@@ -2,7 +2,7 @@
 name = "SageUser"
 edition = "2024.beta"
 version = "0.0.1"
-published-at = "0x01bb081e07825940785a94e1e589de10c44d548f073ca3b3204552918a8330de"
+# published-at = "0x01bb081e07825940785a94e1e589de10c44d548f073ca3b3204552918a8330de"
 
 [dependencies]
 SageAdmin = { local = "../admin" }
@@ -24,7 +24,7 @@ sage_post = "0x1bb982b71af3f6e7fb46a41f82ce6deb799176b55ca48aee547fad684e2b4d93"
 sage_reward = "0xf2b80913a9ab40923ac0e130829c59d5351c609b1a76663e2e3497910657ce00"
 sage_shared = "0x35eb700015d73433bb6c79cee20c840ac2ffaf4ffc873ab6941d2bd2db8f4cb6"
 sage_trust = "0x15a23833eba24a8d6f723031c7ac23d06bcb66648241ab0646e528a99e5b2de2"
-sage_user = "0x01bb081e07825940785a94e1e589de10c44d548f073ca3b3204552918a8330de"
+# sage_user = "0x01bb081e07825940785a94e1e589de10c44d548f073ca3b3204552918a8330de"
 sage_utils = "0x2ce743f87281d7933f02a1f124665d1f43d7a9e57147e7005709cdcd1d6f7b7d"
 
 # sage_admin = "0x0"
@@ -33,5 +33,5 @@ sage_utils = "0x2ce743f87281d7933f02a1f124665d1f43d7a9e57147e7005709cdcd1d6f7b7d
 # sage_reward = "0x0"
 # sage_shared = "0x0"
 # sage_trust = "0x0"
-# sage_user = "0x0"
+sage_user = "0x0"
 # sage_utils  = "0x0"

@@ -137,6 +137,7 @@ $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function a
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "liked-post" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "post-favorited" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "post-liked" 1000000
+$ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "profile-created" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "user-followed" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "user-friends" 1000000
 $ sui client call --package <REWARD_PKG_ID> --module reward_actions --function add_weight --args <REWARD_CAP_ID> <REWARD_COST_WEIGHTS_REG_ID> "user-text-posts" 1000000
