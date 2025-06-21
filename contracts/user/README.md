@@ -7,6 +7,6 @@
 [UpgradeCap](https://testnet.suivision.xyz/object/0x02eb2efe7bc939ae6426bb07669c69e5229471c8fee7666f5afa84f576424797)
 
 [InviteConfig](https://testnet.suivision.xyz/object/0x21409b2bf56bd804f3c425da3bec2a9b4e2d1caf764f52c2ed87f5a3c9618f62)
-[UserFees](https://testnet.suivision.xyz/object/0x726a3afc8c93909a52266e2ff696590545f16bcae57990504022e3baa486fc8f)
+[UserFees](https://testnet.suivision.xyz/object/0xc1dbde88a9915700acbd6b7909692e3a716a3aa8580d90d7c850662a6f73e100)
 [UserRegistry](https://testnet.suivision.xyz/object/0xa8350e09646fdb2a22ed5d93fd208ac0e39a54eae1946b35d75b40fa95c0ad2f)
 [UserInviteRegistry](https://testnet.suivision.xyz/object/0x14c083581b50ff124ea98515a06b3c265ec2e3043264fb49e49b6cd5bb9dbcff)

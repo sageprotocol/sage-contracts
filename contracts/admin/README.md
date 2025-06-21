@@ -14,12 +14,12 @@
 [RewardCap](https://testnet.suivision.xyz/object/0x99ca15ee63bd7a4c6b6f286e160cbe755f905b604d657c6222dc0e0d3ee8f033)
 
 [AppRegistry](https://testnet.suivision.xyz/object/0xd2a9387f5703690896c703cc7640d06cecd9e1fa08a62bd6ec1ad1888c18a047)
-[ChannelConfig](https://testnet.suivision.xyz/object/0x4c1ade6d39cf001bdf0f561bf48a1e9410bfef0db6b2d90c3c2e68ac10597c1c)
-[ChannelWitnessConfig](https://testnet.suivision.xyz/object/0x09f15f39f3f8ef1dc6eac4603d5bbc32055ef47ea7b4f503a98c0df7fb79b39b)
+[ChannelConfig](https://testnet.suivision.xyz/object/0xd5837130cc16be9f38afb437d3e55f7366a9bafac8cc0d528b15a55de83c4543)
+[ChannelWitnessConfig](https://testnet.suivision.xyz/object/0x16208e2c3891049131083c72dbf9005fdc3bc995f49ec2ce2995604ffdfa44dd)
 [GroupWitnessConfig]()
 [OwnedUserConfig](https://testnet.suivision.xyz/object/0xa3aee5663541bbda92da0246737fd097f03b236f0a7df842b7341a52ae94ed8b)
 [SharedUserConfig](https://testnet.suivision.xyz/object/0xe7a74ce148e5f1b91fc7684a2a7cdeb403351d210ccefae65c1b39a4570e464e)
 [UserWitnessConfig](https://testnet.suivision.xyz/object/0xda9b53159f4fedab1472537b6d9114701d00df650e0d140c1d40c050ebca27cc)
 
-[Sage App](https://testnet.suivision.xyz/object/0x4f821cc6406a04fc3f7820d735cee3456071b262fe3dda7d951fd90f6195a0c9)
-[Royalties](https://testnet.suivision.xyz/object/0x13013428a2a7f851e2cc93ad670367d35ee8fa4440a0b1b8050c10714ad8a697)
+[Sage App](https://testnet.suivision.xyz/object/0xbdf69c7b5e4b1afc54579f07309d5bb9351eb4467e2980d067182c9d3c96d676)
+[Royalties](https://testnet.suivision.xyz/object/0xbc0ad98fe2aafa158d70254bd6fd271bff2fd9945692ad9faf313af14e1603a6)
